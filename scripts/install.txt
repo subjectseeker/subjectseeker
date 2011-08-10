@@ -1,0 +1,3 @@
+* Make sure magic_quotes_gpc is turned off in php.ini or in .htaccess
+  .htaccess:
+  php_flag magic_quotes_gpc Off

@@ -1,0 +1,4 @@
+#!/bin/sh
+
+date >> /home/sciseek/public_html/onlinecommunications/logs/crawler.log
+/home/sciseek/public_html/onlinecommunications/oc-crawler.php >> /home/sciseek/public_html/onlinecommunications/logs/crawler.log
