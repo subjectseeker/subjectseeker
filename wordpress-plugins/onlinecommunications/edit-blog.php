@@ -135,8 +135,6 @@ function displayEditBlogsForm ($msg, $db) {
     print "<p class=\"error\"><font color=\"red\">You cannot edit your blog as your account is not currently active. You may <a href='/contact-us/'>contact us</a> to ask for more information.</font></p>\n";
     return;
   }
-
-
 }
 
 function displayEditBlogForm($db, $data) {
@@ -219,6 +217,9 @@ function doEditBlog ($db) {
   // If this is the first time this user has tried to interact with
   // the OC system, create a USER entry for them
   $userId = addUser($displayName, $email, $db);
+
+  // TODO
+  // If user is requesting a blogUrl or blogsyndicationuri change, ensure that they own the new url
 
   $result = editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayName, $db);
 

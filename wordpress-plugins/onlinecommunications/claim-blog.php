@@ -89,7 +89,7 @@ function determineClaimStep() {
     $userId = addUser($displayName, $email, $db);
 
     // If there is already a verified claim, move ahead to linking things
-    if (retrieveVerifiedClaimToken($blogId, $userId, $db)) {
+    if ($step == null && retrieveVerifiedClaimToken($blogId, $userId, $db)) {
       displayUserAuthorLinkForm($blogId, $userId, $displayName, $db);
     } else if ($step === null) {
       doClaimBlog($blogId, $displayName, $email, $db);
