@@ -194,6 +194,12 @@ function doAddBlog ($db) {
     displayBlogForm("Unable to parse feed at $blogsyndicationuri. Are you sure it is Atom or RSS?", $db);
     return;
   }
+  
+  // Check that the user has selected at least one topic
+  if ($topic1 == -1 && $topic2 == -1) {
+	  print displayBlogForm("You need to choose at least one topic.", $db);
+	  return;
+  }
 
   // If this is the first time this user has tried to interact with
   // the OC system, create a USER entry for them
