@@ -46,7 +46,7 @@ function getSearchCurl ($type, $params) {
   curl_setopt($ch, CURLOPT_FAILONERROR, 1);
   curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
-  curl_setopt($ch, CURLOPT_TIMEOUT, 3); // times out after 4s
+  curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 4s
   curl_setopt($ch, CURLOPT_POST, 1); // set POST method
   curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
   return $ch;
@@ -66,7 +66,7 @@ function getSerializerCurl ($type, $ocParams, $httpParams) {
   curl_setopt($ch, CURLOPT_FAILONERROR, 1);
   curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
-  curl_setopt($ch, CURLOPT_TIMEOUT, 3); // times out after 4s
+  curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 4s
   curl_setopt($ch, CURLOPT_POST, 1); // set POST method
   curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
   return $ch;
@@ -80,7 +80,7 @@ function getDownloadCurl($uri) {
   curl_setopt($ch, CURLOPT_FAILONERROR, 1);
   curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
-  curl_setopt($ch, CURLOPT_TIMEOUT, 3); // times out after 4s
+  curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 4s
   return $ch;
 }
 
@@ -685,7 +685,7 @@ function uriFetchable ($uri) {
   curl_setopt($ch, CURLOPT_FAILONERROR, 1);
   curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
-  curl_setopt($ch, CURLOPT_TIMEOUT, 3); // times out after 4s
+  curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 4s
   $result = curl_exec($ch);
   $cerror = curl_error($ch);
   if (($cerror != null & strlen($cerror) > 0) || ! hasProtocol($uri)) {
@@ -944,6 +944,209 @@ function removeTopics($blogId, $db) {
   mysql_query($sql, $db);
 }
 
+/*
+ * Edit stuff
+ */
+
+function displayEditBlogsForm ($msg, $db) {
+  $blogname = stripslashes($_REQUEST["blogname"]);
+  $blogurl = stripslashes($_REQUEST["blogurl"]);
+  $blogsyndicationuri = stripslashes($_REQUEST["blogsyndicationuri"]);
+  $blogdescription = stripslashes($_REQUEST["blogdescription"]);
+
+  global $current_user;
+  get_currentuserinfo();
+  $displayName = $current_user->display_name;
+
+  print "Welcome, $displayName<br /><br />\n";
+
+  if ($msg) {
+    print "<p class='msg'>$msg</p><br />";
+  }
+
+  // If this is the first time this user has tried to interact with
+  // the OC system, create a USER entry for them
+  $userId = addUser($displayName, $email, $db);
+
+  $blogIds = getBlogIdsByUserId($userId, $db);
+  if (sizeof($blogIds) == 0) {
+    print "<p class='msg'>$displayName has no blogs.</p><br />";
+    return;
+  }
+
+  $blogData = blogIdsToBlogData($blogIds, $db);
+
+  while ($row = mysql_fetch_array($blogData)) {
+    displayEditBlogForm($db, $row);
+  }
+
+  // Only active users can edit blogs
+  $userStatus = getUserPrivilegeStatus($userId, $db);
+  if ($userStatus != 0) {
+    print "<p class=\"error\"><font color=\"red\">You cannot edit your blog as your account is not currently active. You may <a href='/contact-us/'>contact us</a> to ask for more information.</font></p>\n";
+    return;
+  }
+}
+
+function displayEditBlogForm($db, $data) {
+  $blogId = $data["BLOG_ID"];
+  $blogname = $data["BLOG_NAME"];
+  $blogurl = $data["BLOG_URI"];
+  $blogsyndicationuri = $data["BLOG_SYNDICATION_URI"];
+  $blogdescription = $data["BLOG_DESCRIPTION"];
+  $blogtopics = getBlogTopics($blogId, $db);
+  //$topic1 = $_REQUEST["topic1"];
+  //$topic2 = $_REQUEST["topic2"];
+
+  print "<h2>Edit $blogname</h2>\n";
+
+?>
+<form method="POST">
+<input type="hidden" name="step" value="doEdit" />
+<?php
+
+   print "<input type=\"hidden\" name=\"blogId\" value=\"$blogId\" />\n";
+
+   if ($errormsg !== null) {
+     print "<p><font color='red'>Error: $errormsg</font></p>\n";
+   }
+
+  print "<p>*Required field</p>\n<p>\n";
+  print "*Blog name: <input type=\"text\" name=\"blogname\" size=\"40\" value=\"$blogname\"/>\n</p>\n<p>\n*Blog URL: <input type=\"text\" name=\"blogurl\" size=\"40\" value=\"$blogurl\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)";
+  print "</p><p>*Blog syndication URL: <input type=\"text\" name=\"blogsyndicationuri\" size=\"40\" value=\"$blogsyndicationuri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)";
+  print "</p><p>Blog description:<br /><textarea name=\"blogdescription\" rows=\"5\" cols=\"70\">$blogdescription</textarea><br />\n";
+
+  print "Blog topic: <select name='topic1'>\n";
+  print "<option value='-1'>None</option>\n";
+  $topicList = getTopicList(true, $db);
+  while ($row = mysql_fetch_array($topicList)) {
+    print "<option value='" . $row["TOPIC_ID"] . "'";
+    if ($row["TOPIC_ID"] == $blogtopics[0]) {
+      print " selected";
+    }
+    print ">" . $row["TOPIC_NAME"] . "</option>\n";
+  }
+  print "</select><br />\n";
+
+  print "Blog topic: <select name='topic2'>\n";
+  print "<option value='-1'> None</option>\n";
+  $topicList = getTopicList(true, $db);
+  while ($row = mysql_fetch_array($topicList)) {
+    print "<option value='" . $row["TOPIC_ID"] . "'";
+    if ($row["TOPIC_ID"] == $blogtopics[1]) {
+      print " selected";
+    }
+    print ">" . $row["TOPIC_NAME"] . "</option>\n";
+  }
+  print "</select>\n";
+?>
+
+<p>
+<input type="submit" value="Edit blog info" />
+</p>
+</form>
+<p><hr /></p>
+<?php
+
+   }
+
+function doEditBlog ($db) {
+  $blogId = stripslashes($_REQUEST["blogId"]);
+  $blogName = stripslashes($_REQUEST["blogname"]);
+  $blogUri = stripslashes($_REQUEST["blogurl"]);
+  $blogSyndicationUri = stripslashes($_REQUEST["blogsyndicationuri"]);
+  $blogDescription = stripslashes($_REQUEST["blogdescription"]);
+  $topic1 = stripslashes($_REQUEST["topic1"]);
+  $topic2 = stripslashes($_REQUEST["topic2"]);
+  $userIsAuthor = stripslashes($_REQUEST["userIsAuthor"]);
+
+  global $current_user;
+  get_currentuserinfo();
+  $displayName = $current_user->display_name;
+  $email = $current_user->user_email;
+
+  // If this is the first time this user has tried to interact with
+  // the OC system, create a USER entry for them
+  $userId = addUser($displayName, $email, $db);
+
+  // If user is requesting a blogUri or blogsyndicationuri change, ensure that they own the new url
+  $origBlogSyndicationUri = getBlogSyndicationUri($blogId, $db);
+  $origBlogUri = getBlogUri($blogId, $db);
+
+  // If blog URL or syndication URL have changed, we need to re-verify the claim to the blog (the author's ability to write to it)
+  if ($origBlogSyndicationUri !== $blogSyndicationUri || $origBlogUri != $blogUri) {
+    $claimToken = retrieveVerifiedClaimToken ($blogId, $userId, $db);
+    clearClaimToken($blogId, $userId, $claimToken, $db);
+
+    $claimToken = retrievePendingClaimToken ($blogId, $userId, $db);
+    if ($claimToken == null) {
+      $claimToken = generateClaimToken();
+      storeClaimToken($claimToken, $blogId, $userId, $db);
+    }
+
+    $result = editBlog($blogId, $blogName, $origBlogUri, $origBlogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $displayName, $db);
+
+    print "<p>To change the URL of your feed, you must re-claim your blog.</p>";
+    displayBlogClaimToken($claimToken, $blogId, $displayName, $blogUri, $blogSyndicationUri, $db);
+    return;
+  }
+
+  $result = editBlog($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $displayName, $db);
+
+  if ($result == NULL) {
+    displayEditBlogsForm("$blogName was updated.", $db);
+    return;
+  } else {
+    displayEditBlogsForm("ERROR: $result", $db);
+  }
+}
+
+function doVerifyEditClaim ($db) {
+  $blogId = stripslashes($_REQUEST["blogId"]);
+  $blogUri = stripslashes($_REQUEST["blogUri"]);
+  $blogSyndicationUri = stripslashes($_REQUEST["blogSyndicationUri"]);
+  $blogName = getBlogName($blogId, $db);
+
+  global $current_user;
+  get_currentuserinfo();
+  $displayName = $current_user->display_name;
+  $userId = getUser($displayName, $db);
+  $result = verifyClaim($blogId, $userId, $blogUri, $blogSyndicationUri, $db);
+
+  if ($result === "no-claim") {
+      doEditBlog($db);
+      return;
+  } else if ($result == "verified") {
+    $claimToken = getClaimToken($blogId, $userId, $db);
+    $success = markClaimTokenVerified($blogId, $userId, $claimToken, $db);
+    if (! $success) {
+      print "Error, failed to update db";
+      return;
+    }
+
+    $blogDescription = getBlogDescription($blogId, $db);
+    $blogTopics = getBlogTopics($blogId, $db);
+    $topic1 = null; $topic2 = null;
+    if (sizeof($blogTopics) > 0) {
+      $topic1 = $blogTopics[0];
+    }
+    if (sizeof ($blogTopcs) > 1) {
+      $topic2 = $blogTopics[1];
+    }
+
+    $result = editBlog($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $displayName, $db);
+
+    displayEditBlogsForm("Blog $blogName edited.", $db);
+    return;
+  } else {
+    $claimToken = getClaimToken($blogId, $userId, $db);
+    print "<p>Your claim token ($claimToken) was not found on your blog and/or your syndication feed.</p>\n";
+    displayBlogClaimToken($claimToken, $blogId, $displayName, $blogUri, $blogSyndicationUri, $db);
+  }
+
+}
+
+
 // Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, user ID, user display name, DB handle
 // Action: edit blog metadata
 // Return: error message or null
@@ -1037,6 +1240,18 @@ function getBlogName($blogId, $db) {
   }
   $row = mysql_fetch_array($results);
   return $row["BLOG_NAME"];
+}
+
+// Input: blog ID, DB handle
+// Return: description of this blog, or null
+function getBlogDescription($blogId, $db) {
+  $sql = "SELECT BLOG_DESCRIPTION FROM BLOG WHERE BLOG_ID=$blogId";
+  $results = mysql_query($sql, $db);
+  if ($results == null || mysql_num_rows($results) == 0) {
+    return null;
+  }
+  $row = mysql_fetch_array($results);
+  return $row["BLOG_DESCRIPTION"];
 }
 
 // Input: blog ID, DB handle
@@ -1188,7 +1403,7 @@ function getSimplePie($uri) {
 
 // Input: blog ID, user ID, DB handle
 // Returns: claim token associated with this blog ID and user ID, and currently pending
-function getBlogClaimToken($blogId, $userId, $db) {
+function getClaimToken($blogId, $userId, $db) {
   $sql = "SELECT CLAIM_TOKEN FROM CLAIM_BLOG WHERE BLOG_ID=$blogId AND USER_ID=$userId AND CLAIM_STATUS_ID=0";
 
   $results = mysql_query($sql, $db);
@@ -1201,32 +1416,36 @@ function getBlogClaimToken($blogId, $userId, $db) {
   return $row['CLAIM_TOKEN'];
 }
 
+function generateClaimToken() {
+  return uniqid("sciseekclaimtoken-");
+}
+
 function doClaimBlog($blogId, $displayName, $email, $db) {
 
   $userId = getUser($displayName, $db);
 
   // If there is already a pending request, let them choose to verify that instead
-  $blogToken = retrievePendingClaimToken($blogId, $userId, $db);
+  $claimToken = retrievePendingClaimToken($blogId, $userId, $db);
 
   // If there was no pending request, create one
-  if ($blogToken == null) {
-    $blogToken = uniqid("blog");
-    storeBlogClaimToken($blogToken, $blogId, $userId, $db);
+  if ($claimToken == null) {
+    $claimToken = generateClaimToken();
+    storeClaimToken($claimToken, $blogId, $userId, $db);
   }
 
-  displayBlogClaimToken($blogToken, $blogId, $displayName, $db);
+  displayBlogClaimToken($claimToken, $blogId, $displayName, null, null, $db);
 }
 
 function doVerifyClaim($blogId, $displayName, $db) {
   $userId = getUser($displayName, $db);
-  $result = verifyClaim($blogId, $userId, $db);
+  $result = verifyClaim($blogId, $userId, getBlogUri($blogId, $db), getBlogSyndicationUri($blogId, $db), $db);
 
   if ($result === "no-claim") {
       doClaimBlog($blogId, $displayName, $email, $db);
       return;
   } else if ($result == "verified") {
-    $blogToken = getBlogClaimToken($blogId, $userId, $db);
-    $success = markClaimTokenVerified($blogId, $userId, $blogToken, $db);
+    $claimToken = getClaimToken($blogId, $userId, $db);
+    $success = markClaimTokenVerified($blogId, $userId, $claimToken, $db);
     if (! $success) {
       print "Error, failed to update db";
       return;
@@ -1234,22 +1453,43 @@ function doVerifyClaim($blogId, $displayName, $db) {
     displayUserAuthorLinkForm($blogId, $userId, $displayName, $db);
 
   } else {
-    $blogToken = getBlogClaimToken($blogId, $userId, $db);
-    print "<p>Your claim token ($blogToken) was not found on your blog, in a post or in a meta tag.</p>\n";
-    displayBlogClaimToken($blogToken, $blogId, $displayName, $db);
+    $claimToken = getClaimToken($blogId, $userId, $db);
+    print "<p>Your claim token ($claimToken) was not found on your blog, in a post or in a meta tag.</p>\n";
+    displayBlogClaimToken($claimToken, $blogId, $displayName, null, null, $db);
   }
 }
 
-// Input: blog ID, user ID, DB handle
+// Input: blog ID, user ID, new blog URL, DB handle
 // Return: true if the specified blog contains the claim token specified in the CLAIM_BLOG table (select by user ID and blog ID)
-function verifyClaim($blogId, $userId, $db) {
+function verifyClaim($blogId, $userId, $blogUri, $blogSyndicationUri, $db) {
 
   $claimToken = retrievePendingClaimToken ($blogId, $userId, $db);
   if ($claimToken == null) {
     return "no-claim";
   }
 
-  $blogSyndicationUri = getBlogSyndicationUri($blogId, $db);
+  // Verify that the token exists on the actual page
+  // (this could be insecure if a blog displays recent comments on its main page, or if the URL given points to a specific post which displays comments)
+  $ch = curl_init();    // initialize curl handle
+  curl_setopt($ch, CURLOPT_URL, $blogUri); // set url to post to
+  curl_setopt($ch, CURLOPT_FAILONERROR, 1);
+  curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
+  curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 4s
+  $result = curl_exec($ch);
+  $cerror = curl_error($ch);
+
+  // Error fetching page -> unverified
+  if (($cerror != null & strlen($cerror) > 0) || strlen($result) == 0) {
+    return "unverified";
+  }
+
+  // Token not on page -> unverified
+  if (strpos($result, $claimToken) == FALSE) {
+    return "unverified";
+  }
+
+  // Verify that the token exists in the syndication feed
   $feed = getSimplePie($blogSyndicationUri);
   $feed->set_cache_duration(0);
   $feed->init();
@@ -1262,14 +1502,17 @@ function verifyClaim($blogId, $userId, $db) {
     }
   }
 
-  // If it wasn't in feed content, also check meta tags
-  $blogUri = getBlogUri($blogId, $db);
-  $metas = get_meta_tags($blogUri);
-  foreach ($metas as $meta) {
-    if ($meta === $claimToken) {
-      return "verified";
-    }
-  }
+  // DELETEME
+  // We no longer check meta tags; annoying to ask user to do both, and not secure to rely entirely on meta tags (must check the syndication feed!)
+
+  // // If it wasn't in feed content, also check meta tags
+  // $blogUri = getBlogUri($blogId, $db);
+  // $metas = get_meta_tags($blogUri);
+  // foreach ($metas as $meta) {
+  //   if ($meta === $claimToken) {
+  //     return "verified";
+  //   }
+  // }
 
   return "unverified";
 
@@ -1314,39 +1557,66 @@ function markClaimTokenVerified($blogId, $userId, $claimToken, $db) {
   return (!mysql_error());
 }
 
+// Input: blog ID, user ID, claim token, DB handle
+// Action: update specified claim token object to note that it is no longer verified (eg someone has asked to edit it), and refresh token
+// Returns: true on success, false on failure
+function clearClaimToken($blogId, $userId, $claimToken, $db) {
+  $claimToken = uniqid("sciseekclaimtoken-");
+
+  $sql = "UPDATE CLAIM_BLOG SET (CLAIM_STATUS_ID, CLAIM_TOKEN) VALUES (0, '$claimToken' WHERE USER_ID=$userId and BLOG_ID=$blogId";
+
+  mysql_query($sql, $db);
+
+  return (!mysql_error());
+}
+
 
 /* Template/display functions */
 
 // Input: unique blog token, blog ID, user ID, DB handle
 // Action: store blog token, blog ID, and user ID in the CLAIM_BLOG table
 // Returns: null on success, error message on error
-function storeBlogClaimToken($blogToken, $blogId, $userId, $db) {
+function storeClaimToken($claimToken, $blogId, $userId, $db) {
 
   // Is there already a pending claim token? If so, set it to "overridden" (2)
   $sql = "UPDATE CLAIM_BLOG SET CLAIM_STATUS_ID=2 WHERE BLOG_ID=$blogId AND USER_ID=$userId AND CLAIM_STATUS_ID=0";
   mysql_query($sql, $db);
   if (mysql_error()) {
-    die ("storeBlogClaimToken: " . mysql_error() . " ($sql)\n");
+    die ("storeClaimToken: " . mysql_error() . " ($sql)\n");
   }
 
   // Insert into db
-  $sql = "INSERT INTO CLAIM_BLOG (BLOG_ID, USER_ID, CLAIM_TOKEN, CLAIM_STATUS_ID, CLAIM_DATE_TIME) VALUES ($blogId, $userId, '$blogToken', 0, NOW())";
+  $sql = "INSERT INTO CLAIM_BLOG (BLOG_ID, USER_ID, CLAIM_TOKEN, CLAIM_STATUS_ID, CLAIM_DATE_TIME) VALUES ($blogId, $userId, '$claimToken', 0, NOW())";
   mysql_query($sql, $db);
 
   if (mysql_error()) {
-    die ("storeBlogClaimToken: " . mysql_error() . " ($sql)\n");
+    die ("storeClaimToken: " . mysql_error() . " ($sql)\n");
   }
 
 }
 
 // Input: blog claim token, blog ID, display name of user, DB handle
 // Action: Display message to user with blog claim token, explaining how to use it to claim the blog in question
-function displayBlogClaimToken($blogToken, $blogId, $displayName, $db) {
+function displayBlogClaimToken($claimToken, $blogId, $displayName, $blogUri, $blogSyndicationUri, $db) {
   $blogName = getBlogName($blogId, $db);
-  print "<p>To claim this blog ($blogName), we request that you demonstrate that you are able to write to it. To do this, please post the below automatically generated token on your blog. You can do this in a blog post, which you may delete after the claim process is complete. Alternately, you may add a meta tag into your blog's HTML header.</p>\n";
-  print "<p><b>Claim token:</b> $blogToken</p>\n";
-  print "<p><b>Meta tag:</b> &lt;meta content='$blogToken' name='claimToken' /&gt;</p>\n"; 
-  print "<p>Once the token is displayed on your blog, in a post or in a meta tag in the header, <a href='./?step=verify&blogId=$blogId'>continue to the next step.</a></p>\n";
+
+  if ($blogUri == null) {
+    $blogUri = getBlogUri($blogId, $db);
+  }
+
+  if ($blogSyndicationUri == null) {
+    $blogSyndicationUri = getBlogSyndicationUri($blogId, $db);
+  }
+
+  print "<p>To claim this blog ($blogName), we request that you demonstrate that you are able to write to it. To do this, please post the below automatically generated token on your blog. You can do this in a blog post, which you may delete after the claim process is complete. You may simply add the token at any point in a post. Alternately, we provide some sample HTML code which will make the token invisible to your blog readers.</p>\n";
+  print "<p><b>Claim token:</b> $claimToken</p>\n";
+  print "<p><b>Sample HTML to include:</b> &lt;p&gt;&lt;span style=\"display:none\"&gt;$claimToken&lt;/span&gt;&lt;/p&gt;\n"; 
+  print "<p>Once the token is displayed on your blog, in a post or in a meta tag in the header, <a href='javaScript:document.doVerifyForm.submit()'>continue to the next step.</a>";
+  print "<form method='POST' name='doVerifyForm'>\n<input type='hidden' name='step' value='verify' />\n";
+  print "<input type='hidden' name='blogId' value='$blogId' />\n";
+  print "<input type='hidden' name='blogUri' value='$blogUri' />\n";
+  print "<input type='hidden' name='blogSyndicationUri' value='$blogSyndicationUri' />\n";
+  print "</form>";
 }
 
 
@@ -1481,7 +1751,7 @@ function doLinkUserAndAuthor($displayName, $db) {
   }
 
   if ($success) {
-    print "Congratulations, $personaName, you've claimed your blog. Soon you’ll be able to edit your settings, customize your view of the site, and more.<br />\n";
+    print "Congratulations, $personaName, you've claimed your blog. Choose \"Edit Blog\" to edit your blog settings.<br />\n";
   }
 
 }
