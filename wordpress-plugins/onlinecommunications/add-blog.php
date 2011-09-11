@@ -117,7 +117,7 @@ function displayBlogForm ($errormsg, $db) {
   $userId = addUser($displayName, $email, $db);
 
   // Only active users can claim blogs
-  $userStatus = getUserPrivilegeStatus($userId, $db);
+  $userStatus = getUserStatus($userId, $db);
   if ($userStatus != 0) {
     print "<p class=\"error\"><font color=\"red\">You cannot claim this blog as your account is not currently active. You may <a href='/contact-us/'>contact us</a> to ask for more information.</font></p>\n";
     return;
