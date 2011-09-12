@@ -86,10 +86,12 @@ function doApproveBlogs() {
 	  $blogId = $blog["id"];
 	  $blogName = $blog["name"];
 	  $blogUri = $blog["uri"];
+	  $blogDescription = $blog["blogdescription"];
 	  $blogSyndicationUri = $blog["syndicationuri"];
 	  print "<p>$blogName<br />Blog URL: <a href=\"$blogUri\">$blogUri</a><br />Feed URL: <a href=\"$blogSyndicationUri\">$blogSyndicationUri</a><br />";
 	  print "<input type=\"radio\" name=\"blog-$blogId\" value=\"1\" /> Approve";
 	  print "<input type=\"radio\" name=\"blog-$blogId\" value=\"0\" /> Reject";
+	  print "</p><p>Blog description:<br /><textarea name=\"approveblogdescription\" rows=\"5\" cols=\"70\">$blogDescription</textarea><br />\n";
 	  print "</p>\n";
 	}
 
@@ -102,11 +104,13 @@ function doApproveBlogs() {
 
 	foreach ($_REQUEST as $name => $value) {
 	  $value = stripslashes($value);
+	  $description = $_REQUEST["approveblogdescription"];
 	  if (substr($name, 0, 5) === "blog-") {
 	    $blogId = substr($name, 5);
 	    $blogName = getBlogName($blogId, $db);
 	    if ($value == 1) {
-	      approveBlog($blogId, $db);
+		  changeDescription ($blogId, $description, $db);
+		  approveBlog($blogId, $db);
 	      print "Blog $blogName (id $blogId) APPROVED<br />\n";
 	    } else {
 	      rejectBlog($blogId, $db);

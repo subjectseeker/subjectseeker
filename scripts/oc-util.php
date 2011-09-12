@@ -276,17 +276,25 @@ function getSparseBlogs($db, $limit=1000) {
 // Output: array of hashes of pending blogs (id, name, uri)
 function getPendingBlogs($db) {
   // status 1 => pending
-  $sql = "SELECT BLOG_NAME, BLOG_ID, BLOG_URI, BLOG_SYNDICATION_URI FROM BLOG WHERE BLOG_STATUS_ID=1";
+  $sql = "SELECT BLOG_NAME, BLOG_ID, BLOG_URI, BLOG_DESCRIPTION, BLOG_SYNDICATION_URI FROM BLOG WHERE BLOG_STATUS_ID=1";
   $blogs = array();
   $results = mysql_query($sql, $db);
   while ($row = mysql_fetch_array($results)) {
     $blog["id"] = $row["BLOG_ID"];
     $blog["name"] = $row["BLOG_NAME"];
     $blog["uri"] = $row["BLOG_URI"];
+	$blog["blogdescription"] = $row["BLOG_DESCRIPTION"];
     $blog["syndicationuri"] = $row["BLOG_SYNDICATION_URI"];
     array_push($blogs, $blog);
   }
   return $blogs;
+}
+
+//Input:  blog ID, blog Description, DB handle
+// Action: change description of blog.
+function changeDescription ($blogId, $description, $db) {
+  $sql = "UPDATE BLOG SET BLOG_DESCRIPTION='$description' WHERE BLOG_ID=$blogId";
+  mysql_query($sql, $db);
 }
 
 // Input: blog ID, DB handle
