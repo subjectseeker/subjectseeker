@@ -1,4 +1,4 @@
-<?php
+ <?php
 
 include_once "oc-globals.php";
 require_once(dirname(__FILE__).'/../wp-includes/class-simplepie.php');
@@ -290,13 +290,6 @@ function getPendingBlogs($db) {
   return $blogs;
 }
 
-//Input:  blog ID, blog Description, DB handle
-// Action: change description of blog.
-function changeDescription ($blogId, $description, $db) {
-  $sql = "UPDATE BLOG SET BLOG_DESCRIPTION='$description' WHERE BLOG_ID=$blogId";
-  mysql_query($sql, $db);
-}
-
 // Input: blog ID, DB handle
 // Action: change status of blog to APPROVED (0)
 function approveBlog($blogId, $db) {
@@ -401,6 +394,19 @@ function getBlogIdsByUserId ($userId, $db) {
   return $blogIds;
 }
 
+function getBlogsInfo () {
+	
+$result = editPendingBlog ($blogName, $userId, $displayname, $db);
+foreach	($result as $something) {
+
+  if ($result == NULL) {
+    echo "$blogName was updated.";
+  } else {
+    echo "ERROR: $result";
+  }
+}
+  }
+  
 // Input: blog ID, DB handle
 // Return: id of "Unknown" author associated with this blog, else null
 function getUnknownAuthorId ($blogId, $db) {
@@ -989,7 +995,7 @@ function displayEditBlogsForm ($msg, $db) {
   }
 
   // Only active users can edit blogs
-  $userStatus = getUserPrivilegeStatus($userId, $db);
+  $userStatus = getUserStatus($userId, $db);
   if ($userStatus != 0) {
     print "<p class=\"error\"><font color=\"red\">You cannot edit your blog as your account is not currently active. You may <a href='/contact-us/'>contact us</a> to ask for more information.</font></p>\n";
     return;
@@ -1151,13 +1157,43 @@ function doVerifyEditClaim ($db) {
     print "<p>Your claim token ($claimToken) was not found on your blog and/or your syndication feed.</p>\n";
     displayBlogClaimToken($claimToken, $blogId, $displayName, $blogUri, $blogSyndicationUri, $db);
   }
-
+  
 }
 
+function editPendingBlogs ($userId, $displayname, $db) {
+  $blogs["id"] = $_REQUEST["blogId"];
+  $blogs["name"] = $_REQUEST["blogname"];
+  $blogs["uri"] = $_REQUEST["blogurl"];
+  $blogs["syndicationuri"] = $_REQUEST["blogsyndicationuri"];
+  $blogs["description"] = $_REQUEST["blogdescription"];
+  $blogs["topic1"] = $_REQUEST["topic1"];
+  $blogs["topic2"] = $_REQUEST["topic2"];
+		
+  foreach ($blogs ["id"] as $id => $value) {
+	  $blogId = stripslashes($blogs["id"][$id]);
+	  $blogname = stripslashes($blogs["name"][$id]);
+	  $blogurl = stripslashes($blogs["uri"][$id]);
+	  $blogsyndicationuri = stripslashes($blogs["syndicationuri"][$id]);
+	  $blogdescription = stripslashes($blogs["description"][$id]);
+	  $topic1 = stripslashes($blogs["topic1"][$id]);
+	  $topic2 = stripslashes($blogs["topic2"][$id]);
+	  
+	  editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
+	  $result = editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
+	  $blogName = getBlogName($blogId, $db);
+	  
+	  if ($result == NULL) {
+		  echo "<p>$blogName (id $blogId) was updated.</p>";
+	  } else {
+		  echo "<p><font color='red'>$blogName (id $blogId): $result</p></font><br />";
+		  }
+  }
+}
 
 // Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, user ID, user display name, DB handle
 // Action: edit blog metadata
 // Return: error message or null
+
 function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db) {
 
   // get old info about this blog
@@ -1222,7 +1258,6 @@ function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescri
   if ($topic2 != "-1") {
     associateTopic($topic2, $blogId, $db);
   }
-
   return null;
 }
 
@@ -1233,7 +1268,7 @@ function canEdit($userId, $blogId, $db) {
   if ($userPriv > 0) { // moderator or admin
     return true;
   }
-
+  
   $authorIds = getBlogAuthorIds($blogId, $db);
   return (in_array ($userId, $authorIds));
 }
