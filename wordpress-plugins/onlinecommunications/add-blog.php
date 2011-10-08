@@ -23,7 +23,7 @@ if (!class_exists('ocAddBlog')) {
     function setupActivation() {
       function get_and_delete_option($setting) { $v = get_option($setting); delete_option($setting); return $v; }
     }
-
+	
     function setupWidget() {
       if (!function_exists('register_sidebar_widget')) return;
       function widget_ocAddBlog($args) {

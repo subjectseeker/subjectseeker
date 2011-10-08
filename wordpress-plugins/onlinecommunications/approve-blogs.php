@@ -19,7 +19,7 @@ if (!class_exists('ocApproveBlogs')) {
     function ocApproveBlogs() {
       $this->version = "0.1";
     }
-
+	
     function setupActivation() {
       function get_and_delete_option($setting) { $v = get_option($setting); delete_option($setting); return $v; }
     }

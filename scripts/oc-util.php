@@ -814,7 +814,7 @@ function getBlogAuthorId($name, $blogId, $db) {
   if (!$results || mysql_num_rows($results) === 0) {
     return null;
   }
-
+  
   $row = mysql_fetch_array($results);
   return $row["BLOG_AUTHOR_ID"];
 }
