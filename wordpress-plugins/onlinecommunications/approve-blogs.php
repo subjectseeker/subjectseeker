@@ -123,7 +123,7 @@ function doApproveBlogs() {
                     }
             print "</select><br />\n";
             print "<input type=\"radio\" name=\"$blogId-blog\" value=\"1\" /> Approve<br />";
-            print "<input type=\"radio\" name=\"$blogId-blog\" value=\"0\" /> Reject<br />";  
+            print "<input type=\"radio\" name=\"$blogId-blog\" value=\"2\" /> Reject<br />";  
             }
             print "<input type=\"submit\" value=\"Submit\" />\n";
             print "</form>\n";
@@ -155,22 +155,22 @@ function doApproveBlogs() {
 	  $oldBlogName = getBlogName($blogId, $db);
 	  
 	  if ($result == NULL) {
-		   if ($status == 1) {
+		  if ($status == 1) {
 			   approveBlog($blogId, $db);
 			   print "<p>Blog $blogname (id $blogId) APPROVED</p>\n";
 			   } 
-			elseif ($status == 0) {
+		  if ($status == 2) {
 				rejectBlog($blogId, $db);
 				$contacts = getBlogContacts($blogId, $db);
-				print "<p>Blog $oldBlogName (id $blogId) REJECTED (email contact(s):</p>";
+				print "<p>Blog $oldBlogName (id $blogId) REJECTED (email contact(s):";
 				foreach ($contacts as $contact) {
 					print " <a href=\"mailto:$contact\">$contact</a>";
 					}
-					print ")<br />\n";
+					print ")</p>\n";
 					}
-					print "<p>$blogname (id $blogId) was updated.</p>";  
+				print "<p>$blogname (id $blogId) was updated.</p>\n";  
 			} else {
-				print "<p><font color='red'>$oldBlogName (id $blogId): $result</font></p>";
+				print "<p><font color='red'>$oldBlogName (id $blogId): $result</font></p>\n";
 				}
 			}
       }

@@ -1,4 +1,4 @@
- <?php
+<?php
 
 include_once "oc-globals.php";
 require_once(dirname(__FILE__).'/../wp-includes/class-simplepie.php');
@@ -172,14 +172,14 @@ function getUrlParamString($ignoreParams) {
  */
 function sanitize( $htmlString ) {
   return str_replace( array( '&', '<' ),
-		      array( '&amp;', '&lt;' ),
-		      $htmlString );
+                      array( '&amp;', '&lt;' ),
+                      $htmlString );
 }
 
 function insanitize( $htmlString ) {
   return str_replace( array( '&amp;', '&lt;' ),
-		      array( '&', '<' ),
-		      $htmlString );
+                      array( '&', '<' ),
+                      $htmlString );
 }
 
 
@@ -282,8 +282,8 @@ function getPendingBlogs($db) {
   while ($row = mysql_fetch_array($results)) {
     $blog["id"] = $row["BLOG_ID"];
     $blog["name"] = $row["BLOG_NAME"];
-    $blog["uri"] = $row["BLOG_URI"];
 	$blog["blogdescription"] = $row["BLOG_DESCRIPTION"];
+    $blog["uri"] = $row["BLOG_URI"];
     $blog["syndicationuri"] = $row["BLOG_SYNDICATION_URI"];
     array_push($blogs, $blog);
   }
@@ -394,19 +394,6 @@ function getBlogIdsByUserId ($userId, $db) {
   return $blogIds;
 }
 
-function getBlogsInfo () {
-	
-$result = editPendingBlog ($blogName, $userId, $displayname, $db);
-foreach	($result as $something) {
-
-  if ($result == NULL) {
-    echo "$blogName was updated.";
-  } else {
-    echo "ERROR: $result";
-  }
-}
-  }
-  
 // Input: blog ID, DB handle
 // Return: id of "Unknown" author associated with this blog, else null
 function getUnknownAuthorId ($blogId, $db) {
@@ -814,7 +801,7 @@ function getBlogAuthorId($name, $blogId, $db) {
   if (!$results || mysql_num_rows($results) === 0) {
     return null;
   }
-  
+
   $row = mysql_fetch_array($results);
   return $row["BLOG_AUTHOR_ID"];
 }
@@ -995,7 +982,7 @@ function displayEditBlogsForm ($msg, $db) {
   }
 
   // Only active users can edit blogs
-  $userStatus = getUserStatus($userId, $db);
+  $userStatus = getUserPrivilegeStatus($userId, $db);
   if ($userStatus != 0) {
     print "<p class=\"error\"><font color=\"red\">You cannot edit your blog as your account is not currently active. You may <a href='/contact-us/'>contact us</a> to ask for more information.</font></p>\n";
     return;
@@ -1157,13 +1144,13 @@ function doVerifyEditClaim ($db) {
     print "<p>Your claim token ($claimToken) was not found on your blog and/or your syndication feed.</p>\n";
     displayBlogClaimToken($claimToken, $blogId, $displayName, $blogUri, $blogSyndicationUri, $db);
   }
-  
+
 }
+
 
 // Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, user ID, user display name, DB handle
 // Action: edit blog metadata
 // Return: error message or null
-
 function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db) {
 
   // get old info about this blog
@@ -1201,21 +1188,21 @@ function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescri
   if (! uriFetchable($blogurl)) {
     return ("Unable to fetch the contents of your blog at $blogurl. Did you remember to put \"http://\" before the URL when you entered it? If you did, make sure your blog page is actually working, or <a href='/contact-us/'>contact us</a> to ask for help in resolving this problem.");
   }
+
+  // check that syndication feed is parseable
+  $feed = getSimplePie($blogsyndicationuri);
+  if ($feed->get_type() == 0) {
+    return("Unable to parse feed at $blogsyndicationuri. Are you sure it is Atom or RSS?");
+  }
   
   // check that blog URL and blog syndication URL are not the same
   if ($blogurl == $blogsyndicationuri) {
 	  return ("The blog URL (homepage) and the blog syndication URL (RSS or Atom feed) need to be different.");
   }
   
-    // Check that the user has selected at least one topic
+  // Check that the user has selected at least one topic
   if ($topic1 == -1 && $topic2 == -1) {
 	  return ("You need to choose at least one topic.");
-  }
-
-  // check that syndication feed is parseable
-  $feed = getSimplePie($blogsyndicationuri);
-  if ($feed->get_type() == 0) {
-    return("Unable to parse feed at $blogsyndicationuri. Are you sure it is Atom or RSS?");
   }
 
   // escape stuff
@@ -1238,6 +1225,7 @@ function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescri
   if ($topic2 != "-1") {
     associateTopic($topic2, $blogId, $db);
   }
+
   return null;
 }
 
@@ -1248,7 +1236,7 @@ function canEdit($userId, $blogId, $db) {
   if ($userPriv > 0) { // moderator or admin
     return true;
   }
-  
+
   $authorIds = getBlogAuthorIds($blogId, $db);
   return (in_array ($userId, $authorIds));
 }
