@@ -1160,36 +1160,6 @@ function doVerifyEditClaim ($db) {
   
 }
 
-function editPendingBlogs ($userId, $displayname, $db) {
-  $blogs["id"] = $_REQUEST["blogId"];
-  $blogs["name"] = $_REQUEST["blogname"];
-  $blogs["uri"] = $_REQUEST["blogurl"];
-  $blogs["syndicationuri"] = $_REQUEST["blogsyndicationuri"];
-  $blogs["description"] = $_REQUEST["blogdescription"];
-  $blogs["topic1"] = $_REQUEST["topic1"];
-  $blogs["topic2"] = $_REQUEST["topic2"];
-		
-  foreach ($blogs ["id"] as $id => $value) {
-	  $blogId = stripslashes($blogs["id"][$id]);
-	  $blogname = stripslashes($blogs["name"][$id]);
-	  $blogurl = stripslashes($blogs["uri"][$id]);
-	  $blogsyndicationuri = stripslashes($blogs["syndicationuri"][$id]);
-	  $blogdescription = stripslashes($blogs["description"][$id]);
-	  $topic1 = stripslashes($blogs["topic1"][$id]);
-	  $topic2 = stripslashes($blogs["topic2"][$id]);
-	  
-	  editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
-	  $result = editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
-	  $blogName = getBlogName($blogId, $db);
-	  
-	  if ($result == NULL) {
-		  echo "<p>$blogName (id $blogId) was updated.</p>";
-	  } else {
-		  echo "<p><font color='red'>$blogName (id $blogId): $result</p></font><br />";
-		  }
-  }
-}
-
 // Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, user ID, user display name, DB handle
 // Action: edit blog metadata
 // Return: error message or null
@@ -1230,6 +1200,16 @@ function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescri
   // check that blog URL is fetchable
   if (! uriFetchable($blogurl)) {
     return ("Unable to fetch the contents of your blog at $blogurl. Did you remember to put \"http://\" before the URL when you entered it? If you did, make sure your blog page is actually working, or <a href='/contact-us/'>contact us</a> to ask for help in resolving this problem.");
+  }
+  
+  // check that blog URL and blog syndication URL are not the same
+  if ($blogurl == $blogsyndicationuri) {
+	  return ("The blog URL (homepage) and the blog syndication URL (RSS or Atom feed) need to be different.");
+  }
+  
+    // Check that the user has selected at least one topic
+  if ($topic1 == -1 && $topic2 == -1) {
+	  return ("You need to choose at least one topic.");
   }
 
   // check that syndication feed is parseable

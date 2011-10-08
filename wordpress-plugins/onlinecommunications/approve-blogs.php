@@ -101,7 +101,7 @@ function doApproveBlogs() {
             print "*Blog name: <input type=\"text\" name=\"blogname[]\" size=\"40\" value=\"$blogName\"/>\n</p>\n<p>\n*Blog URL: <input type=\"text\" name=\"blogurl[]\" size=\"40\" value=\"$blogUri\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)";
             print "</p><p>*Blog syndication URL: <input type=\"text\" name=\"blogsyndicationuri[]\" size=\"40\" value=\"$blogSyndicationUri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)";
             print "</p><p>Blog description:<br /><textarea name=\"blogdescription[]\" rows=\"5\" cols=\"70\">$blogDescription</textarea><br />\n";
-            print "Blog topic: <select name='topic1[]'>\n";  
+            print "Blog topics: <select name='topic1[]'>\n";  
             print "<option value='-1'>None</option>\n";
             $topicList = getTopicList(true, $db);
             while ($row = mysql_fetch_array($topicList)) {
@@ -111,8 +111,7 @@ function doApproveBlogs() {
                     }
                     print ">" . $row["TOPIC_NAME"] . "</option>\n";
                     }
-            print "</select><br />\n";
-            print "Blog topic: <select name='topic2[]'>\n";
+            print "</select>&nbsp;<select name='topic2[]'>\n";
             print "<option value='-1'> None</option>\n";
             $topicList = getTopicList(true, $db);
             while ($row = mysql_fetch_array($topicList)) {
@@ -123,8 +122,8 @@ function doApproveBlogs() {
                     print ">" . $row["TOPIC_NAME"] . "</option>\n";
                     }
             print "</select><br />\n";
-            print "<input type=\"radio\" name=\"blog-$blogId\" value=\"1\" /> Approve<br />";
-            print "<input type=\"radio\" name=\"blog-$blogId\" value=\"0\" /> Reject<br />";  
+            print "<input type=\"radio\" name=\"$blogId-blog\" value=\"1\" /> Approve<br />";
+            print "<input type=\"radio\" name=\"$blogId-blog\" value=\"0\" /> Reject<br />";  
             }
             print "<input type=\"submit\" value=\"Submit\" />\n";
             print "</form>\n";
@@ -132,27 +131,48 @@ function doApproveBlogs() {
     } else {
 		
         print "<h2>Administrative action</h2>";
-		editPendingBlogs ($userId, $displayname, $db);
-
-	foreach ($_REQUEST as $name => $value) {
-	  $value = stripslashes($value);	  
-	  if (substr($name, 0, 5) === "blog-") {
-	    $blogId = substr($name, 5);
-	    $blogName = getBlogName($blogId, $db);
-	    if ($value == 1) {
-		  approveBlog($blogId, $db);
-	      print "Blog $blogName (id $blogId) APPROVED<br />\n";
-	    } else {
-	      rejectBlog($blogId, $db);
-	      $contacts = getBlogContacts($blogId, $db);
-	      print "Blog $blogName (id $blogId) REJECTED (email contact(s):";
-	      foreach ($contacts as $contact) {
-		print " <a href=\"mailto:$contact\">$contact</a>";
-	      }
-	      print ")<br />\n";
-	    }
-	  }
-	}
+		
+		$blogs["id"] = $_REQUEST["blogId"];
+		$blogs["name"] = $_REQUEST["blogname"];
+		$blogs["uri"] = $_REQUEST["blogurl"];
+		$blogs["syndicationuri"] = $_REQUEST["blogsyndicationuri"];
+		$blogs["description"] = $_REQUEST["blogdescription"];
+		$blogs["topic1"] = $_REQUEST["topic1"];
+		$blogs["topic2"] = $_REQUEST["topic2"];
+		
+		foreach ($blogs["id"] as $id => $value) {
+			$blogId = stripslashes($blogs["id"][$id]);
+			$blogname = stripslashes($blogs["name"][$id]);
+			$blogurl = stripslashes($blogs["uri"][$id]);
+			$blogsyndicationuri = stripslashes($blogs["syndicationuri"][$id]);
+			$blogdescription = stripslashes($blogs["description"][$id]);
+			$topic1 = stripslashes($blogs["topic1"][$id]);
+			$topic2 = stripslashes($blogs["topic2"][$id]);
+			$status = $_REQUEST["$blogId-blog"];
+	  
+	  editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
+	  $result = editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
+	  $oldBlogName = getBlogName($blogId, $db);
+	  
+	  if ($result == NULL) {
+		   if ($status == 1) {
+			   approveBlog($blogId, $db);
+			   print "<p>Blog $blogname (id $blogId) APPROVED</p>\n";
+			   } 
+			elseif ($status == 0) {
+				rejectBlog($blogId, $db);
+				$contacts = getBlogContacts($blogId, $db);
+				print "<p>Blog $oldBlogName (id $blogId) REJECTED (email contact(s):</p>";
+				foreach ($contacts as $contact) {
+					print " <a href=\"mailto:$contact\">$contact</a>";
+					}
+					print ")<br />\n";
+					}
+					print "<p>$blogname (id $blogId) was updated.</p>";  
+			} else {
+				print "<p><font color='red'>$oldBlogName (id $blogId): $result</font></p>";
+				}
+			}
       }
     } else { # not moderator or admin
       print "You are not authorized to view the list of blogs for approval.<br />";

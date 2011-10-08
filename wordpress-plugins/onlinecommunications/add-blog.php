@@ -197,7 +197,13 @@ function doAddBlog ($db) {
   
   // Check that the user has selected at least one topic
   if ($topic1 == -1 && $topic2 == -1) {
-	  print displayBlogForm("You need to choose at least one topic.", $db);
+	  displayBlogForm("You need to choose at least one topic.", $db);
+	  return;
+  }
+  
+  // check that blog URL and blog syndication URL are not the same
+  if ($blogurl == $blogsyndicationuri) {
+	  displayBlogForm("The blog URL (homepage) and the blog syndication URL (RSS or Atom feed) need to be different.", $db);
 	  return;
   }
 
