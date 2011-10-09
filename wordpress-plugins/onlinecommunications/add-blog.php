@@ -181,6 +181,12 @@ function doAddBlog ($db) {
   get_currentuserinfo();
   $displayName = $current_user->display_name;
   $email = $current_user->user_email;
+  
+  // check that there is a name
+  if ($blogname == null) {
+	  displayblogForm("You need to submit a name for the blog", $db);
+	  return;
+  }
 
   // check that blog URL is fetchable
   if (! uriFetchable($blogurl)) {

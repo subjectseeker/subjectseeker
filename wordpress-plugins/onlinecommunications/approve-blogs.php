@@ -78,55 +78,7 @@ function doApproveBlogs() {
     if ($userPriv > 0) { // moderator or admin
     if ($step == null) {
 		
-        print "<h2>List of pending blogs</h2>";
-		
-        print "<form method=\"POST\">\n";
-        print "<input type=\"hidden\" name=\"step\" value=\"approve\" />";
-        $blogList = getPendingBlogs($db);
-        foreach ($blogList as $blog) {
-            $blogId = $blog["id"];
-            $blogName = $blog["name"];
-            $blogUri = $blog["uri"];
-            $blogDescription = $blog["blogdescription"];
-            $blogSyndicationUri = $blog["syndicationuri"];
-            $blogtopics = getBlogTopics($blogId, $db);
-            //$topic1 = $_REQUEST["topic1"];
-            //$topic2 = $_REQUEST["topic2"];
-            print "<input type=\"hidden\" name=\"blogId[]\" value=\"$blogId\" />\n";
-            if ($errormsg !== null) {
-                print "<p><font color='red'>Error: $errormsg</font></p>\n";
-            }
-			print "<p><strong>$blogName</strong></p>";
-            print "<p>*Required field</p>\n<p>\n";
-            print "*Blog name: <input type=\"text\" name=\"blogname[]\" size=\"40\" value=\"$blogName\"/>\n</p>\n<p>\n*Blog URL: <input type=\"text\" name=\"blogurl[]\" size=\"40\" value=\"$blogUri\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)";
-            print "</p><p>*Blog syndication URL: <input type=\"text\" name=\"blogsyndicationuri[]\" size=\"40\" value=\"$blogSyndicationUri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)";
-            print "</p><p>Blog description:<br /><textarea name=\"blogdescription[]\" rows=\"5\" cols=\"70\">$blogDescription</textarea><br />\n";
-            print "Blog topics: <select name='topic1[]'>\n";  
-            print "<option value='-1'>None</option>\n";
-            $topicList = getTopicList(true, $db);
-            while ($row = mysql_fetch_array($topicList)) {
-                print "<option value='" . $row["TOPIC_ID"] . "'";
-                if ($row["TOPIC_ID"] == $blogtopics[0]) {
-                    print " selected";
-                    }
-                    print ">" . $row["TOPIC_NAME"] . "</option>\n";
-                    }
-            print "</select>&nbsp;<select name='topic2[]'>\n";
-            print "<option value='-1'> None</option>\n";
-            $topicList = getTopicList(true, $db);
-            while ($row = mysql_fetch_array($topicList)) {
-                print "<option value='" . $row["TOPIC_ID"] . "'";
-                if ($row["TOPIC_ID"] == $blogtopics[1]) {
-                    print " selected";
-                    }
-                    print ">" . $row["TOPIC_NAME"] . "</option>\n";
-                    }
-            print "</select><br />\n";
-            print "<input type=\"radio\" name=\"$blogId-blog\" value=\"1\" /> Approve<br />";
-            print "<input type=\"radio\" name=\"$blogId-blog\" value=\"2\" /> Reject<br />";  
-            }
-            print "<input type=\"submit\" value=\"Submit\" />\n";
-            print "</form>\n";
+		displayEditPendingBlogs ($db);
 			
     } else {
 		
@@ -155,11 +107,11 @@ function doApproveBlogs() {
 	  $oldBlogName = getBlogName($blogId, $db);
 	  
 	  if ($result == NULL) {
-		  if ($status == 1) {
+		   if ($status == 1) {
 			   approveBlog($blogId, $db);
 			   print "<p>Blog $blogname (id $blogId) APPROVED</p>\n";
 			   } 
-		  if ($status == 2) {
+			elseif ($status == 2) {
 				rejectBlog($blogId, $db);
 				$contacts = getBlogContacts($blogId, $db);
 				print "<p>Blog $oldBlogName (id $blogId) REJECTED (email contact(s):";
@@ -168,10 +120,14 @@ function doApproveBlogs() {
 					}
 					print ")</p>\n";
 					}
-				print "<p>$blogname (id $blogId) was updated.</p>\n";  
+					print "<p>$blogname (id $blogId) was updated.</p>";  
 			} else {
-				print "<p><font color='red'>$oldBlogName (id $blogId): $result</font></p>\n";
+				print "<p><font color='red'>$oldBlogName (id $blogId): $result</font></p>";
 				}
+			}
+			$blogList = getPendingBlogs($db);
+			if ($blogList != null) {
+			return displayEditPendingBlogs ($db);
 			}
       }
     } else { # not moderator or admin
