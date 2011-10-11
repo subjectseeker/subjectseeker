@@ -73,7 +73,7 @@ function displayFeed() {
 
   $type = $_REQUEST["type"]; // "blog"
   $ocParams = parseHttpParams();
-  $httpParams["n"] = 50;
+  $httpParams["n"] = $_REQUEST["n"];
   $httpParams["offset"] = $_REQUEST["offset"];
 
   $resourceXml = searchFeeds ($type, $ocParams, $httpParams);
@@ -114,7 +114,7 @@ function printFeeds($xmlFeed) {
   }
 
   setXsltParameter($xslt, "offset", $_REQUEST["offset"]);
-  setXsltParameter($xslt, "pagesize", $_REQUEST["pagesize"]);
+  setXsltParameter($xslt, "pagesize", $_REQUEST["n"]);
   setXsltParameter($xslt, "baseurl", $baseurl);
 
   $xslt->importStylesheet($xsl);

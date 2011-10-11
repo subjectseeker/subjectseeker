@@ -109,7 +109,7 @@
           <div class="alignleft">
             <h4>
               <a title="Next {$pagesize} posts"
-                href="{$baseurl}&amp;offset={$offset+$pagesize}">
+                href="{$baseurl}&amp;offset={$offset+$pagesize}&amp;n={$pagesize}">
                 <b>
                   <xsl:text>&#xab; Older Entries</xsl:text>
                 </b>
@@ -131,6 +131,8 @@
                         <xsl:value-of select="$offset - $pagesize"/>
                       </xsl:otherwise>
                     </xsl:choose>
+                    <xsl:text>&amp;n=</xsl:text>
+                    <xsl:value-of select="$pagesize"/>
                   </xsl:attribute>
                   <b>
                     <xsl:text>&#xbb; Newer Entries</xsl:text>
