@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: OnlineCommunications Top Level Topics List
+Plugin Name: SubjectSeeker Top Level Topics List
 Plugin URI: http://scienceseeker.org/
 Description: Listing of all top level topics
 Author: Jessica P. Hekman
@@ -12,7 +12,7 @@ Author URI: http://www.arborius.net/~jphekman/
  * PHP widget methods
  */
 
-include_once "oc-includes.inc";
+include_once "ss-includes.inc";
 
 function doTopLevelTopicsList()
 {
@@ -41,7 +41,7 @@ function widget_topLevelTopicsList($args) {
 
 function topLevelTopicsList_init()
 {
-  register_sidebar_widget(__('OC Top Level Topics List'), 'widget_topLevelTopicsList');
+  register_sidebar_widget(__('SS Top Level Topics List'), 'widget_topLevelTopicsList');
 }
 add_action("plugins_loaded", "topLevelTopicsList_init");
 

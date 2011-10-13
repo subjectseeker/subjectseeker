@@ -1,8 +1,8 @@
 <?php
 /*
-Plugin Name: OnlineCommunications Claim Blog
+Plugin Name: SubjectSeeker Claim Blog
 Plugin URI: http://scienceseeker.org/
-Description: Claim blog for OnlineCommunications tool
+Description: Claim blog for SubjectSeeker tool
 Author: Jessica P. Hekman
 Version: 1
 Author URI: http://www.arborius.net/~jphekman/
@@ -12,11 +12,11 @@ Author URI: http://www.arborius.net/~jphekman/
  * PHP widget methods
  */
 
-include_once "oc-includes.inc";
+include_once "ss-includes.inc";
 
-if (!class_exists('ocClaimBlog')) {
-  class ocClaimBlog {
-    function ocClaimBlog() {
+if (!class_exists('ssClaimBlog')) {
+  class ssClaimBlog {
+    function ssClaimBlog() {
       $this->version = "0.1";
     }
 
@@ -26,37 +26,37 @@ if (!class_exists('ocClaimBlog')) {
 
     function setupWidget() {
       if (!function_exists('register_sidebar_widget')) return;
-      function widget_ocClaimBlog($args) {
+      function widget_ssClaimBlog($args) {
         extract($args);
-        $options = get_option('widget_ocClaimBlog');
+        $options = get_option('widget_ssClaimBlog');
         $title = $options['title'];
         echo $before_widget . $before_title . $title . $after_title;
-        get_ocClaimBlog();
+        get_ssClaimBlog();
         echo $after_widget;
       }
-      function widget_ocClaimBlog_control() {
-        $options = get_option('widget_ocClaimBlog');
-        if ( $_POST['ocClaimBlog-submit'] ) {
-          $options['title'] = strip_tags(stripslashes($_POST['ocClaimBlog-title']));
-          update_option('widget_ocClaimBlog', $options);
+      function widget_ssClaimBlog_control() {
+        $options = get_option('widget_ssClaimBlog');
+        if ( $_POST['ssClaimBlog-submit'] ) {
+          $options['title'] = strip_tags(stripslashes($_POST['ssClaimBlog-title']));
+          update_option('widget_ssClaimBlog', $options);
         }
         $title = htmlspecialchars($options['title'], ENT_QUOTES);
         echo
-          '<p><label for="ocClaimBlog-title">Title:<input class="widefat" name="ocClaimBlog-title" type="text" value="'.$title.'" /></label></p>'.
-          '<input type="hidden" id="ocClaimBlog-submit" name="ocClaimBlog-submit" value="1" />';
+          '<p><label for="ssClaimBlog-title">Title:<input class="widefat" name="ssClaimBlog-title" type="text" value="'.$title.'" /></label></p>'.
+          '<input type="hidden" id="ssClaimBlog-submit" name="ssClaimBlog-submit" value="1" />';
       }
-      register_sidebar_widget('ocClaimBlog', 'widget_ocClaimBlog');
-      register_widget_control('ocClaimBlog', 'widget_ocClaimBlog_control');
+      register_sidebar_widget('ssClaimBlog', 'widget_ssClaimBlog');
+      register_widget_control('ssClaimBlog', 'widget_ssClaimBlog_control');
     }
   }
 }
 
-$ocClaimBlog = new ocClaimBlog();
-add_action( 'plugins_loaded', array(&$ocClaimBlog, 'setupWidget') );
-register_activation_hook( __FILE__, array( &$ocClaimBlog, 'setupActivation' ));
+$ssClaimBlog = new ssClaimBlog();
+add_action( 'plugins_loaded', array(&$ssClaimBlog, 'setupWidget') );
+register_activation_hook( __FILE__, array( &$ssClaimBlog, 'setupActivation' ));
 
-function get_ocClaimBlog($settings = array()) {
-	global $ocClaimBlog;
+function get_ssClaimBlog($settings = array()) {
+	global $ssClaimBlog;
 
         determineClaimStep($settings);
 }
@@ -82,17 +82,17 @@ function determineClaimStep() {
     $step = $_REQUEST["step"];
 
     // Connect to DB.
-    $db  = ocDbConnect();
+    $db  = ssDbConnect();
 
     // If this is the first time this user has tried to interact with
-    // the OC system, create a USER entry for them
+    // the SS system, create a USER entry for them
     $userId = addUser($displayName, $email, $db);
 
     // If there is already a verified claim, move ahead to linking things
     if ($step == null && retrieveVerifiedClaimToken($blogId, $userId, $db)) {
       displayUserAuthorLinkForm($blogId, $userId, $displayName, $db);
     } else if ($step === null) {
-      doClaimBlog($blogId, $displayName, $email, $db);
+      dsslaimBlog($blogId, $displayName, $email, $db);
     } else if ($step === "verify") {
       doVerifyClaim($blogId, $displayName, $db);
     } else if ($step === "userAuthorLinkForm") {

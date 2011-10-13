@@ -1,8 +1,8 @@
 <?php
 /*
-Plugin Name: OnlineCommunications Approve Blogs
+Plugin Name: SubjectSeeker Approve Blogs
 Plugin URI: http://scienceseeker.org/
-Description: Approve blogs for OnlineCommunications tool
+Description: Approve blogs for SubjectSeeker tool
 Author: Jessica P. Hekman
 Version: 1
 Author URI: http://www.arborius.net/~jphekman/
@@ -12,11 +12,11 @@ Author URI: http://www.arborius.net/~jphekman/
  * PHP widget methods
  */
 
-include_once "oc-includes.inc";
+include_once "ss-includes.inc";
 
-if (!class_exists('ocApproveBlogs')) {
-  class ocApproveBlogs {
-    function ocApproveBlogs() {
+if (!class_exists('ssApproveBlogs')) {
+  class ssApproveBlogs {
+    function ssApproveBlogs() {
       $this->version = "0.1";
     }
 	
@@ -26,43 +26,43 @@ if (!class_exists('ocApproveBlogs')) {
 
     function setupWidget() {
       if (!function_exists('register_sidebar_widget')) return;
-      function widget_ocApproveBlogs($args) {
+      function widget_ssApproveBlogs($args) {
         extract($args);
-        $options = get_option('widget_ocApproveBlogs');
+        $options = get_option('widget_ssApproveBlogs');
         $title = $options['title'];
         echo $before_widget . $before_title . $title . $after_title;
-        get_ocApproveBlogs();
+        get_ssApproveBlogs();
         echo $after_widget;
       }
-      function widget_ocApproveBlogs_control() {
-        $options = get_option('widget_ocApproveBlogs');
-        if ( $_POST['ocApproveBlogs-submit'] ) {
-          $options['title'] = strip_tags(stripslashes($_POST['ocApproveBlogs-title']));
-          update_option('widget_ocApproveBlogs', $options);
+      function widget_ssApproveBlogs_control() {
+        $options = get_option('widget_ssApproveBlogs');
+        if ( $_POST['ssApproveBlogs-submit'] ) {
+          $options['title'] = strip_tags(stripslashes($_POST['ssApproveBlogs-title']));
+          update_option('widget_ssApproveBlogs', $options);
         }
         $title = htmlspecialchars($options['title'], ENT_QUOTES);
         echo
-          '<p><label for="ocApproveBlogs-title">Title:<input class="widefat" name="ocApproveBlogs-title" type="text" value="'.$title.'" /></label></p>'.
-          '<input type="hidden" id="ocApproveBlogs-submit" name="ocApproveBlogs-submit" value="1" />';
+          '<p><label for="ssApproveBlogs-title">Title:<input class="widefat" name="ssApproveBlogs-title" type="text" value="'.$title.'" /></label></p>'.
+          '<input type="hidden" id="ssApproveBlogs-submit" name="ssApproveBlogs-submit" value="1" />';
       }
-      register_sidebar_widget('ocApproveBlogs', 'widget_ocApproveBlogs');
-      register_widget_control('ocApproveBlogs', 'widget_ocApproveBlogs_control');
+      register_sidebar_widget('ssApproveBlogs', 'widget_ssApproveBlogs');
+      register_widget_control('ssApproveBlogs', 'widget_ssApproveBlogs_control');
     }
   }
 }
 
-$ocApproveBlogs = new ocApproveBlogs();
-add_action( 'plugins_loaded', array(&$ocApproveBlogs, 'setupWidget') );
-register_activation_hook( __FILE__, array( &$ocApproveBlogs, 'setupActivation' ));
+$ssApproveBlogs = new ssApproveBlogs();
+add_action( 'plugins_loaded', array(&$ssApproveBlogs, 'setupWidget') );
+register_activation_hook( __FILE__, array( &$ssApproveBlogs, 'setupActivation' ));
 
-function get_ocApproveBlogs($settings = array()) {
-  global $ocApproveBlogs;
+function get_ssApproveBlogs($settings = array()) {
+  global $ssApproveBlogs;
   doApproveBlogs();
 }
 
 function doApproveBlogs() {
   $step = $_REQUEST["step"];
-  $db = ocDbConnect();
+  $db = ssDbConnect();
 
   if (is_user_logged_in()){
     global $current_user;

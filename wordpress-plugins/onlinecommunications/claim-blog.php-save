@@ -1,8 +1,8 @@
 <?php
 /*
-Plugin Name: OnlineCommunications Claim Blog
+Plugin Name: SubjectSeeker Claim Blog
 Plugin URI: http://scienceseeker.org/
-Description: Claim blog for OnlineCommunications tool
+Description: Claim blog for SubjectSeeker tool
 Author: Jessica P. Hekman
 Version: 1
 Author URI: http://www.arborius.net/~jphekman/
@@ -12,7 +12,7 @@ Author URI: http://www.arborius.net/~jphekman/
  * PHP widget methods
  */
 
-include_once "oc-includes.inc";
+include_once "ss-includes.inc";
 
 $intopic = false;
 
@@ -30,7 +30,7 @@ function determineClaimStep() {
     $step = $_REQUEST["step"];
 
     // Connect to DB.
-    $db  = ocDbConnect();
+    $db  = ssDbConnect();
 
     if ($step === null) {
       doClaimBlog($blogId, $displayName, $email, $db);
@@ -40,7 +40,7 @@ function determineClaimStep() {
       print "ERROR: Unknown step $step.";
     }
 
-    ocDbClose($db);
+    ssDbClose($db);
 
   } else {
     print "You must log in before you can add a blog.<br />\n";
@@ -50,7 +50,7 @@ function determineClaimStep() {
 function doClaimBlog($blogId, $displayName, $email, $db) {
 
   // If this is the first time this user has tried to interact with
-  // the OC system, create a USER entry for them
+  // the SS system, create a USER entry for them
   $userId = addUser($displayName, $email, $db);
 
   displayUserAuthorLinkForm($blogId, $userId, $displayName, $db);
@@ -66,7 +66,7 @@ function widget_claimBlog($args) {
 
 function claimBlog_init()
 {
-  register_sidebar_widget(__('OC Claim Blog'), 'widget_claimBlog');
+  register_sidebar_widget(__('SS Claim Blog'), 'widget_claimBlog');
 }
 add_action("plugins_loaded", "claimBlog_init");
 

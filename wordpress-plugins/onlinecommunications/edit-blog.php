@@ -12,11 +12,11 @@ Author URI: http://www.arborius.net/~jphekman/
  * PHP widget methods
  */
 
-include_once "oc-includes.inc";
+include_once "ss-includes.inc";
 
-if (!class_exists('ocEditBlog')) {
-  class ocEditBlog {
-    function ocEditBlog() {
+if (!class_exists('ssEditBlog')) {
+  class ssEditBlog {
+    function ssEditBlog() {
       $this->version = "0.1";
     }
 
@@ -26,37 +26,37 @@ if (!class_exists('ocEditBlog')) {
 
     function setupWidget() {
       if (!function_exists('register_sidebar_widget')) return;
-      function widget_ocEditBlog($args) {
+      function widget_ssEditBlog($args) {
         extract($args);
-        $options = get_option('widget_ocEditBlog');
+        $options = get_option('widget_ssEditBlog');
         $title = $options['title'];
         echo $before_widget . $before_title . $title . $after_title;
-        get_ocEditBlog();
+        get_ssEditBlog();
         echo $after_widget;
       }
-      function widget_ocEditBlog_control() {
-        $options = get_option('widget_ocEditBlog');
-        if ( $_POST['ocEditBlog-submit'] ) {
-          $options['title'] = strip_tags(stripslashes($_POST['ocEditBlog-title']));
-          update_option('widget_ocEditBlog', $options);
+      function widget_ssEditBlog_control() {
+        $options = get_option('widget_ssEditBlog');
+        if ( $_POST['ssEditBlog-submit'] ) {
+          $options['title'] = strip_tags(stripslashes($_POST['ssEditBlog-title']));
+          update_option('widget_ssEditBlog', $options);
         }
         $title = htmlspecialchars($options['title'], ENT_QUOTES);
         echo
-          '<p><label for="ocEditBlog-title">Title:<input class="widefat" name="ocEditBlog-title" type="text" value="'.$title.'" /></label></p>'.
-          '<input type="hidden" id="ocEditBlog-submit" name="ocEditBlog-submit" value="1" />';
+          '<p><label for="ssEditBlog-title">Title:<input class="widefat" name="ssEditBlog-title" type="text" value="'.$title.'" /></label></p>'.
+          '<input type="hidden" id="ssEditBlog-submit" name="ssEditBlog-submit" value="1" />';
       }
-      register_sidebar_widget('ocEditBlog', 'widget_ocEditBlog');
-      register_widget_control('ocEditBlog', 'widget_ocEditBlog_control');
+      register_sidebar_widget('ssEditBlog', 'widget_ssEditBlog');
+      register_widget_control('ssEditBlog', 'widget_ssEditBlog_control');
     }
   }
 }
 
-$ocEditBlog = new ocEditBlog();
-add_action( 'plugins_loaded', array(&$ocEditBlog, 'setupWidget') );
-register_activation_hook( __FILE__, array( &$ocEditBlog, 'setupActivation' ));
+$ssEditBlog = new ssEditBlog();
+add_action( 'plugins_loaded', array(&$ssEditBlog, 'setupWidget') );
+register_activation_hook( __FILE__, array( &$ssEditBlog, 'setupActivation' ));
 
-function get_ocEditBlog($settings = array()) {
-  global $ocEditBlog;
+function get_ssEditBlog($settings = array()) {
+  global $ssEditBlog;
 
   determineEditStep();
 }
@@ -79,7 +79,7 @@ function determineEditStep()
     $blogId = $_REQUEST["blogId"];
 
     // Connect to DB.
-    $db  = ocDbConnect();
+    $db  = ssDbConnect();
 
     if ($step === null) {
       displayEditBlogsForm(null, $db);
@@ -91,7 +91,7 @@ function determineEditStep()
       print "ERROR: Unknown step $step.";
     }
 
-    // DELETEME ocDbClose($db);
+    // DELETEME ssDbClose($db);
     // this line of code causes errors in other plugins on the same page
     // dunno why, but the doc says it is not necessary to explicitly close a db connection
 

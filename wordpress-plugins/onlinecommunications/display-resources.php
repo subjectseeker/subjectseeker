@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: OnlineCommunications Display Resources
+Plugin Name: SubjectSeeker Display Resources
 Plugin URI: http://scienceseeker.org/
 Description: Display the requested resources (usually blogs)
 Author: Jessica P. Hekman
@@ -12,11 +12,11 @@ Author URI: http://www.arborius.net/~jphekman/
  * PHP widget methods
  */
 
-include_once "oc-includes.inc";
+include_once "ss-includes.inc";
 
-if (!class_exists('ocDisplayResources')) {
-  class ocDisplayResources {
-    function ocDisplayResources() {
+if (!class_exists('ssDisplayResources')) {
+  class ssDisplayResources {
+    function ssDisplayResources() {
       $this->version = "0.1";
     }
 
@@ -26,37 +26,37 @@ if (!class_exists('ocDisplayResources')) {
 
     function setupWidget() {
       if (!function_exists('register_sidebar_widget')) return;
-      function widget_ocDisplayResources($args) {
+      function widget_ssDisplayResources($args) {
         extract($args);
-        $options = get_option('widget_ocDisplayResources');
+        $options = get_option('widget_ssDisplayResources');
         $title = $options['title'];
         echo $before_widget . $before_title . $title . $after_title;
-        get_ocDisplayResources();
+        get_ssDisplayResources();
         echo $after_widget;
       }
-      function widget_ocDisplayResources_control() {
-        $options = get_option('widget_ocDisplayResources');
-        if ( $_POST['ocDisplayResources-submit'] ) {
-          $options['title'] = strip_tags(stripslashes($_POST['ocDisplayResources-title']));
-          update_option('widget_ocDisplayResources', $options);
+      function widget_ssDisplayResources_control() {
+        $options = get_option('widget_ssDisplayResources');
+        if ( $_POST['ssDisplayResources-submit'] ) {
+          $options['title'] = strip_tags(stripslashes($_POST['ssDisplayResources-title']));
+          update_option('widget_ssDisplayResources', $options);
         }
         $title = htmlspecialchars($options['title'], ENT_QUOTES);
         echo
-          '<p><label for="ocDisplayResources-title">Title:<input class="widefat" name="ocDisplayResources-title" type="text" value="'.$title.'" /></label></p>'.
-          '<input type="hidden" id="ocDisplayResources-submit" name="ocDisplayResources-submit" value="1" />';
+          '<p><label for="ssDisplayResources-title">Title:<input class="widefat" name="ssDisplayResources-title" type="text" value="'.$title.'" /></label></p>'.
+          '<input type="hidden" id="ssDisplayResources-submit" name="ssDisplayResources-submit" value="1" />';
       }
-      register_sidebar_widget('ocDisplayResources', 'widget_ocDisplayResources');
-      register_widget_control('ocDisplayResources', 'widget_ocDisplayResources_control');
+      register_sidebar_widget('ssDisplayResources', 'widget_ssDisplayResources');
+      register_widget_control('ssDisplayResources', 'widget_ssDisplayResources_control');
     }
   }
 }
 
-$ocDisplayResources = new ocDisplayResources();
-add_action( 'plugins_loaded', array(&$ocDisplayResources, 'setupWidget') );
-register_activation_hook( __FILE__, array( &$ocDisplayResources, 'setupActivation' ));
+$ssDisplayResources = new ssDisplayResources();
+add_action( 'plugins_loaded', array(&$ssDisplayResources, 'setupWidget') );
+register_activation_hook( __FILE__, array( &$ssDisplayResources, 'setupActivation' ));
 
-function get_ocDisplayResources($settings = array()) {
-  global $ocDisplayResources;
+function get_ssDisplayResources($settings = array()) {
+  global $ssDisplayResources;
 
   doDisplayResources();
 }

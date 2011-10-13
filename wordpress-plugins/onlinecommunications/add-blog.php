@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: OnlineCommunications Add Blog
+Plugin Name: SubjectSeeker Add Blog
 Plugin URI: http://scienceseeker.org/
 Description: Add a new blog to the database
 Author: Jessica P. Hekman
@@ -12,11 +12,11 @@ Author URI: http://www.arborius.net/~jphekman/
  * PHP widget methods
  */
 
-include_once "oc-includes.inc";
+include_once "ss-includes.inc";
 
-if (!class_exists('ocAddBlog')) {
-  class ocAddBlog {
-    function ocAddBlog() {
+if (!class_exists('ssAddBlog')) {
+  class ssAddBlog {
+    function ssAddBlog() {
       $this->version = "0.1";
     }
 
@@ -26,37 +26,37 @@ if (!class_exists('ocAddBlog')) {
 	
     function setupWidget() {
       if (!function_exists('register_sidebar_widget')) return;
-      function widget_ocAddBlog($args) {
+      function widget_ssAddBlog($args) {
         extract($args);
-        $options = get_option('widget_ocAddBlog');
+        $options = get_option('widget_ssAddBlog');
         $title = $options['title'];
         echo $before_widget . $before_title . $title . $after_title;
-        get_ocAddBlog();
+        get_ssAddBlog();
         echo $after_widget;
       }
-      function widget_ocAddBlog_control() {
-        $options = get_option('widget_ocAddBlog');
-        if ( $_POST['ocAddBlog-submit'] ) {
-          $options['title'] = strip_tags(stripslashes($_POST['ocAddBlog-title']));
-          update_option('widget_ocAddBlog', $options);
+      function widget_ssAddBlog_control() {
+        $options = get_option('widget_ssAddBlog');
+        if ( $_POST['ssAddBlog-submit'] ) {
+          $options['title'] = strip_tags(stripslashes($_POST['ssAddBlog-title']));
+          update_option('widget_ssAddBlog', $options);
         }
         $title = htmlspecialchars($options['title'], ENT_QUOTES);
         echo
-          '<p><label for="ocAddBlog-title">Title:<input class="widefat" name="ocAddBlog-title" type="text" value="'.$title.'" /></label></p>'.
-          '<input type="hidden" id="ocAddBlog-submit" name="ocAddBlog-submit" value="1" />';
+          '<p><label for="ssAddBlog-title">Title:<input class="widefat" name="ssAddBlog-title" type="text" value="'.$title.'" /></label></p>'.
+          '<input type="hidden" id="ssAddBlog-submit" name="ssAddBlog-submit" value="1" />';
       }
-      register_sidebar_widget('ocAddBlog', 'widget_ocAddBlog');
-      register_widget_control('ocAddBlog', 'widget_ocAddBlog_control');
+      register_sidebar_widget('ssAddBlog', 'widget_ssAddBlog');
+      register_widget_control('ssAddBlog', 'widget_ssAddBlog_control');
     }
   }
 }
 
-$ocAddBlog = new ocAddBlog();
-add_action( 'plugins_loaded', array(&$ocAddBlog, 'setupWidget') );
-register_activation_hook( __FILE__, array( &$ocAddBlog, 'setupActivation' ));
+$ssAddBlog = new ssAddBlog();
+add_action( 'plugins_loaded', array(&$ssAddBlog, 'setupWidget') );
+register_activation_hook( __FILE__, array( &$ssAddBlog, 'setupActivation' ));
 
-function get_ocAddBlog($settings = array()) {
-  global $ocAddBlog;
+function get_ssAddBlog($settings = array()) {
+  global $ssAddBlog;
 
   determineStep();
 }
@@ -79,7 +79,7 @@ function determineStep()
     $blogId = $_REQUEST["blogId"];
 
     // Connect to DB.
-    $db  = ocDbConnect();
+    $db  = ssDbConnect();
 
     if ($step === null) {
       displayBlogForm(null, $db);
@@ -93,7 +93,7 @@ function determineStep()
       print "ERROR: Unknown step $step.";
     }
 
-    // DELETEME ocDbClose($db);
+    // DELETEME ssDbClose($db);
     // this line of code causes errors in other plugins on the same page
     // dunno why, but the doc says it is not necessary to explicitly close a db connection
 
@@ -113,7 +113,7 @@ function displayBlogForm ($errormsg, $db) {
   $displayName = $current_user->display_name;
 
   // If this is the first time this user has tried to interact with
-  // the OC system, create a USER entry for them
+  // the SS system, create a USER entry for them
   $userId = addUser($displayName, $email, $db);
 
   // Only active users can claim blogs
@@ -214,7 +214,7 @@ function doAddBlog ($db) {
   }
 
   // If this is the first time this user has tried to interact with
-  // the OC system, create a USER entry for them
+  // the SS system, create a USER entry for them
   $userId = addUser($displayName, $email, $db);
 
   $addBlog = addBlog($blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $db);

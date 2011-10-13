@@ -27,7 +27,7 @@
     <xsl:text> </xsl:text>
     <a>
       <xsl:attribute name="href">
-        <xsl:text>/onlinecommunications/oc-serializer.php?type=blog&amp;filter0=topic&amp;value0=</xsl:text>
+        <xsl:text>/subjectseeker/ss-serializer.php?type=blog&amp;filter0=topic&amp;value0=</xsl:text>
         <xsl:apply-templates />
       </xsl:attribute>
       <span class="postsub">Subscribe</span>

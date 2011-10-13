@@ -1,6 +1,6 @@
 <?php
 
-include_once "oc-globals.php";
+include_once "ss-globals.php";
 require_once(dirname(__FILE__).'/../wp-includes/class-simplepie.php');
 
 /*
@@ -8,7 +8,7 @@ require_once(dirname(__FILE__).'/../wp-includes/class-simplepie.php');
  */
 
 // Open a connection to the DB. Return a handle to it.
-function ocDbConnect() {
+function ssDbConnect() {
 
   global $dbUser;
   global $dbPass;
@@ -26,7 +26,7 @@ function ocDbConnect() {
 }
 
 // Given a handle to the DB, close the connection.
-function ocDbClose($dbConnection) {
+function ssDbClose($dbConnection) {
   mysql_close($dbConnection);
 }
 
@@ -54,12 +54,12 @@ function getSearchCurl ($type, $params) {
 
 // Input: type of search; search parameters (hash array)
 // Output: Curl for serializing matching feeds
-function getSerializerCurl ($type, $ocParams, $httpParams) {
+function getSerializerCurl ($type, $ssParams, $httpParams) {
   global $serializerUrl;
 
   $url = $serializerUrl . paramArrayToString($httpParams);
 
-  $data = paramsToQuery($type, $ocParams);
+  $data = paramsToQuery($type, $ssParams);
 
   $ch = curl_init();    // initialize curl handle
   curl_setopt($ch, CURLOPT_URL,$url); // set url to post to
@@ -87,7 +87,7 @@ function getDownloadCurl($uri) {
 // Input: type of search, map of params (name => array)
 // Return: string containing chunk of XML representing them
 function paramsToQuery($type, $params) {
-  $data = "<ocQuery><type>$type</type>";
+  $data = "<ssQuery><type>$type</type>";
   foreach ($params as $key => $value) {
     if (is_array($value)) {
       foreach ($value as $oneValue) {
@@ -97,7 +97,7 @@ function paramsToQuery($type, $params) {
       $data .= "<param><name>$key</name><value>$value</value></param>";
     }
   }
-  $data .= "</ocQuery>";
+  $data .= "</ssQuery>";
   return $data;
 }
 
@@ -966,7 +966,7 @@ function displayEditBlogsForm ($msg, $db) {
   }
 
   // If this is the first time this user has tried to interact with
-  // the OC system, create a USER entry for them
+  // the SS system, create a USER entry for them
   $userId = addUser($displayName, $email, $db);
 
   $blogIds = getBlogIdsByUserId($userId, $db);
@@ -1119,7 +1119,7 @@ function doEditBlog ($db) {
   $email = $current_user->user_email;
 
   // If this is the first time this user has tried to interact with
-  // the OC system, create a USER entry for them
+  // the SS system, create a USER entry for them
   $userId = addUser($displayName, $email, $db);
 
   // If user is requesting a blogUri or blogsyndicationuri change, ensure that they own the new url

@@ -1,7 +1,7 @@
 <?php
 
-include_once "oc-globals.php";
-include_once "oc-util.php";
+include_once "ss-globals.php";
+include_once "ss-util.php";
 
 global $dbName;
 // TODO pass this back somehow, don't use a global
@@ -19,12 +19,12 @@ foreach ($params as $name => $value) {
 // Display
 
 echo "<?xml version=\"1.0\" ?>\n";
-print "<onlinecommunications>\n";
+print "<subjectseeker>\n";
 
 $searchResults = searchDB();
 printResults ($searchResults);
 
-print "</onlinecommunications>\n";
+print "</subjectseeker>\n";
 
 
 /* Functions */
@@ -33,7 +33,7 @@ function searchDB() {
 
   global $type;
 
-  $cid = ocDbConnect();
+  $cid = ssDbConnect();
 
   if (strcasecmp($type, "topic") == 0) {
     $searchResults = searchTopics($cid);
@@ -43,7 +43,7 @@ function searchDB() {
     $searchResults = searchBlogs($cid);
   }
 
-  ocDbClose($cid);
+  ssDbClose($cid);
 
   return $searchResults;
 

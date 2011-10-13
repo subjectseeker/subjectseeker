@@ -8,7 +8,7 @@ header( "Content-Type: application/atom+xml" );
 // Parameter offset determines the number of the post with which to
 // start syndication; 0 is the default.
 
-include_once "oc-util.php";
+include_once "ss-util.php";
 global $params;
 
 // Put us in Eastern Time; eventually, this should be set by a
@@ -26,7 +26,7 @@ $myURI = $myHost . $_SERVER[ "SCRIPT_NAME" ];
 $params = discoverSearchParams();
 
 // Default number of blog posts to 100.
-// TODO: add to oc-globals.php
+// TODO: add to ss-globals.php
 $numPosts = 100;
 if ( isset( $_REQUEST[ "n" ] ) and is_numeric( $_REQUEST[ "n" ] ) and
      ( $_REQUEST[ "n" ] > 0 ) ) {
@@ -41,7 +41,7 @@ if ( isset( $_REQUEST[ "offset" ] ) and
 }
 
 // Connect to our database.
-$db = ocDbConnect();
+$db = ssDbConnect();
 
 print "<?xml version=\"1.0\" encoding=\"utf-8\"?>
 <feed xmlns=\"http://www.w3.org/2005/Atom\" xml:lang=\"en\">
@@ -65,7 +65,7 @@ foreach ( getRecentPosts( $params, $numPosts, $postOffset, $db )
 print "</feed>
 ";
 
-// DELETEME ocDbClose( $db );
+// DELETEME ssDbClose( $db );
 
 // Parse search parameters which were passed in by POST
 // and also check any GET parameters.

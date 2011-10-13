@@ -2,12 +2,12 @@
 
 <?php
 
-include_once "oc-globals.php";
-include_once "oc-util.php";
+include_once "ss-globals.php";
+include_once "ss-util.php";
 
-$limit = 200; // TODO put in oc-globals
+$limit = 200; // TODO put in ss-globals
 
-$db = ocDbConnect();
+$db = ssDbConnect();
 
 $blogs = getSparseBlogs($db, $limit);
 foreach ($blogs as $blog) {
@@ -32,5 +32,5 @@ foreach ($blogs as $blog) {
 }
 
 // clean up - we're done
-ocDbClose($db);
+ssDbClose($db);
 ?>

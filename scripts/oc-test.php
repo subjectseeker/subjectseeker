@@ -2,11 +2,11 @@
 
 <?php
 
-include "oc-globals.php";
-include "oc-util.php";
+include "ss-globals.php";
+include "ss-util.php";
 require_once(dirname(__FILE__).'/../wp-includes/class-simplepie.php');
 
-$db = ocDbConnect();
+$db = ssDbConnect();
 
 /*
 // Language testing
@@ -80,6 +80,6 @@ foreach ($feed->get_items() as $item) {
 #  addSimplePieItem ($item, "en", 782, $db);
 }
 
-ocDbClose($db);
+ssDbClose($db);
 
 ?>
