@@ -1,6 +1,6 @@
 <?php
 
-include_once "/home/sciseek/public_html/subjectseeker/oc-globals.php";
-include_once "/home/sciseek/public_html/subjectseeker/oc-util.php";
+include_once "/home/sciseek/public_html/subjectseeker/ss-globals.php";
+include_once "/home/sciseek/public_html/subjectseeker/ss-util.php";
 
 ?>

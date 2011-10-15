@@ -9,14 +9,14 @@ $host = "localhost";
 
 // URLs
 $homeUrl = "http://yoursite.com/";
-$searchUrl = $homeUrl . "/onlinecommunications/oc-search.php";
-$serializerUrl = $homeUrl . "/onlinecommunications/oc-serializer.php";
+$searchUrl = $homeUrl . "/subjectseeker/ss-search.php";
+$serializerUrl = $homeUrl . "/subjectseeker/ss-serializer.php";
 $approveUrl = $homeUrl . "approve-blog";
 
 // Files and directories
 $basedir = "/home/username/public_html";
 $cachedir = "$basedir/cache";
-$resources2html = "$basedir/onlinecommunications/xsl/resources2html.xsl";
-$topics2html = "$basedir/onlinecommunications/xsl/topics2html.xsl";
-$feed2html = "$basedir/onlinecommunications/xsl/feed2html.xsl";
+$resources2html = "$basedir/subjectseeker/xsl/resources2html.xsl";
+$topics2html = "$basedir/subjectseeker/xsl/topics2html.xsl";
+$feed2html = "$basedir/subjectseeker/xsl/feed2html.xsl";
 ?>

@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: SubjectSeeker edit blog
+Plugin Name: SubjectSeeker Edit Blog
 Plugin URI: http://scienceseeker.org/
 Description: Edit an existing blog in the database
 Author: Jessica P. Hekman
