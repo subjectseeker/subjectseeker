@@ -11,11 +11,15 @@ $host = "localhost";
 $homeUrl = "http://yoursite.com/";
 $searchUrl = $homeUrl . "/subjectseeker/ss-search.php";
 $serializerUrl = $homeUrl . "/subjectseeker/ss-serializer.php";
+$adminPanel = $homeUrl . "admin-panel";
+$adminBlogs = $homeUrl . "admin-blogs";
+$adminUsers = $homeUrl . "admin-users";
 $approveUrl = $homeUrl . "approve-blog";
 
 // Files and directories
 $basedir = "/home/username/public_html";
 $cachedir = "$basedir/cache";
+$jslibrary = "$basedir/subjectseeker/js/ss-library.js";
 $resources2html = "$basedir/subjectseeker/xsl/resources2html.xsl";
 $topics2html = "$basedir/subjectseeker/xsl/topics2html.xsl";
 $feed2html = "$basedir/subjectseeker/xsl/feed2html.xsl";

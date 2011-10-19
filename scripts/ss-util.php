@@ -187,6 +187,20 @@ function insanitize( $htmlString ) {
  * DB query functions
  */
 
+function getUsers ($arrange, $order, $db) {
+  $sql = "SELECT USER_ID, USER_NAME, USER_STATUS_ID, USER_PRIVILEGE_ID, EMAIL_ADDRESS FROM USER ORDER BY $arrange $order";
+  $users = array();
+  $results = mysql_query($sql, $db);
+  while ($row = mysql_fetch_array($results)) {
+    $user["id"] = $row["USER_ID"];
+    $user["name"] = $row["USER_NAME"];
+		$user["status"] = $row["USER_STATUS_ID"];
+    $user["privilege"] = $row["USER_PRIVILEGE_ID"];
+    $user["email"] = $row["EMAIL_ADDRESS"];
+    array_push($users, $user);
+  }
+  return $users;
+}
 
 // Input: Username, DB handle
 // Return: User ID or null, error message
@@ -267,6 +281,23 @@ function getSparseBlogs($db, $limit=1000) {
   while ($row = mysql_fetch_array($results)) {
     $blog["id"] = $row["BLOG_ID"];
     $blog["uri"] = $row["BLOG_SYNDICATION_URI"];
+    array_push($blogs, $blog);
+  }
+  return $blogs;
+}
+
+// Input: DB handle
+// Output: array of hashes of blogs (id, name, uri, description, syndication uri)
+function getBlogs($arrange, $order, $db) {
+  $sql = "SELECT BLOG_NAME, BLOG_ID, BLOG_URI, BLOG_DESCRIPTION, BLOG_SYNDICATION_URI FROM BLOG ORDER BY $arrange $order";
+  $blogs = array();
+  $results = mysql_query($sql, $db);
+  while ($row = mysql_fetch_array($results)) {
+    $blog["id"] = $row["BLOG_ID"];
+    $blog["name"] = $row["BLOG_NAME"];
+    $blog["blogdescription"] = $row["BLOG_DESCRIPTION"];
+    $blog["uri"] = $row["BLOG_URI"];
+    $blog["syndicationuri"] = $row["BLOG_SYNDICATION_URI"];
     array_push($blogs, $blog);
   }
   return $blogs;
@@ -1052,9 +1083,8 @@ function displayEditBlogForm($db, $data) {
    }
    
 function displayEditPendingBlogs ($db) {
-	print "<h2>List of pending blogs</h2>";
 	print "<form method=\"POST\">\n";
-	print "<input type=\"hidden\" name=\"step\" value=\"approve\" />";
+	print "<input type=\"hidden\" name=\"step\" value=\"edit\" />";
 	$blogList = getPendingBlogs($db);
 	foreach ($blogList as $blog) {
 		$blogId = $blog["id"];
@@ -1238,7 +1268,7 @@ function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescri
   
   // check that there is a name
   if ($blogname == null) {
-	  return "You need to submit a name for the blog";
+	  return "You need to submit a name for the blog.";
 	  
   }
 
@@ -1287,6 +1317,66 @@ function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescri
   return null;
 }
 
+// Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, user ID, user display name, DB handle
+// Action: edit blog metadata
+// Return: error message or null
+function editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $displayname, $db) {
+
+  // if not logged in as an author or as admin, fail
+  if ($userPriv < 2) {
+    return "$displayname does not have editing privileges to administrate users.";
+  }
+
+  // user exists? active (0)?
+  $userStatus = getUserStatus($userId, $db);
+  if ($userStatus == null) {
+    return "No such user $displayname.";
+  }
+  if ($userStatus != 0) {
+    return "User $displayname is not active; could not update user info.";
+  }
+  
+  // check that there is a name
+  if ($userName == null) {
+	  return "You need to submit a name for the user.";	  
+  }
+	
+	// check if the email is valid
+	if (!filter_var($userEmail, FILTER_VALIDATE_EMAIL)) {
+		return "The submited e-mail is not valid.";
+	}
+  
+  // Check that there is a user status
+  if ($userStatus == null) {
+          return ("You need to submit a user status.");
+  }
+	
+	// Check that there is a user privilige
+  if ($userPrivilege == null) {
+          return ("You need to submit a user privilege status.");
+  }
+	
+	print "Data is: $userID, $userName, $userStatus, $userEmail, $userPrivilege";
+
+  // update easy data
+  $sql = "UPDATE USER SET USER_NAME='$userName', USER_PRIVILEGE_ID='$userPrivilege', USER_STATUS_ID='$userStatus', EMAIL_ADDRESS='$userEmail' WHERE USER_ID=$userID";
+  mysql_query($sql, $db);
+
+  return null;
+}
+
+// Input: blog status, DB handle
+// Action: edit blog status
+function editBlogStatus ($blogId, $blogStatus, $db) {
+  $sql = "UPDATE BLOG SET BLOG_STATUS_ID='$blogStatus' WHERE BLOG_ID=$blogId";
+  mysql_query($sql, $db);
+	
+	if (mysql_error() != null) {
+    print "ERROR: " . mysql_error() . "<br />";
+    return;
+  }
+}
+
 // Input: user ID, blog ID, DB handle
 // Return: true if user ID is an author of blog ID or an admin, false otherwise
 function canEdit($userId, $blogId, $db) {
@@ -1309,6 +1399,18 @@ function getBlogName($blogId, $db) {
   }
   $row = mysql_fetch_array($results);
   return $row["BLOG_NAME"];
+}
+
+// Input: user ID, DB handle
+// Return: name of this user, or null
+function getUserName($userId, $db) {
+  $sql = "SELECT USER_NAME FROM USER WHERE USER_ID=$userId";
+  $results = mysql_query($sql, $db);
+  if ($results == null || mysql_num_rows($results) == 0) {
+    return null;
+  }
+  $row = mysql_fetch_array($results);
+  return $row["USER_NAME"];
 }
 
 // Input: blog ID, DB handle

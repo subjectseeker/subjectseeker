@@ -76,8 +76,8 @@ function doApproveBlogs() {
     print "<p>Hello, $displayName.</p>\n";
 	
     if ($userPriv > 0) { // moderator or admin
-    if ($step == null) {
-		
+    if ($step == null) {		
+		print "<h2>List of pending blogs</h2>";
 		displayEditPendingBlogs ($db);
 			
     } else {
