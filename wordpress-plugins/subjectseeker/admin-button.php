@@ -63,6 +63,7 @@ function doAdminButton() {
   $db = ssDbConnect();
   if (is_user_logged_in()){
     global $current_user;
+		global $adminPanel;
     get_currentuserinfo();
     $displayName = $current_user->display_name;
     $email = $current_user->user_email;

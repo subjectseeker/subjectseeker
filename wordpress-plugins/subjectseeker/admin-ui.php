@@ -64,6 +64,9 @@ function doAdminUI() {
   $db = ssDbConnect();
   if (is_user_logged_in()){
     global $current_user;
+		global $approveUrl;
+		global $adminUsers;
+		global $adminBlogs;
     get_currentuserinfo();
     $displayName = $current_user->display_name;
     $email = $current_user->user_email;
@@ -72,10 +75,10 @@ function doAdminUI() {
 		print "<p>Hello, $displayName.</p>\n";
 		if ($userPriv > 0){
 			print "<div class=\"UI-buttons\"><a href=\"$approveUrl\">Approve Blogs</a></div>";
-			print "<div class=\"UI-buttons\"><a href=\"$adminUsers\">Blogs Administration</a></div>";
+			print "<div class=\"UI-buttons\"><a href=\"$adminBlogs\">Blogs Administration</a></div>";
 		}
 		if ($userPriv > 1){
-			print "<div class=\"UI-buttons\"><a href=\"$adminBlogs\">Users Administration</a></div>";
+			print "<div class=\"UI-buttons\"><a href=\"$adminUsers\">Users Administration</a></div>";
 		}
 		else { # not moderator or admin
   		print "You are not authorized to view the administration panel.<br />";
