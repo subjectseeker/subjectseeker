@@ -72,10 +72,10 @@ function doAdminUI() {
 		print "<p>Hello, $displayName.</p>\n";
 		if ($userPriv > 0){
 			print "<div class=\"UI-buttons\"><a href=\"$approveUrl\">Approve Blogs</a></div>";
-			print "<div class=\"UI-buttons\"><a href=\"$adminUsers\">Administrate Blogs</a></div>";
+			print "<div class=\"UI-buttons\"><a href=\"$adminUsers\">Blogs Administration</a></div>";
 		}
 		if ($userPriv > 1){
-			print "<div class=\"UI-buttons\"><a href=\"$adminBlogs\">Administrate Users</a></div>";
+			print "<div class=\"UI-buttons\"><a href=\"$adminBlogs\">Users Administration</a></div>";
 		}
 		else { # not moderator or admin
   		print "You are not authorized to view the administration panel.<br />";

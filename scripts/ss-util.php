@@ -271,6 +271,15 @@ function alternateUris($uri) {
 }
 
 // Input: DB handle
+// Output: Number of approved blogs
+function getBlogCount($db) {
+	$sql = "SELECT COUNT(BLOG_ID) FROM BLOG WHERE BLOG_STATUS_ID = 0";
+	$result = mysql_query($sql, $db);
+	$count = mysql_result($result, 0);
+	return $count; 
+}
+
+// Input: DB handle
 // Output: array of arrays; sub-arrays contain ["uri"] and ["id"]
 function getSparseBlogs($db, $limit=1000) {
 
@@ -1167,14 +1176,14 @@ function doEditBlog ($db) {
       storeClaimToken($claimToken, $blogId, $userId, $db);
     }
 
-    $result = editBlog($blogId, $blogName, $origBlogUri, $origBlogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $displayName, $db);
+    $result = editBlog($blogId, $blogName, $origBlogUri, $origBlogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $blogDelete, $displayName, $db);
 
     print "<p>To change the URL of your feed, you must re-claim your blog.</p>";
     displayBlogClaimToken($claimToken, $blogId, $displayName, $blogUri, $blogSyndicationUri, $db);
     return;
   }
 
-  $result = editBlog($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $displayName, $db);
+  $result = editBlog($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $blogDelete, $displayName, $db);
 
   if ($result == NULL) {
     displayEditBlogsForm("$blogName was updated.", $db);
@@ -1217,7 +1226,7 @@ function doVerifyEditClaim ($db) {
       $topic2 = $blogTopics[1];
     }
 
-    $result = editBlog($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $displayName, $db);
+    $result = editBlog($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $blogDelete, $displayName, $db);
 
     displayEditBlogsForm("Blog $blogName edited.", $db);
     return;
@@ -1233,7 +1242,7 @@ function doVerifyEditClaim ($db) {
 // Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, user ID, user display name, DB handle
 // Action: edit blog metadata
 // Return: error message or null
-function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db) {
+function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $blogDelete, $displayname, $db) {
 
   // get old info about this blog
   $results = blogIdsToBlogData(array(0 => $blogId), $db);
@@ -1253,12 +1262,21 @@ function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescri
   if ($userStatus != 0) {
     return "User $displayname is not active; could not update blog info.";
   }
+	
+	// delete user if requested
+	if ($blogDelete == 1) {
+		$sql = "DELETE FROM BLOG WHERE BLOG_ID=$blogId";
+		mysql_query($sql, $db);
+		
+		return "Blog has been deleted.";
+	}
 
   // blog exists? need blog id!
   $blogStatus = getBlogStatusId($blogId, $db);
   if ($blogStatus == null) {
     return "No such blog $blogId.";
   }
+	
   if ($blogStatus != 0) {
     $userPriv = getUserPrivilegeStatus($userId, $db);
     if ($userPriv == 0) { // not moderator or admin
@@ -1317,10 +1335,10 @@ function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescri
   return null;
 }
 
-// Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, user ID, user display name, DB handle
-// Action: edit blog metadata
+// Input: user ID, user name, user status, user privilege status, user email, administrator id, administrator privilege, delete user, administrator display name, DB handle
+// Action: edit user metadata
 // Return: error message or null
-function editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $displayname, $db) {
+function editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $userDelete, $oldUserName, $displayname, $wpdb, $db) {
 
   // if not logged in as an author or as admin, fail
   if ($userPriv < 2) {
@@ -1335,6 +1353,17 @@ function editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $
   if ($userStatus != 0) {
     return "User $displayname is not active; could not update user info.";
   }
+	
+	// delete user if requested
+	if ($userDelete == 1) {
+		$sql = "DELETE FROM USER WHERE USER_ID=$userID";
+		mysql_query($sql, $db);
+		
+		// delete user from Wordpress
+		$wpdb->query( "DELETE FROM $wpdb->users WHERE user_login = '$oldUserName'" );
+		
+		return "User has been deleted.";
+	}
   
   // check that there is a name
   if ($userName == null) {
@@ -1348,20 +1377,21 @@ function editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $
   
   // Check that there is a user status
   if ($userStatus == null) {
-          return ("You need to submit a user status.");
+		return ("You need to submit a user status.");
   }
 	
 	// Check that there is a user privilige
   if ($userPrivilege == null) {
-          return ("You need to submit a user privilege status.");
+		return ("You need to submit a user privilege status.");
   }
 	
-	print "Data is: $userID, $userName, $userStatus, $userEmail, $userPrivilege";
-
-  // update easy data
+	// update Wordpress name
+	$wpdb->update( $wpdb->users, array('user_login' => $userName, 'user_nicename' => $userName, 'display_name' => $userName), array('user_login' => $oldUserName) );
+	
+	// update easy data
   $sql = "UPDATE USER SET USER_NAME='$userName', USER_PRIVILEGE_ID='$userPrivilege', USER_STATUS_ID='$userStatus', EMAIL_ADDRESS='$userEmail' WHERE USER_ID=$userID";
   mysql_query($sql, $db);
-
+	
   return null;
 }
 

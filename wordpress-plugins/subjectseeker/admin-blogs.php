@@ -126,12 +126,12 @@ function doAdminBlogs() {
 				if ($order == "ASC") {
 					print " selected";
 				}
-				print ">Ascendent</option>\n";
+				print ">Ascendant</option>\n";
 				print "<option value='DESC'";
 				if ($order == "DESC") {
 					print " selected";
 				}
-				print ">Descendent</option>\n";
+				print ">Descendant</option>\n";
 				print "</select>\n";
 				print "<input type=\"submit\" value=\"Filter\" />";
 				print "</form><br />";
@@ -143,11 +143,12 @@ function doAdminBlogs() {
 				$blogdescription = stripslashes($_REQUEST["blogdescription"]);
 				$topic1 = stripslashes($_REQUEST["topic1"]);
 				$topic2 = stripslashes($_REQUEST["topic2"]);
-				$blogStatus = stripslashes($_REQUEST["status"]);
-				editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
-				editBlogStatus ($blogId, $blogStatus, $db);
-				$result = editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
+				$blogStatus = stripslashes($_REQUEST["blogStatus"]);
+				$blogDelete = stripslashes($_REQUEST["blogDelete"]);
 				$oldBlogName = getBlogName($blogId, $db);
+				editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $blogDelete, $displayname, $db);
+				editBlogStatus ($blogId, $blogStatus, $db);
+				$result = editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $blogDelete, $displayname, $db);
 				if ($result == NULL) {					
 					if ($blogStatus == 2 || $blogStatus == 4) {
 						$contacts = getBlogContacts($blogId, $db);
@@ -157,8 +158,9 @@ function doAdminBlogs() {
 						}
 						print ")</p>\n";
 					}
-				print "<p>$blogname (id $blogId) was updated.</p>";  
-				} else {
+					print "<p>$blogname (id $blogId) was updated.</p>";  
+					} 
+				else {
 					print "<p><font color='red'>$oldBlogName (id $blogId): $result</font></p>";
 				}
 			}
@@ -173,9 +175,9 @@ function doAdminBlogs() {
 			//$topic1 = $_REQUEST["topic1"];
 			//$topic2 = $_REQUEST["topic2"];
 			print "<p>$blogId - $blogName <a id=\"showForm-$blogId\" href=\"javascript:;\" onmousedown=\"toggleSlide('blogForm-$blogId');\" onclick=\"toggleButton('showForm-$blogId');\">Show</a></p>";
-			print "<div id=\"blogForm-$blogId\" style=\"display:none; overflow:hidden; height:680px;\">";
+			print "<div id=\"blogForm-$blogId\" style=\"display:none; overflow:hidden; height:700px;\">";
 			print "<form method=\"POST\">\n";
-			print "<input type=\"hidden\" name=\"step\" value=\"approve\" />";
+			print "<input type=\"hidden\" name=\"step\" value=\"edit\" />";
 			if ($errormsg !== null) {
 				print "<p><font color='red'>Error: $errormsg</font></p>\n";
 			}
@@ -207,7 +209,7 @@ function doAdminBlogs() {
 				print ">" . $row["TOPIC_NAME"] . "</option>\n";
 			}
 			print "</select><br />\n";
-			print "<select name='status'>\n";
+			print "<select name='blogStatus'>\n";
 			$blogStatus = getBlogStatusId ($blogId, $db);
 			print "<option value='0'";
 			if ($blogStatus == 0) {
@@ -235,6 +237,8 @@ function doAdminBlogs() {
 			}
 			print ">Withdrawn by indexer</option>\n";
 			print "</select><br />\n";
+			print "<input type=\"radio\" name=\"blogDelete\" value=\"1\" /> Delete blog.<br />";
+			print "<input type=\"submit\" value=\"Submit\" /><br />\n";
 			print "<input type=\"submit\" value=\"Submit\" /><br />\n";
 		  print "</form>\n";
 			print "</div>";
