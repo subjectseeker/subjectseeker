@@ -142,6 +142,32 @@ function parseHttpParams() {
 
 }
 
+function getURL () {
+	$pageURL = 'http';
+	
+	if ($_SERVER["HTTPS"] == "on") {
+		$pageURL .= "s";
+	}
+	
+	$pageURL .= "://";
+	
+	if ($_SERVER["SERVER_PORT"] != "80") {
+			$pageURL .= $_SERVER["SERVER_NAME"].":".$_SERVER["SERVER_PORT"].$_SERVER["REQUEST_URI"];
+	}
+	else {
+			$pageURL .= $_SERVER["SERVER_NAME"].$_SERVER["REQUEST_URI"];
+	}
+	
+	return $pageURL;  
+}
+
+function removeParams () {
+	$url = getURL ();
+	$parsed = parse_url($url);
+	$baseUrl = $parsed["scheme"] . "://" . $parsed["host"] . $parsed["path"];
+	return $baseUrl;
+}
+
 // Input: URL
 // Return: true if URL starts with http:// or https://, otherwise false
 function hasProtocol ($url) {
@@ -187,8 +213,8 @@ function insanitize( $htmlString ) {
  * DB query functions
  */
 
-function getUsers ($arrange, $order, $db) {
-  $sql = "SELECT USER_ID, USER_NAME, USER_STATUS_ID, USER_PRIVILEGE_ID, EMAIL_ADDRESS FROM USER ORDER BY $arrange $order";
+function getUsers ($arrange, $order, $pagesize, $offset, $db) {
+  $sql = "SELECT USER_ID, USER_NAME, USER_STATUS_ID, USER_PRIVILEGE_ID, EMAIL_ADDRESS FROM USER ORDER BY $arrange $order LIMIT $pagesize OFFSET $offset";
   $users = array();
   $results = mysql_query($sql, $db);
   while ($row = mysql_fetch_array($results)) {
@@ -297,8 +323,8 @@ function getSparseBlogs($db, $limit=1000) {
 
 // Input: DB handle
 // Output: array of hashes of blogs (id, name, uri, description, syndication uri)
-function getBlogs($arrange, $order, $db) {
-  $sql = "SELECT BLOG_NAME, BLOG_ID, BLOG_URI, BLOG_DESCRIPTION, BLOG_SYNDICATION_URI FROM BLOG ORDER BY $arrange $order";
+function getBlogList ($arrange, $order, $pagesize, $offset, $db) {
+  $sql = "SELECT BLOG_ID, BLOG_NAME, BLOG_STATUS_ID, BLOG_URI, BLOG_DESCRIPTION, BLOG_SYNDICATION_URI, ADDED_DATE_TIME, CRAWLED_DATE_TIME FROM BLOG ORDER BY $arrange $order LIMIT $pagesize OFFSET $offset";
   $blogs = array();
   $results = mysql_query($sql, $db);
   while ($row = mysql_fetch_array($results)) {
@@ -307,6 +333,9 @@ function getBlogs($arrange, $order, $db) {
     $blog["blogdescription"] = $row["BLOG_DESCRIPTION"];
     $blog["uri"] = $row["BLOG_URI"];
     $blog["syndicationuri"] = $row["BLOG_SYNDICATION_URI"];
+		$blog["status"] = $row["BLOG_STATUS_ID"];
+		$blog["addedtime"] = $row["ADDED_DATE_TIME"];
+		$blog["crawledtime"] = $row["CRAWLED_DATE_TIME"];
     array_push($blogs, $blog);
   }
   return $blogs;
@@ -381,6 +410,45 @@ function getBlogStatusId ($blogId, $db) {
   return $row["BLOG_STATUS_ID"];
 }
 
+// Input: DB handle
+// Return: user status list
+function getUserStatusList ($db) {
+	$sql = "SELECT USER_STATUS_ID, USER_STATUS_DESCRIPTION FROM USER_STATUS ORDER BY USER_STATUS_DESCRIPTION";
+  $results =  mysql_query($sql, $db);
+
+  if (mysql_error() != null) {
+    print "ERROR: " . mysql_error() . "<br />";
+  }
+
+  return $results;
+}
+
+// Input: DB handle
+// Return: user privilege list
+function getUserPrivilegeList ($db) {
+	$sql = "SELECT USER_PRIVILEGE_ID, USER_PRIVILEGE_DESCRIPTION FROM USER_PRIVILEGE ORDER BY USER_PRIVILEGE_DESCRIPTION";
+  $results =  mysql_query($sql, $db);
+
+  if (mysql_error() != null) {
+    print "ERROR: " . mysql_error() . "<br />";
+  }
+
+  return $results;
+}
+
+// Input: DB handle
+// Return: blog status list
+function getBlogStatusList ($db) {
+	$sql = "SELECT BLOG_STATUS_ID, BLOG_STATUS_DESCRIPTION FROM BLOG_STATUS ORDER BY BLOG_STATUS_DESCRIPTION";
+  $results =  mysql_query($sql, $db);
+
+  if (mysql_error() != null) {
+    print "ERROR: " . mysql_error() . "<br />";
+  }
+
+  return $results;
+}
+
 // Input: topLevel (bool), DB handle
 // Return: array of topics (topLevel only if topLevel == true)
 function getTopicList ($topLevel, $db) {
@@ -398,7 +466,6 @@ function getTopicList ($topLevel, $db) {
   }
 
   return $results;
-
 }
 
 // Input: user ID, DB handle
@@ -499,6 +566,57 @@ function getAuthorList ($blogId, $db) {
   unset ($feed);
 
   return $authorList;
+
+}
+
+// Input: User status id, DB handle
+// Return: user status name according to id
+function userStatusIdToName ($userStatusId, $db) {
+	
+  $sql = "SELECT USER_STATUS_DESCRIPTION FROM USER_STATUS WHERE USER_STATUS_ID = '$userStatusId'";
+  $results = mysql_query($sql, $db);
+
+  if (!$results || mysql_num_rows($results) == 0) {
+    return null;
+  }
+
+  $name = mysql_fetch_array($results);
+
+  return $name["USER_STATUS_DESCRIPTION"];
+
+}
+
+// Input: User status id, DB handle
+// Return: user privilege name according to id
+function userPrivilegeIdToName ($userPrivilegeId, $db) {
+	
+  $sql = "SELECT USER_PRIVILEGE_DESCRIPTION FROM USER_PRIVILEGE WHERE USER_PRIVILEGE_ID = '$userPrivilegeId'";
+  $results = mysql_query($sql, $db);
+
+  if (!$results || mysql_num_rows($results) == 0) {
+    return null;
+  }
+
+  $name = mysql_fetch_array($results);
+
+  return $name["USER_PRIVILEGE_DESCRIPTION"];
+
+}
+
+// Input: Blog status id, DB handle
+// Return: blog status name according to id
+function blogStatusIdToName ($blogStatusId, $db) {
+	
+  $sql = "SELECT BLOG_STATUS_DESCRIPTION FROM BLOG_STATUS WHERE BLOG_STATUS_ID = '$blogStatusId'";
+  $results = mysql_query($sql, $db);
+
+  if (!$results || mysql_num_rows($results) == 0) {
+    return null;
+  }
+
+  $name = mysql_fetch_array($results);
+
+  return $name["BLOG_STATUS_DESCRIPTION"];
 
 }
 

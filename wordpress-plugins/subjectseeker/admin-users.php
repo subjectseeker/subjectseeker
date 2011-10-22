@@ -76,11 +76,19 @@ function doAdminUsers() {
 		if ($userPriv > 1) { // moderator or admin
 			$arrange = $_REQUEST["arrange"];
 			$order = $_REQUEST["order"];
+			$pagesize = $_REQUEST["n"];
+			$offset = $_REQUEST["offset"];
 			if ($arrange == null) {
 				$arrange = "USER_NAME";
 			}
 			if ($order == null) {
 				$order = "ASC";
+			}
+			if ($pagesize == null || is_numeric($pagesize) == FALSE) {
+				$pagesize = "10";
+			}
+			if ($offset == null || is_numeric($offset) == FALSE) {
+				$offset = "0";
 			}
 			print "<form method=\"POST\">\n";
 			print "<input type=\"hidden\" name=\"filters\" value=\"filters\" />";
@@ -124,82 +132,87 @@ function doAdminUsers() {
 			}
 			print ">Descendant</option>\n";
 			print "</select>\n";
+			print " Blogs:<input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/>";
+			print " Offset:<input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>";
 			print "<input type=\"submit\" value=\"Filter\" />";
 			print "</form><br />";
-		if ($step != null) {
-			$userID = stripslashes($_REQUEST["userId"]);
-			$userName = stripslashes($_REQUEST["userName"]);
-			$userStatus = stripslashes($_REQUEST["userStatus"]);
-			$userEmail = stripslashes($_REQUEST["userEmail"]);
-			$userPrivilege = stripslashes($_REQUEST["userPrivilege"]);
-			$userDelete = stripslashes($_REQUEST["userDelete"]);
-			$oldUserName = getUserName($userID, $db);
-			editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $userDelete, $oldUserName, $displayname, $wpdb, $db);
-			$result = editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $userDelete, $oldUserName, $displayname, $wpdb, $db);
-			if ($result == NULL) {					
-			print "<p>$userName (id $userID) was updated.</p>";  
-			} else {
-				print "<p><font color='red'>$oldUserName (id $userID): $result</font></p>";
+			if ($step != null) {
+				$userID = stripslashes($_REQUEST["userId"]);
+				$userName = stripslashes($_REQUEST["userName"]);
+				$userStatus = stripslashes($_REQUEST["userStatus"]);
+				$userEmail = stripslashes($_REQUEST["userEmail"]);
+				$userPrivilege = stripslashes($_REQUEST["userPrivilege"]);
+				$userDelete = stripslashes($_REQUEST["userDelete"]);
+				$oldUserName = getUserName($userID, $db);
+				editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $userDelete, $oldUserName, $displayname, $wpdb, $db);
+				$result = editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $userDelete, $oldUserName, $displayname, $wpdb, $db);
+				if ($result == NULL) {					
+				print "<p>$userName (id $userID) was updated.</p>";  
+				} else {
+					print "<p><font color='red'>$oldUserName (id $userID): $result</font></p>";
+				}
 			}
-		}
-		$userList = getUsers ($arrange, $order, $db);
-		foreach ($userList as $user) {
-			$userID = $user["id"];
-			$userName = $user["name"];
-			$userStatus = $user["status"];
-			$userPrivilege = $user["privilege"];
-			$userEmail = $user["email"];
-			print "<p>$userID - $userName <a id=\"showForm-$userID\" href=\"javascript:;\" onmousedown=\"toggleSlide('userForm-$userID');\" onclick=\"toggleButton('showForm-$userID');\">Show</a></p>";
-			print "<div id=\"userForm-$userID\" style=\"display:none; overflow:hidden; height:400px;\">";
-			print "<form method=\"POST\">\n";
-			print "<input type=\"hidden\" name=\"step\" value=\"edit\" />";
-			if ($errormsg !== null) {
-				print "<p><font color='red'>Error: $errormsg</font></p>\n";
+			$baseUrl = removeParams();
+			$userList = getUsers ($arrange, $order, $pagesize, $offset, $db);
+			if ($userList == null) {
+				print "There are no more users in the system.<br />";
 			}
-			print "<input type=\"hidden\" name=\"userId\" value=\"$userID\" />\n";
-			print "<p><strong>$userName</strong></p>";
-			print "<p>*Required field</p>\n<p>\n";
-			print "*User name: <input type=\"text\" name=\"userName\" size=\"40\" value=\"$userName\"/><br />\n";
-			print "*User e-mail: <input type=\"text\" name=\"userEmail\" size=\"40\" value=\"$userEmail\"/><br />\n";
-			print "*User Status: <select name='userStatus'>\n";
-			print "<option value='0'";
-				if ($userStatus == "0") {
-					print " selected";
+			else {
+				foreach ($userList as $user) {
+					$userID = $user["id"];
+					$userName = $user["name"];
+					$userStatusId = $user["status"];
+					$userPrivilegeId = $user["privilege"];
+					$userEmail = $user["email"];
+					$userStatus = ucwords(userStatusIdToName ($userStatusId, $db));
+					$userPrivilege = ucwords(userPrivilegeIdToName ($userPrivilegeId, $db));
+					print "<p>$userID | $userName | $userStatus | $userPrivilege | <a id=\"showForm-$userID\" href=\"javascript:;\" onmousedown=\"toggleSlide('userForm-$userID');\" onclick=\"toggleButton('showForm-$userID');\">Show</a></p>";
+					print "<div id=\"userForm-$userID\" style=\"display:none; overflow:hidden; height:400px;\">";
+					print "<form method=\"POST\">\n";
+					print "<input type=\"hidden\" name=\"step\" value=\"edit\" />";
+					if ($errormsg !== null) {
+						print "<p><font color='red'>Error: $errormsg</font></p>\n";
+					}
+					print "<input type=\"hidden\" name=\"userId\" value=\"$userID\" />\n";
+					print "<p>*Required field</p>\n<p>\n";
+					print "*User name: <input type=\"text\" name=\"userName\" size=\"40\" value=\"$userName\"/><br />\n";
+					print "*User e-mail: <input type=\"text\" name=\"userEmail\" size=\"40\" value=\"$userEmail\"/><br />\n";
+					print "*User Status: <select name='userStatus'>\n";
+					$statusList = getUserStatusList ($db);
+					while ($row = mysql_fetch_array($statusList)) {
+						print "<option value='" . $row["USER_STATUS_ID"] . "'";
+						if ($row["USER_STATUS_ID"] == $userStatusId) {
+							print " selected";
+									}
+						print ">" . ucwords($row["USER_STATUS_DESCRIPTION"]) . "</option>\n";
+					}
+					print "</select><br />";
+					print "*User Privilege: <select name='userPrivilege'>\n";
+					$privilegeList = getUserPrivilegeList ($db);
+					while ($row = mysql_fetch_array($privilegeList)) {
+						print "<option value='" . $row["BLOG_STATUS_ID"] . "'";
+						if ($row["USER_PRIVILEGE_ID"] == $userPrivilegeId) {
+							print " selected";
+									}
+						print ">" . ucwords($row["USER_PRIVILEGE_DESCRIPTION"]) . "</option>\n";
+					}
+					print "</select><br />\n";
+					print "<input type=\"radio\" name=\"userDelete\" value=\"1\" /> Delete user.<br />";
+					print "<input type=\"submit\" value=\"Submit\" /><br />\n";
+					print "</form>\n";
+					print "</div>";
 				}
-			print ">Active</option>\n";
-			print "<option value='1'";
-				if ($arrange == "1") {
-					print " selected";
-				}
-			print ">Inactive by user request</option>\n";
-			print "<option value='2'";
-				if ($arrange == "2") {
-					print " selected";
-				}
-			print ">Inactive by indexer request</option>\n";
-			print "</select><br />";
-			print "*User Privilege: <select name='userPrivilege'>\n";
-			print "<option value='0'";
-				if ($userPrivilege == "0") {
-					print " selected";
-				}
-			print ">User</option>\n";
-			print "<option value='1'";
-				if ($userPrivilege == "1") {
-					print " selected";
-				}
-			print ">Moderator</option>\n";
-			print "<option value='2'";
-				if ($userPrivilege == "2") {
-					print " selected";
-				}
-			print ">Administrator</option>\n";
-			print "</select><br />\n";
-			print "<input type=\"radio\" name=\"userDelete\" value=\"1\" /> Delete user.<br />";
-			print "<input type=\"submit\" value=\"Submit\" /><br />\n";
-		  print "</form>\n";
-			print "</div>";
-		}
+				$nextOffset = $offset + $pagesize;
+				$nextParams = "?filters=filters&arrange=$arrange&order=$order&n=$pagesize&offset=$nextOffset";
+				$nextUrl = $baseUrl . $nextParams;
+				print "<div class=\"alignright\"><h4><a title=\"Next users\" href=\"$nextUrl\"><b>Next Users »</b></a></h4></div>";
+			}
+			if ($offset > 0) {
+			$previousOffset = $offset - $pagesize;
+			$previousParams = "?filters=filters&arrange=$arrange&order=$order&n=$pagesize&offset=$previousOffset";
+			$previousUrl = $baseUrl . $previousParams;
+			print "<div class=\"alignleft\"><h4><a title=\"Previous users\" href=\"$previousUrl\"><b>« Previous Users</b></a></h4></div>";
+			}
 		} else { # not moderator or admin
 			print "You are not authorized to administrate users.<br />";
 		}

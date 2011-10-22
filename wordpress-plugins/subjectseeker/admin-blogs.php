@@ -75,13 +75,21 @@ function doAdminBlogs() {
 		if ($userPriv > 0) { // moderator or admin
 				$arrange = $_REQUEST["arrange"];
 				$order = $_REQUEST["order"];
+				$pagesize = $_REQUEST["n"];
+				$offset = $_REQUEST["offset"];
 				if ($arrange == null) {
 					$arrange = "BLOG_NAME";
 				}
 				if ($order == null) {
 					$order = "ASC";
 				}
-				print "<form method=\"POST\">\n";
+				if ($pagesize == null || is_numeric($pagesize) == FALSE) {
+					$pagesize = "10";
+				}
+				if ($offset == null || is_numeric($offset) == FALSE) {
+					$offset = "0";
+				}
+				print "<form method=\"GET\">\n";
 				print "<input type=\"hidden\" name=\"filters\" value=\"filters\" />";
 				print "Order by: ";
 				print "<select name='arrange'>\n";
@@ -133,7 +141,9 @@ function doAdminBlogs() {
 				}
 				print ">Descendant</option>\n";
 				print "</select>\n";
-				print "<input type=\"submit\" value=\"Filter\" />";
+				print " Blogs:<input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/>";
+				print " Offset:<input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>";
+				print " <input type=\"submit\" value=\"Filter\" />";
 				print "</form><br />";
 			if ($step != null) {
 				$blogId = stripslashes($_REQUEST["blogId"]);
@@ -164,85 +174,89 @@ function doAdminBlogs() {
 					print "<p><font color='red'>$oldBlogName (id $blogId): $result</font></p>";
 				}
 			}
-		$bloglist = getBlogs($arrange, $order, $db);
-		foreach ($bloglist as $blog) {
-			$blogId = $blog["id"];
-			$blogName = $blog["name"];
-			$blogUri = $blog["uri"];
-			$blogDescription = $blog["blogdescription"];
-			$blogSyndicationUri = $blog["syndicationuri"];
-			$blogtopics = getBlogTopics($blogId, $db);
-			//$topic1 = $_REQUEST["topic1"];
-			//$topic2 = $_REQUEST["topic2"];
-			print "<p>$blogId - $blogName <a id=\"showForm-$blogId\" href=\"javascript:;\" onmousedown=\"toggleSlide('blogForm-$blogId');\" onclick=\"toggleButton('showForm-$blogId');\">Show</a></p>";
-			print "<div id=\"blogForm-$blogId\" style=\"display:none; overflow:hidden; height:700px;\">";
-			print "<form method=\"POST\">\n";
-			print "<input type=\"hidden\" name=\"step\" value=\"edit\" />";
-			if ($errormsg !== null) {
-				print "<p><font color='red'>Error: $errormsg</font></p>\n";
+			$baseUrl = removeParams();
+			$blogList = getBlogList($arrange, $order, $pagesize, $offset, $db);
+			if ($blogList == null) {
+				print "There are no more blogs in the system.<br />";
 			}
-			print "<input type=\"hidden\" name=\"blogId\" value=\"$blogId\" />\n";
-			print "<p><strong>$blogName</strong></p>";
-			print "<p>*Required field</p>\n<p>\n";
-			print "*Blog name: <input type=\"text\" name=\"blogname\" size=\"40\" value=\"$blogName\"/><br />\n";
-			print "*<a href=\"$blogUri\" style=\"none\" target=\"_blank\">Blog URL:</a> <input type=\"text\" name=\"blogurl\" size=\"40\" value=\"$blogUri\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)";
-			print "</p><p>*<a href=\"$blogSyndicationUri\" style=\"none\" target=\"_blank\">Blog syndication URL:</a> <input type=\"text\" name=\"blogsyndicationuri\" size=\"40\" value=\"$blogSyndicationUri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)";
-			print "</p><p>Blog description:<br /><textarea name=\"blogdescription\" rows=\"5\" cols=\"70\">$blogDescription</textarea><br />\n";
-			print "Blog topics: <select name='topic1'>\n";
-			print "<option value='-1'>None</option>\n";
-			$topicList = getTopicList(true, $db);
-			while ($row = mysql_fetch_array($topicList)) {
-				print "<option value='" . $row["TOPIC_ID"] . "'";
-				if ($row["TOPIC_ID"] == $blogtopics[0]) {
-					print " selected";
+			else {
+				foreach ($blogList as $blog) {
+					$blogId = $blog["id"];
+					$blogName = $blog["name"];
+					$blogUri = $blog["uri"];
+					$blogDescription = $blog["blogdescription"];
+					$blogSyndicationUri = $blog["syndicationuri"];
+					$blogAddedTime = $blog["addedtime"];
+					$blogCrawledTime = $blog["crawledtime"];
+					$blogStatusId = $blog["status"];
+					$blogtopics = getBlogTopics($blogId, $db);
+					$blogStatus = ucwords(blogStatusIdToName ($blogStatusId, $db));
+					//$topic1 = $_REQUEST["topic1"];
+					//$topic2 = $_REQUEST["topic2"];
+					print "<p>$blogId | <a href=\"$blogUri\" target=\"_blank\">$blogName</a> | $blogStatus | <a id=\"showForm-$blogId\" href=\"javascript:;\" onmousedown=\"toggleSlide('formContainer-$blogId');\" onclick=\"toggleButton('showForm-$blogId');\">Show</a></p>";
+					print "<div id=\"formContainer-$blogId\" style=\"display:none; overflow:hidden; height:730px;\">";
+					print "<div class=\"adminForm\">";
+					print "<form method=\"POST\">\n";
+					print "<input type=\"hidden\" name=\"step\" value=\"edit\" />";
+					if ($errormsg !== null) {
+						print "<p><font color='red'>Error: $errormsg</font></p>\n";
+					}
+					print "<input type=\"hidden\" name=\"blogId\" value=\"$blogId\" />\n";
+					print "<p>Added: $blogAddedTime</p>"; 
+					print "<p>Crawled: $blogCrawledTime</p>";
+					print "<p>*Required field</p>\n";
+					print "<p>*Blog name: <input type=\"text\" name=\"blogname\" size=\"40\" value=\"$blogName\"/></p>\n";
+					print "<p>*<a href=\"$blogUri\" target=\"_blank\">Blog URL:</a> <input type=\"text\" name=\"blogurl\" size=\"40\" value=\"$blogUri\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>";
+					print "<p>*<a href=\"$blogSyndicationUri\" target=\"_blank\">Blog syndication URL:</a> <input type=\"text\" name=\"blogsyndicationuri\" size=\"40\" value=\"$blogSyndicationUri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</p>";
+					print "<p>Blog description:<br /><textarea name=\"blogdescription\" rows=\"5\" cols=\"70\">$blogDescription</textarea></p>\n";
+					print "</p>*Blog topics: <select name='topic1'>\n";
+					print "<option value='-1'>None</option>\n";
+					$topicList = getTopicList(true, $db);
+					while ($row = mysql_fetch_array($topicList)) {
+						print "<option value='" . $row["TOPIC_ID"] . "'";
+						if ($row["TOPIC_ID"] == $blogtopics[0]) {
+							print " selected";
+						}
+						print ">" . $row["TOPIC_NAME"] . "</option>\n";
+					}
+					print "</select>&nbsp;<select name='topic2'>\n";
+					print "<option value='-1'> None</option>\n";
+					$topicList = getTopicList(true, $db);
+					while ($row = mysql_fetch_array($topicList)) {
+						print "<option value='" . $row["TOPIC_ID"] . "'";
+						if ($row["TOPIC_ID"] == $blogtopics[1]) {
+							print " selected";
+									}
+						print ">" . $row["TOPIC_NAME"] . "</option>\n";
+					}
+					print "</select></p>\n";
+					print "<p>Blog Status: <select name='blogStatus'>\n";
+					$statusList = getBlogStatusList ($db);
+					while ($row = mysql_fetch_array($statusList)) {
+						print "<option value='" . $row["BLOG_STATUS_ID"] . "'";
+						if ($row["BLOG_STATUS_ID"] == $blogStatusId) {
+							print " selected";
+									}
+						print ">" . ucwords($row["BLOG_STATUS_DESCRIPTION"]) . "</option>\n";
+					}
+					print "</select></p>\n";
+					print "<input type=\"radio\" name=\"blogDelete\" value=\"1\" /> Delete blog.<br />";
+					print "<input type=\"submit\" value=\"Submit\" /><br />\n";
+					print "</form>\n";
+					print "</div>";
+					print "</div>";
 				}
-				print ">" . $row["TOPIC_NAME"] . "</option>\n";
+				$nextOffset = $offset + $pagesize;
+				$nextParams = "?filters=filters&arrange=$arrange&order=$order&n=$pagesize&offset=$nextOffset";
+				$nextUrl = $baseUrl . $nextParams;
+				print "<div class=\"alignright\"><h4><a title=\"Next blogs\" href=\"$nextUrl\"><b>Next Blogs »</b></a></h4></div>";
 			}
-			print "</select>&nbsp;<select name='topic2'>\n";
-			print "<option value='-1'> None</option>\n";
-			$topicList = getTopicList(true, $db);
-			while ($row = mysql_fetch_array($topicList)) {
-				print "<option value='" . $row["TOPIC_ID"] . "'";
-				if ($row["TOPIC_ID"] == $blogtopics[1]) {
-					print " selected";
-							}
-				print ">" . $row["TOPIC_NAME"] . "</option>\n";
+			if ($offset > 0) {
+				$previousOffset = $offset - $pagesize;
+				$previousParams = "?filters=filters&arrange=$arrange&order=$order&n=$pagesize&offset=$previousOffset";
+				$previousUrl = $baseUrl . $previousParams;
+				print "<div class=\"alignleft\"><h4><a title=\"Previous blogs\" href=\"$previousUrl\"><b>« Previous Blogs</b></a></h4></div>";
 			}
-			print "</select><br />\n";
-			print "<select name='blogStatus'>\n";
-			$blogStatus = getBlogStatusId ($blogId, $db);
-			print "<option value='0'";
-			if ($blogStatus == 0) {
-				print " selected";
-			}
-			print ">Approved</option>\n";
-			print "<option value='1'";
-			if ($blogStatus == 1) {
-				print " selected";
-			}
-			print ">Pending</option>\n";
-			print "<option value='2'";
-			if ($blogStatus == 2) {
-				print " selected";
-			}
-			print ">Rejected</option>\n";
-			print "<option value='3'";
-			if ($blogStatus == 3) {
-				print " selected";
-			}
-			print ">Withdrawn by owner</option>\n";
-			print "<option value='4'";
-			if ($blogStatus == 4) {
-				print " selected";
-			}
-			print ">Withdrawn by indexer</option>\n";
-			print "</select><br />\n";
-			print "<input type=\"radio\" name=\"blogDelete\" value=\"1\" /> Delete blog.<br />";
-			print "<input type=\"submit\" value=\"Submit\" /><br />\n";
-			print "<input type=\"submit\" value=\"Submit\" /><br />\n";
-		  print "</form>\n";
-			print "</div>";
-		}
 		} else { # not moderator or admin
 			print "You are not authorized to administrate blogs.<br />";
 		}
