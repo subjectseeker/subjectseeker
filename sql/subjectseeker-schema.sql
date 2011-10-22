@@ -3,6 +3,32 @@
 /* Created on:     12/20/2010 4:25:27 PM                        */
 /*==============================================================*/
 
+/*==============================================================*/
+/* Copyright © 2010–2011 Christopher R. Maden and Jessica Perry */
+/* Hekman.                                                      */
+/*                                                              */
+/* Permission is hereby granted, free of charge, to any person  */
+/* obtaining a copy of this software and associated             */
+/* documentation files (the “Software”), to deal in the         */
+/* Software without restriction, including without limitation   */
+/* the rights to use, copy, modify, merge, publish, distribute, */
+/* sublicense, and/or sell copies of the Software, and to       */
+/* permit persons to whom the Software is furnished to do so,   */
+/* subject to the following conditions:                         */
+/*                                                              */
+/* The above copyright notice and this permission notice shall  */
+/* be included in all copies or substantial portions of the     */
+/* Software.                                                    */
+/*                                                              */
+/* THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY    */
+/* KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE   */
+/* WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR      */
+/* PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS   */
+/* OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR     */
+/* OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR   */
+/* OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE    */
+/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.       */
+/*==============================================================*/
 
 drop table if exists ADMINISTRATOR_NOTE;
 
@@ -182,6 +208,7 @@ create table BLOG_POST
    BLOG_POST_DATE_TIME  datetime not null comment 'The date and time at which this post was published to its home blog.',
    BLOG_POST_INGEST_DATE_TIME datetime not null comment 'The date and time at which this post was collected by the aggregation system.',
    BLOG_POST_SUMMARY    text not null comment 'A free text summary of the blog post, typically created by truncating the start of the post.',
+   BLOG_POST_HAS_CITATION bool not null default FALSE comment 'Indicator whether this blog post has a research citation in its content.',
    BLOG_POST_TITLE      varchar(1023) comment 'The original title of the blog post.',
    primary key (BLOG_POST_ID)
 );
