@@ -74,11 +74,14 @@ function doAdminUI() {
     $userPriv = getUserPrivilegeStatus($userId, $db);
 		print "<p>Hello, $displayName.</p>\n";
 		if ($userPriv > 0){
-			print "<div class=\"UI-buttons\"><a href=\"$approveUrl\">Approve Blogs</a></div>";
-			print "<div class=\"UI-buttons\"><a href=\"$adminBlogs\">Blogs Administration</a></div>";
-		}
-		if ($userPriv > 1){
-			print "<div class=\"UI-buttons\"><a href=\"$adminUsers\">Users Administration</a></div>";
+			print "<h2>Administration Tools</h2>
+			<ul class=\"adminPanelOptions\">
+			<h3><li class=\"adminPanelOption\"><a href=\"$approveUrl\">Approve Blogs</a></li></h3>
+			<h3><li class=\"adminPanelOption\"><a href=\"$adminBlogs\">Blogs Administration</a></li></h3>";
+			if ($userPriv > 1){
+				print "<h3><li class=\"adminPanelOption\"><a href=\"$adminUsers\">Users Administration</a></li></h3>";
+			}
+			print "</ul>";
 		}
 		else { # not moderator or admin
   		print "You are not authorized to view the administration panel.<br />";

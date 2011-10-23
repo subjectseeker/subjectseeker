@@ -90,7 +90,7 @@ function doAdminUsers() {
 			if ($offset == null || is_numeric($offset) == FALSE) {
 				$offset = "0";
 			}
-			print "<form method=\"POST\">\n";
+			print "<form method=\"GET\">\n";
 			print "<input type=\"hidden\" name=\"filters\" value=\"filters\" />";
 			print "Order by: ";
 			print "<select name='arrange'>\n";
@@ -125,16 +125,16 @@ function doAdminUsers() {
 			if ($order == "ASC") {
 				print " selected";
 			}
-			print ">Ascendant</option>\n";
+			print ">Ascending</option>\n";
 			print "<option value='DESC'";
 			if ($order == "DESC") {
 				print " selected";
 			}
-			print ">Descendant</option>\n";
+			print ">Descending</option>\n";
 			print "</select>\n";
-			print " Blogs:<input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/>";
-			print " Offset:<input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>";
-			print "<input type=\"submit\" value=\"Filter\" />";
+			print " | Blogs:<input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/>";
+			print " | Offset:<input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>";
+			print " <input type=\"submit\" value=\"Filter\" />";
 			print "</form><br />";
 			if ($step != null) {
 				$userID = stripslashes($_REQUEST["userId"]);
@@ -142,10 +142,9 @@ function doAdminUsers() {
 				$userStatus = stripslashes($_REQUEST["userStatus"]);
 				$userEmail = stripslashes($_REQUEST["userEmail"]);
 				$userPrivilege = stripslashes($_REQUEST["userPrivilege"]);
-				$userDelete = stripslashes($_REQUEST["userDelete"]);
 				$oldUserName = getUserName($userID, $db);
-				editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $userDelete, $oldUserName, $displayname, $wpdb, $db);
-				$result = editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $userDelete, $oldUserName, $displayname, $wpdb, $db);
+				editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $oldUserName, $displayname, $wpdb, $db);
+				$result = editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $oldUserName, $displayname, $wpdb, $db);
 				if ($result == NULL) {					
 				print "<p>$userName (id $userID) was updated.</p>";  
 				} else {
@@ -166,18 +165,18 @@ function doAdminUsers() {
 					$userEmail = $user["email"];
 					$userStatus = ucwords(userStatusIdToName ($userStatusId, $db));
 					$userPrivilege = ucwords(userPrivilegeIdToName ($userPrivilegeId, $db));
-					print "<p>$userID | $userName | $userStatus | $userPrivilege | <a id=\"showForm-$userID\" href=\"javascript:;\" onmousedown=\"toggleSlide('userForm-$userID');\" onclick=\"toggleButton('showForm-$userID');\">Show</a></p>";
-					print "<div id=\"userForm-$userID\" style=\"display:none; overflow:hidden; height:400px;\">";
+					print "<p>$userID | $userName | $userStatus | $userPrivilege | <a class=\"ss-button\" id=\"showForm-$userID\" href=\"javascript:;\" onmousedown=\"toggleSlide('userForm-$userID');\" onclick=\"toggleButton('showForm-$userID');\">Show</a></p>";
+					print "<div id=\"userForm-$userID\" style=\"display:none; overflow:hidden; height:204px;\">";
 					print "<form method=\"POST\">\n";
 					print "<input type=\"hidden\" name=\"step\" value=\"edit\" />";
 					if ($errormsg !== null) {
 						print "<p><font color='red'>Error: $errormsg</font></p>\n";
 					}
 					print "<input type=\"hidden\" name=\"userId\" value=\"$userID\" />\n";
-					print "<p>*Required field</p>\n<p>\n";
-					print "*User name: <input type=\"text\" name=\"userName\" size=\"40\" value=\"$userName\"/><br />\n";
-					print "*User e-mail: <input type=\"text\" name=\"userEmail\" size=\"40\" value=\"$userEmail\"/><br />\n";
-					print "*User Status: <select name='userStatus'>\n";
+					print "<p>*Required field</p>\n\n";
+					print "<p>*User name: <input type=\"text\" name=\"userName\" size=\"40\" value=\"$userName\"/></p>\n";
+					print "<p>*User e-mail: <input type=\"text\" name=\"userEmail\" size=\"40\" value=\"$userEmail\"/></p>\n";
+					print "<p>*User Status: <select name='userStatus'>\n";
 					$statusList = getUserStatusList ($db);
 					while ($row = mysql_fetch_array($statusList)) {
 						print "<option value='" . $row["USER_STATUS_ID"] . "'";
@@ -186,18 +185,17 @@ function doAdminUsers() {
 									}
 						print ">" . ucwords($row["USER_STATUS_DESCRIPTION"]) . "</option>\n";
 					}
-					print "</select><br />";
-					print "*User Privilege: <select name='userPrivilege'>\n";
+					print "</select></p>\n";
+					print "<p>*User Privilege: <select name='userPrivilege'>\n";
 					$privilegeList = getUserPrivilegeList ($db);
 					while ($row = mysql_fetch_array($privilegeList)) {
-						print "<option value='" . $row["BLOG_STATUS_ID"] . "'";
+						print "<option value='" . $row["USER_PRIVILEGE_ID"] . "'";
 						if ($row["USER_PRIVILEGE_ID"] == $userPrivilegeId) {
 							print " selected";
 									}
 						print ">" . ucwords($row["USER_PRIVILEGE_DESCRIPTION"]) . "</option>\n";
 					}
-					print "</select><br />\n";
-					print "<input type=\"radio\" name=\"userDelete\" value=\"1\" /> Delete user.<br />";
+					print "</select></p>\n";
 					print "<input type=\"submit\" value=\"Submit\" /><br />\n";
 					print "</form>\n";
 					print "</div>";
@@ -211,7 +209,7 @@ function doAdminUsers() {
 			$previousOffset = $offset - $pagesize;
 			$previousParams = "?filters=filters&arrange=$arrange&order=$order&n=$pagesize&offset=$previousOffset";
 			$previousUrl = $baseUrl . $previousParams;
-			print "<div class=\"alignleft\"><h4><a title=\"Previous users\" href=\"$previousUrl\"><b>« Previous Users</b></a></h4></div>";
+			print "<div class=\"alignleft\"><h4><a title=\"Previous users\" href=\"$previousUrl\"><b>« Previous Users</b></a></h4></div><br />";
 			}
 		} else { # not moderator or admin
 			print "You are not authorized to administrate users.<br />";

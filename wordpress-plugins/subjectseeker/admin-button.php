@@ -64,15 +64,24 @@ function doAdminButton() {
   if (is_user_logged_in()){
     global $current_user;
 		global $adminPanel;
+		global $approveUrl;
+		global $adminUsers;
+		global $adminBlogs;
     get_currentuserinfo();
     $displayName = $current_user->display_name;
     $email = $current_user->user_email;
     $userId = addUser($displayName, $email, $db);
     $userPriv = getUserPrivilegeStatus($userId, $db);
 		if ($userPriv > 0){
-			print "<div id=\"adminButton\">
-			<a href=\"$adminPanel\">Administration Panel</a>
-			</div>";
+			print "<div id=\"adminButtonContainer\">
+			<ul class=\"adminButtonOptions\">
+			<li class=\"adminButtonOption\"><a href=\"$adminPanel\">Administration Panel</a></li>
+			<li class=\"adminButtonOption\"><a href=\"$approveUrl\">Approve Blogs</a></li>
+			<li class=\"adminButtonOption\"><a href=\"$adminBlogs\">Blogs Administration</a></li>";
+			if ($userPriv > 1){
+				print "<li class=\"adminButtonOption\"><a href=\"$adminUsers\">Users Administration</a></li>";
+			}
+			print "</ul></div>";
 		}
 	}
 }

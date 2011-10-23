@@ -134,15 +134,15 @@ function doAdminBlogs() {
 				if ($order == "ASC") {
 					print " selected";
 				}
-				print ">Ascendant</option>\n";
+				print ">Ascending</option>\n";
 				print "<option value='DESC'";
 				if ($order == "DESC") {
 					print " selected";
 				}
-				print ">Descendant</option>\n";
+				print ">Descending</option>\n";
 				print "</select>\n";
-				print " Blogs:<input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/>";
-				print " Offset:<input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>";
+				print " | Blogs:<input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/>";
+				print " | Offset:<input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>";
 				print " <input type=\"submit\" value=\"Filter\" />";
 				print "</form><br />";
 			if ($step != null) {
@@ -154,11 +154,10 @@ function doAdminBlogs() {
 				$topic1 = stripslashes($_REQUEST["topic1"]);
 				$topic2 = stripslashes($_REQUEST["topic2"]);
 				$blogStatus = stripslashes($_REQUEST["blogStatus"]);
-				$blogDelete = stripslashes($_REQUEST["blogDelete"]);
 				$oldBlogName = getBlogName($blogId, $db);
-				editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $blogDelete, $displayname, $db);
+				editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
 				editBlogStatus ($blogId, $blogStatus, $db);
-				$result = editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $blogDelete, $displayname, $db);
+				$result = editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
 				if ($result == NULL) {					
 					if ($blogStatus == 2 || $blogStatus == 4) {
 						$contacts = getBlogContacts($blogId, $db);
@@ -193,8 +192,8 @@ function doAdminBlogs() {
 					$blogStatus = ucwords(blogStatusIdToName ($blogStatusId, $db));
 					//$topic1 = $_REQUEST["topic1"];
 					//$topic2 = $_REQUEST["topic2"];
-					print "<p>$blogId | <a href=\"$blogUri\" target=\"_blank\">$blogName</a> | $blogStatus | <a id=\"showForm-$blogId\" href=\"javascript:;\" onmousedown=\"toggleSlide('formContainer-$blogId');\" onclick=\"toggleButton('showForm-$blogId');\">Show</a></p>";
-					print "<div id=\"formContainer-$blogId\" style=\"display:none; overflow:hidden; height:730px;\">";
+					print "<p>$blogId | <a href=\"$blogUri\" target=\"_blank\">$blogName</a> | $blogStatus | <a class=\"ss-button\" id=\"showForm-$blogId\" href=\"javascript:;\" onmousedown=\"toggleSlide('formContainer-$blogId');\" onclick=\"toggleButton('showForm-$blogId');\">Show</a></p>";
+					print "<div id=\"formContainer-$blogId\" style=\"display:none; overflow:hidden; height:488px;\">";
 					print "<div class=\"adminForm\">";
 					print "<form method=\"POST\">\n";
 					print "<input type=\"hidden\" name=\"step\" value=\"edit\" />";
@@ -209,7 +208,7 @@ function doAdminBlogs() {
 					print "<p>*<a href=\"$blogUri\" target=\"_blank\">Blog URL:</a> <input type=\"text\" name=\"blogurl\" size=\"40\" value=\"$blogUri\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>";
 					print "<p>*<a href=\"$blogSyndicationUri\" target=\"_blank\">Blog syndication URL:</a> <input type=\"text\" name=\"blogsyndicationuri\" size=\"40\" value=\"$blogSyndicationUri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</p>";
 					print "<p>Blog description:<br /><textarea name=\"blogdescription\" rows=\"5\" cols=\"70\">$blogDescription</textarea></p>\n";
-					print "</p>*Blog topics: <select name='topic1'>\n";
+					print "<p>*Blog topics: <select name='topic1'>\n";
 					print "<option value='-1'>None</option>\n";
 					$topicList = getTopicList(true, $db);
 					while ($row = mysql_fetch_array($topicList)) {
@@ -240,7 +239,6 @@ function doAdminBlogs() {
 						print ">" . ucwords($row["BLOG_STATUS_DESCRIPTION"]) . "</option>\n";
 					}
 					print "</select></p>\n";
-					print "<input type=\"radio\" name=\"blogDelete\" value=\"1\" /> Delete blog.<br />";
 					print "<input type=\"submit\" value=\"Submit\" /><br />\n";
 					print "</form>\n";
 					print "</div>";
@@ -255,7 +253,7 @@ function doAdminBlogs() {
 				$previousOffset = $offset - $pagesize;
 				$previousParams = "?filters=filters&arrange=$arrange&order=$order&n=$pagesize&offset=$previousOffset";
 				$previousUrl = $baseUrl . $previousParams;
-				print "<div class=\"alignleft\"><h4><a title=\"Previous blogs\" href=\"$previousUrl\"><b>« Previous Blogs</b></a></h4></div>";
+				print "<div class=\"alignleft\"><h4><a title=\"Previous blogs\" href=\"$previousUrl\"><b>« Previous Blogs</b></a></h4></div><br />";
 			}
 		} else { # not moderator or admin
 			print "You are not authorized to administrate blogs.<br />";

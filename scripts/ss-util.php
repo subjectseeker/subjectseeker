@@ -1360,7 +1360,7 @@ function doVerifyEditClaim ($db) {
 // Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, user ID, user display name, DB handle
 // Action: edit blog metadata
 // Return: error message or null
-function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $blogDelete, $displayname, $db) {
+function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db) {
 
   // get old info about this blog
   $results = blogIdsToBlogData(array(0 => $blogId), $db);
@@ -1380,14 +1380,6 @@ function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescri
   if ($userStatus != 0) {
     return "User $displayname is not active; could not update blog info.";
   }
-	
-	// delete user if requested
-	if ($blogDelete == 1) {
-		$sql = "DELETE FROM BLOG WHERE BLOG_ID=$blogId";
-		mysql_query($sql, $db);
-		
-		return "Blog has been deleted.";
-	}
 
   // blog exists? need blog id!
   $blogStatus = getBlogStatusId($blogId, $db);
@@ -1421,12 +1413,12 @@ function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescri
   
   // check that blog URL and blog syndication URL are not the same
   if ($blogurl == $blogsyndicationuri) {
-          return ("The blog URL (homepage) and the blog syndication URL (RSS or Atom feed) need to be different.");
+  	return ("The blog URL (homepage) and the blog syndication URL (RSS or Atom feed) need to be different.");
   }
   
   // Check that the user has selected at least one topic
   if ($topic1 == -1 && $topic2 == -1) {
-          return ("You need to choose at least one topic.");
+  	return ("You need to choose at least one topic.");
   }
 
   // escape stuff
@@ -1456,7 +1448,7 @@ function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescri
 // Input: user ID, user name, user status, user privilege status, user email, administrator id, administrator privilege, delete user, administrator display name, DB handle
 // Action: edit user metadata
 // Return: error message or null
-function editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $userDelete, $oldUserName, $displayname, $wpdb, $db) {
+function editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $oldUserName, $displayname, $wpdb, $db) {
 
   // if not logged in as an author or as admin, fail
   if ($userPriv < 2) {
@@ -1464,24 +1456,13 @@ function editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $
   }
 
   // user exists? active (0)?
-  $userStatus = getUserStatus($userId, $db);
-  if ($userStatus == null) {
+  $checkUserStatus = getUserStatus($userId, $db);
+  if ($checkUserStatus == null) {
     return "No such user $displayname.";
   }
-  if ($userStatus != 0) {
+  if ($checkUserStatus != 0) {
     return "User $displayname is not active; could not update user info.";
   }
-	
-	// delete user if requested
-	if ($userDelete == 1) {
-		$sql = "DELETE FROM USER WHERE USER_ID=$userID";
-		mysql_query($sql, $db);
-		
-		// delete user from Wordpress
-		$wpdb->query( "DELETE FROM $wpdb->users WHERE user_login = '$oldUserName'" );
-		
-		return "User has been deleted.";
-	}
   
   // check that there is a name
   if ($userName == null) {
