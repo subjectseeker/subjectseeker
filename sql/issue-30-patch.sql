@@ -5,7 +5,7 @@
 /*==============================================================*/
 
 /*==============================================================*/
-/* Copyright © 2010–2011 Christopher R. Maden.                  */
+/* Copyright © 2011 Christopher R. Maden.                       */
 /*                                                              */
 /* Permission is hereby granted, free of charge, to any person  */
 /* obtaining a copy of this software and associated             */
