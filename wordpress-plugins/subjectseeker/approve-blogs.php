@@ -101,9 +101,8 @@ function doApproveBlogs() {
 			$topic1 = stripslashes($blogs["topic1"][$id]);
 			$topic2 = stripslashes($blogs["topic2"][$id]);
 			$status = $_REQUEST["$blogId-blog"];
-	  
-	  editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
-	  $result = editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
+			
+	  $result = checkBlogData ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
 	  $oldBlogName = getBlogName($blogId, $db);
 	  
 	  if ($result == NULL) {
@@ -122,7 +121,7 @@ function doApproveBlogs() {
 					}
 					print "<p>$blogname (id $blogId) was updated.</p>";  
 			} else {
-				print "<p><font color='red'>$oldBlogName (id $blogId): $result</font></p>";
+				print "<p>$oldBlogName (id $blogId): <ul class=\"ss-error\">$result</ul></p>";
 				}
 			}
 			$blogList = getPendingBlogs($db);

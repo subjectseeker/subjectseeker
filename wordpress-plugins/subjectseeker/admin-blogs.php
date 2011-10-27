@@ -1,8 +1,8 @@
 <?php
 /*
-Plugin Name: SubjectSeeker Administrate Blogs
+Plugin Name: SubjectSeeker Administer Blogs
 Plugin URI: http://scienceseeker.org/
-Description: Administrate Blogs for SubjectSeeker tool
+Description: Administer Blogs for SubjectSeeker tool
 Author: Liminality
 Version: 1
 Author URI: http://www.binaryparticle.com
@@ -78,20 +78,20 @@ function doAdminBlogs() {
 				$pagesize = $_REQUEST["n"];
 				$offset = $_REQUEST["offset"];
 				if ($arrange == null) {
-					$arrange = "BLOG_NAME";
+					$arrange = "ADDED_DATE_TIME";
 				}
 				if ($order == null) {
-					$order = "ASC";
+					$order = "DESC";
 				}
 				if ($pagesize == null || is_numeric($pagesize) == FALSE) {
-					$pagesize = "10";
+					$pagesize = "30";
 				}
 				if ($offset == null || is_numeric($offset) == FALSE) {
 					$offset = "0";
 				}
 				print "<form method=\"GET\">\n";
 				print "<input type=\"hidden\" name=\"filters\" value=\"filters\" />";
-				print "Order by: ";
+				print "Sort by: ";
 				print "<select name='arrange'>\n";
 				print "<option value='BLOG_ID'";
 				if ($arrange == "BLOG_ID") {
@@ -129,7 +129,7 @@ function doAdminBlogs() {
 				}
 				print ">Crawled Date</option>\n";
 				print "</select>\n";
-				print "<select name='order'>\n";
+				print " | <select name='order'>\n";
 				print "<option value='ASC'";
 				if ($order == "ASC") {
 					print " selected";
@@ -140,12 +140,13 @@ function doAdminBlogs() {
 					print " selected";
 				}
 				print ">Descending</option>\n";
-				print "</select>\n";
-				print " | Blogs:<input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/>";
-				print " | Offset:<input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>";
-				print " <input type=\"submit\" value=\"Filter\" />";
+				print "</select><br />\n";
+				print "Entries per page: <input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/>";
+				print " | Start at: <input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>";
+				print " <input class=\"ss-button\" type=\"submit\" value=\"Go\" />";
 				print "</form><br />";
-			if ($step != null) {
+				
+			if ($step != NULL) {
 				$blogId = stripslashes($_REQUEST["blogId"]);
 				$blogname = stripslashes($_REQUEST["blogname"]);
 				$blogurl = stripslashes($_REQUEST["blogurl"]);
@@ -153,24 +154,51 @@ function doAdminBlogs() {
 				$blogdescription = stripslashes($_REQUEST["blogdescription"]);
 				$topic1 = stripslashes($_REQUEST["topic1"]);
 				$topic2 = stripslashes($_REQUEST["topic2"]);
-				$blogStatus = stripslashes($_REQUEST["blogStatus"]);
+				$blogStatus = stripslashes($_REQUEST["blogstatus"]);
 				$oldBlogName = getBlogName($blogId, $db);
-				editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
-				editBlogStatus ($blogId, $blogStatus, $db);
-				$result = editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
-				if ($result == NULL) {					
-					if ($blogStatus == 2 || $blogStatus == 4) {
-						$contacts = getBlogContacts($blogId, $db);
-						print "<p>Blog $oldBlogName (id $blogId) REJECTED (email contact(s):";
-						foreach ($contacts as $contact) {
-							print " <a href=\"mailto:$contact\">$contact</a>";
+				$result = checkBlogData($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
+				if ($step == 'edit') {
+					if ($result == NULL) {				
+						editBlogStatus ($blogId, $blogStatus, $db);
+						editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $db);
+						if ($blogStatus == 2 || $blogStatus == 4) {
+							$contacts = getBlogContacts($blogId, $db);
+							print "<p>Blog $oldBlogName (id $blogId) REJECTED (email contact(s):";
+							foreach ($contacts as $contact) {
+								print " <a href=\"mailto:$contact\">$contact</a>";
+							}
+							print ")</p>\n";
 						}
-						print ")</p>\n";
+						print "<p>$blogname (id $blogId) was updated.</p>";  
+						} 
+					if ($result != NULL) {
+						print "<p>$oldBlogName (id $blogId): <ul class=\"ss-error\">$result</ul></p>";
+						print "<form class=\"ss-div\" method=\"POST\">
+						<input type=\"hidden\" name=\"step\" value=\"confirm\" />
+						<input type=\"hidden\" name=\"blogId\" value=\"$blogId\" />
+						<input type=\"hidden\" name=\"blogname\" value=\"$blogname\" />
+						<input type=\"hidden\" name=\"blogurl\" value=\"$blogurl\" />
+						<input type=\"hidden\" name=\"blogsyndicationuri\" value=\"$blogsyndicationuri\" />
+						<input type=\"hidden\" name=\"blogdescription\" value=\"$blogdescription\" />
+						<input type=\"hidden\" name=\"topic1\" value=\"$topic1\" />
+						<input type=\"hidden\" name=\"topic2\" value=\"$topic2\" />
+						<input type=\"hidden\" name=\"blogstatus\" value=\"$blogStatus\" />
+						<p>There has been an error, are you sure you want to apply these changes?</p>
+						<input class=\"ss-button\" name=\"confirm\" type=\"submit\" value=\"Yes\" /> <input class=\"ss-button\" type=\"Submit\" value=\"No\" />
+						</form>";
 					}
-					print "<p>$blogname (id $blogId) was updated.</p>";  
-					} 
-				else {
-					print "<p><font color='red'>$oldBlogName (id $blogId): $result</font></p>";
+				}
+				if ($step == 'confirm') {
+					$confirm = $_REQUEST["confirm"];
+					if ($confirm == 'Yes') {
+						editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $db);
+						editBlogStatus ($blogId, $blogStatus, $db);	
+						print "<p>$blogname (id $blogId) was updated.</p>";
+					}
+					else {
+						$oldBlogName = getBlogName($blogId, $db);
+						print "<p>$oldBlogName (id $blogId) was not updated.</p>";
+					}
 				}
 			}
 			$baseUrl = removeParams();
@@ -192,9 +220,9 @@ function doAdminBlogs() {
 					$blogStatus = ucwords(blogStatusIdToName ($blogStatusId, $db));
 					//$topic1 = $_REQUEST["topic1"];
 					//$topic2 = $_REQUEST["topic2"];
-					print "<p>$blogId | <a href=\"$blogUri\" target=\"_blank\">$blogName</a> | $blogStatus | <a class=\"ss-button\" id=\"showForm-$blogId\" href=\"javascript:;\" onmousedown=\"toggleSlide('formContainer-$blogId');\" onclick=\"toggleButton('showForm-$blogId');\">Show</a></p>";
-					print "<div id=\"formContainer-$blogId\" style=\"display:none; overflow:hidden; height:488px;\">";
-					print "<div class=\"adminForm\">";
+					print "<p>$blogId | <a href=\"$blogUri\" target=\"_blank\">$blogName</a> | $blogStatus | $blogAddedTime | <a class=\"ss-button\" id=\"showForm-$blogId\" href=\"javascript:;\" onmousedown=\"toggleSlide('blogFormContainer-$blogId');\" onclick=\"toggleButton('showForm-$blogId');\">Show</a></p>";
+					print "<div id=\"blogFormContainer-$blogId\" style=\"display:none; overflow:hidden; height:488px;\">";
+					print "<div class=\"ss-form\">";
 					print "<form method=\"POST\">\n";
 					print "<input type=\"hidden\" name=\"step\" value=\"edit\" />";
 					if ($errormsg !== null) {
@@ -229,7 +257,7 @@ function doAdminBlogs() {
 						print ">" . $row["TOPIC_NAME"] . "</option>\n";
 					}
 					print "</select></p>\n";
-					print "<p>Blog Status: <select name='blogStatus'>\n";
+					print "<p>Blog Status: <select name='blogstatus'>\n";
 					$statusList = getBlogStatusList ($db);
 					while ($row = mysql_fetch_array($statusList)) {
 						print "<option value='" . $row["BLOG_STATUS_ID"] . "'";
@@ -239,7 +267,7 @@ function doAdminBlogs() {
 						print ">" . ucwords($row["BLOG_STATUS_DESCRIPTION"]) . "</option>\n";
 					}
 					print "</select></p>\n";
-					print "<input type=\"submit\" value=\"Submit\" /><br />\n";
+					print "<input class=\"ss-button\" type=\"submit\" value=\"Submit\" /><br />\n";
 					print "</form>\n";
 					print "</div>";
 					print "</div>";
@@ -247,13 +275,13 @@ function doAdminBlogs() {
 				$nextOffset = $offset + $pagesize;
 				$nextParams = "?filters=filters&arrange=$arrange&order=$order&n=$pagesize&offset=$nextOffset";
 				$nextUrl = $baseUrl . $nextParams;
-				print "<div class=\"alignright\"><h4><a title=\"Next blogs\" href=\"$nextUrl\"><b>Next Blogs »</b></a></h4></div>";
+				print "<div class=\"alignright\"><h4><a title=\"Next page\" href=\"$nextUrl\"><b>Next Page »</b></a></h4></div>";
 			}
 			if ($offset > 0) {
 				$previousOffset = $offset - $pagesize;
 				$previousParams = "?filters=filters&arrange=$arrange&order=$order&n=$pagesize&offset=$previousOffset";
 				$previousUrl = $baseUrl . $previousParams;
-				print "<div class=\"alignleft\"><h4><a title=\"Previous blogs\" href=\"$previousUrl\"><b>« Previous Blogs</b></a></h4></div><br />";
+				print "<div class=\"alignleft\"><h4><a title=\"Previous page\" href=\"$previousUrl\"><b>« Previous Page</b></a></h4></div><br />";
 			}
 		} else { # not moderator or admin
 			print "You are not authorized to administrate blogs.<br />";

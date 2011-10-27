@@ -1140,7 +1140,7 @@ function displayEditBlogsForm ($msg, $db) {
   }
 
   // Only active users can edit blogs
-  $userStatus = getUserPrivilegeStatus($userId, $db);
+  $userStatus = getUserStatus($userId, $db);
   if ($userStatus != 0) {
     print "<p class=\"error\"><font color=\"red\">You cannot edit your blog as your account is not currently active. You may <a href='/contact-us/'>contact us</a> to ask for more information.</font></p>\n";
     return;
@@ -1185,9 +1185,9 @@ function displayEditBlogForm($db, $data) {
     }
     print ">" . $row["TOPIC_NAME"] . "</option>\n";
   }
-  print "</select><br />\n";
+  print "</select>\n";
 
-  print "Blog topic: <select name='topic2'>\n";
+  print " <select name='topic2'>\n";
   print "<option value='-1'> None</option>\n";
   $topicList = getTopicList(true, $db);
   while ($row = mysql_fetch_array($topicList)) {
@@ -1201,7 +1201,7 @@ function displayEditBlogForm($db, $data) {
 ?>
 
 <p>
-<input type="submit" value="Edit blog info" />
+<input class="ss-button" type="submit" value="Edit blog info" />
 </p>
 </form>
 <p><hr /></p>
@@ -1227,12 +1227,12 @@ function displayEditPendingBlogs ($db) {
 			print "<p><font color='red'>Error: $errormsg</font></p>\n";
 		}
 		print "<p><strong>$blogName</strong></p>";
-		print "<p>*Required field</p>\n<p>\n";
-		print "*Blog name: <input type=\"text\" name=\"blogname[]\" size=\"40\" value=\"$blogName\"/><br />\n";
-		print "*<a href=\"$blogUri\" style=\"none\" target=\"_blank\">Blog URL:</a> <input type=\"text\" name=\"blogurl[]\" size=\"40\" value=\"$blogUri\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)";
-		print "</p><p>*<a href=\"$blogSyndicationUri\" style=\"none\" target=\"_blank\">Blog syndication URL:</a> <input type=\"text\" name=\"blogsyndicationuri[]\" size=\"40\" value=\"$blogSyndicationUri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)";
-		print "</p><p>Blog description:<br /><textarea name=\"blogdescription[]\" rows=\"5\" cols=\"70\">$blogDescription</textarea><br />\n";
-		print "Blog topics: <select name='topic1[]'>\n";
+		print "<p>*Required field</p>\n";
+		print "<p>*Blog name: <input type=\"text\" name=\"blogname[]\" size=\"40\" value=\"$blogName\"/></p>\n";
+		print "<p>*<a href=\"$blogUri\" style=\"none\" target=\"_blank\">Blog URL:</a> <input type=\"text\" name=\"blogurl[]\" size=\"40\" value=\"$blogUri\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>";
+		print "<p>*<a href=\"$blogSyndicationUri\" style=\"none\" target=\"_blank\">Blog syndication URL:</a> <input type=\"text\" name=\"blogsyndicationuri[]\" size=\"40\" value=\"$blogSyndicationUri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</p>";
+		print "<p>Blog description:<br /><textarea name=\"blogdescription[]\" rows=\"5\" cols=\"50\">$blogDescription</textarea></p>\n";
+		print "<p>*Blog topics: <select name='topic1[]'>\n";
 		print "<option value='-1'>None</option>\n";
 		$topicList = getTopicList(true, $db);
 		while ($row = mysql_fetch_array($topicList)) {
@@ -1252,11 +1252,11 @@ function displayEditPendingBlogs ($db) {
             }
 			print ">" . $row["TOPIC_NAME"] . "</option>\n";
 		}
-		print "</select><br />\n";
-		print "<input type=\"radio\" name=\"$blogId-blog\" value=\"1\" /> Approve<br />";
-		print "<input type=\"radio\" name=\"$blogId-blog\" value=\"2\" /> Reject<br />";  
+		print "</select></p>\n";
+		print "<p><input type=\"radio\" name=\"$blogId-blog\" value=\"1\" /> Approve<br />";
+		print "<input type=\"radio\" name=\"$blogId-blog\" value=\"2\" /> Reject<br /></p>";  
 		}
-	print "<input type=\"submit\" value=\"Submit\" />\n";
+	print "<input class=\"ss-button\" type=\"submit\" value=\"Submit\" />\n";
 	print "</form>\n";
 }
 
@@ -1294,20 +1294,21 @@ function doEditBlog ($db) {
       storeClaimToken($claimToken, $blogId, $userId, $db);
     }
 
-    $result = editBlog($blogId, $blogName, $origBlogUri, $origBlogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $blogDelete, $displayName, $db);
+    $result = checkBlogData($blogId, $blogName, $origBlogUri, $origBlogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $displayname, $db);
 
     print "<p>To change the URL of your feed, you must re-claim your blog.</p>";
     displayBlogClaimToken($claimToken, $blogId, $displayName, $blogUri, $blogSyndicationUri, $db);
     return;
   }
 
-  $result = editBlog($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $blogDelete, $displayName, $db);
+  $result = checkBlogData($blogId, $blogName, $origBlogUri, $origBlogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $displayname, $db);
 
   if ($result == NULL) {
+		editBlog ($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $db);
     displayEditBlogsForm("$blogName was updated.", $db);
     return;
   } else {
-    displayEditBlogsForm("ERROR: $result", $db);
+    displayEditBlogsForm("<p>ERROR: <ul class=\"ss-error\">$result</ul></p>", $db);
   }
 }
 
@@ -1358,9 +1359,9 @@ function doVerifyEditClaim ($db) {
 
 
 // Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, user ID, user display name, DB handle
-// Action: edit blog metadata
+// Action: check blog metadata
 // Return: error message or null
-function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db) {
+function checkBlogData($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db) {
 
   // get old info about this blog
   $results = blogIdsToBlogData(array(0 => $blogId), $db);
@@ -1369,56 +1370,56 @@ function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescri
 
   // if not logged in as an author or as admin, fail
   if (! canEdit($userId, $blogId, $db)) {
-    return "$displayname does not have editing privileges for blog $oldBlogname.";
+    $result .= "<li>$displayname does not have editing privileges for blog $oldBlogname.</li>";
   }
 
   // user exists? active (0)?
   $userStatus = getUserStatus($userId, $db);
   if ($userStatus == null) {
-    return "No such user $displayname.";
+    $result .= "<li>No such user $displayname.</li>";
   }
   if ($userStatus != 0) {
-    return "User $displayname is not active; could not update blog info.";
+    $result .= "<li>User $displayname is not active; could not update blog info.</li>";
   }
 
   // blog exists? need blog id!
   $blogStatus = getBlogStatusId($blogId, $db);
   if ($blogStatus == null) {
-    return "No such blog $blogId.";
+    $result .= "<li>No such blog $blogId.</li>";
   }
 	
+	$userPriv = getUserPrivilegeStatus($userId, $db);
   if ($blogStatus != 0) {
-    $userPriv = getUserPrivilegeStatus($userId, $db);
     if ($userPriv == 0) { // not moderator or admin
-      return "The entry for blog $oldBlogname (ID $blogId) is not currently active, so it cannot be updated.";
+      $result .= "<li>The entry for blog $oldBlogname (ID $blogId) is not currently active, so it cannot be updated.</li>";
     }
   }
   
   // check that there is a name
   if ($blogname == null) {
-	  return "You need to submit a name for the blog.";
+	  $result .= "<li>You need to submit a name for the blog.</li>";
 	  
   }
 
   // check that blog URL is fetchable
   if (! uriFetchable($blogurl)) {
-    return ("Unable to fetch the contents of your blog at $blogurl. Did you remember to put \"http://\" before the URL when you entered it? If you did, make sure your blog page is actually working, or <a href='/contact-us/'>contact us</a> to ask for help in resolving this problem.");
+    $result .= ("<li>Unable to fetch the contents of your blog at $blogurl. Did you remember to put \"http://\" before the URL when you entered it? If you did, make sure your blog page is actually working, or <a href='/contact-us/'>contact us</a> to ask for help in resolving this problem.</li>");
   }
 
   // check that syndication feed is parseable
   $feed = getSimplePie($blogsyndicationuri);
   if ($feed->get_type() == 0) {
-    return("Unable to parse feed at $blogsyndicationuri. Are you sure it is Atom or RSS?");
+    $result .= ("<li>Unable to parse feed at $blogsyndicationuri. Are you sure it is Atom or RSS?</li>");
   }
   
   // check that blog URL and blog syndication URL are not the same
   if ($blogurl == $blogsyndicationuri) {
-  	return ("The blog URL (homepage) and the blog syndication URL (RSS or Atom feed) need to be different.");
+  	$result .= ("<li>The blog URL (homepage) and the blog syndication URL (RSS or Atom feed) need to be different.</li>");
   }
   
   // Check that the user has selected at least one topic
   if ($topic1 == -1 && $topic2 == -1) {
-  	return ("You need to choose at least one topic.");
+  	$result .= ("<li>You need to choose at least one topic.</li>");
   }
 
   // escape stuff
@@ -1426,9 +1427,16 @@ function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescri
   $blogdescription = mysql_real_escape_string($blogdescription);
   // TODO probably should be escaping the URIs as well
 
-  // update easy data
-  $sql = "UPDATE BLOG SET BLOG_NAME='$blogname', BLOG_URI='$blogurl', BLOG_SYNDICATION_URI='$blogsyndicationuri', BLOG_DESCRIPTION='$blogdescription' WHERE BLOG_ID=$blogId";
-  mysql_query($sql, $db);
+  return $result;
+}
+
+// Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, DB handle
+// Action: edit blog metadata
+function editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $db) {
+	
+		// update easy data
+		$sql = "UPDATE BLOG SET BLOG_NAME='$blogname', BLOG_URI='$blogurl', BLOG_SYNDICATION_URI='$blogsyndicationuri', BLOG_DESCRIPTION='$blogdescription' WHERE BLOG_ID=$blogId";
+		mysql_query($sql, $db);
 
   // remove all topics for this blog
   removeTopics($blogId, $db);
@@ -1441,57 +1449,59 @@ function editBlog($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescri
   if ($topic2 != "-1") {
     associateTopic($topic2, $blogId, $db);
   }
-
-  return null;
 }
 
-// Input: user ID, user name, user status, user privilege status, user email, administrator id, administrator privilege, delete user, administrator display name, DB handle
-// Action: edit user metadata
+// Input: user ID, user name, user status, user privilege status, user email, administrator id, administrator privilege, administrator display name, WordPress DB handle, DB handle
+// Action: check user metadata
 // Return: error message or null
-function editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $oldUserName, $displayname, $wpdb, $db) {
+function checkUserData($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $displayname, $db) {
 
   // if not logged in as an author or as admin, fail
   if ($userPriv < 2) {
-    return "$displayname does not have editing privileges to administrate users.";
+    $result .= "<li>$displayname does not have editing privileges to administrate users.</li>";
   }
 
   // user exists? active (0)?
   $checkUserStatus = getUserStatus($userId, $db);
   if ($checkUserStatus == null) {
-    return "No such user $displayname.";
+    $result .= "<li>No such user $displayname.</li>";
   }
   if ($checkUserStatus != 0) {
-    return "User $displayname is not active; could not update user info.";
+    $result .= "<li>User $displayname is not active; could not update user info.</li>";
   }
   
   // check that there is a name
   if ($userName == null) {
-	  return "You need to submit a name for the user.";	  
+	  $result .= "<li>You need to submit a name for the user.</li>";	  
   }
 	
 	// check if the email is valid
 	if (!filter_var($userEmail, FILTER_VALIDATE_EMAIL)) {
-		return "The submited e-mail is not valid.";
+		$result .= "<li>The submited e-mail is not valid.</li>";
 	}
   
   // Check that there is a user status
   if ($userStatus == null) {
-		return ("You need to submit a user status.");
+		$result .= ("<li>You need to submit a user status.</li>");
   }
 	
 	// Check that there is a user privilige
   if ($userPrivilege == null) {
-		return ("You need to submit a user privilege status.");
+		$result .= ("<li>You need to submit a user privilege status.</li>");
   }
 	
+  return $result;
+}
+
+// Input: user ID, user name, user status, user privilege status, user email, old user name, WordPress DB handle, DB handle
+// Action: edit user metadata
+function editUser ($userID, $userName, $userStatus, $userEmail, $userPrivilege, $oldUserName, $wpdb, $db) {
 	// update Wordpress name
 	$wpdb->update( $wpdb->users, array('user_login' => $userName, 'user_nicename' => $userName, 'display_name' => $userName), array('user_login' => $oldUserName) );
 	
 	// update easy data
   $sql = "UPDATE USER SET USER_NAME='$userName', USER_PRIVILEGE_ID='$userPrivilege', USER_STATUS_ID='$userStatus', EMAIL_ADDRESS='$userEmail' WHERE USER_ID=$userID";
   mysql_query($sql, $db);
-	
-  return null;
 }
 
 // Input: blog status, DB handle

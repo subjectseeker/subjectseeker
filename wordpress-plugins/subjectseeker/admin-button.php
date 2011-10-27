@@ -63,7 +63,6 @@ function doAdminButton() {
   $db = ssDbConnect();
   if (is_user_logged_in()){
     global $current_user;
-		global $adminPanel;
 		global $approveUrl;
 		global $adminUsers;
 		global $adminBlogs;
@@ -75,11 +74,10 @@ function doAdminButton() {
 		if ($userPriv > 0){
 			print "<div id=\"adminButtonContainer\">
 			<ul class=\"adminButtonOptions\">
-			<li class=\"adminButtonOption\"><a href=\"$adminPanel\">Administration Panel</a></li>
 			<li class=\"adminButtonOption\"><a href=\"$approveUrl\">Approve Blogs</a></li>
-			<li class=\"adminButtonOption\"><a href=\"$adminBlogs\">Blogs Administration</a></li>";
+			<li class=\"adminButtonOption\"><a href=\"$adminBlogs\">Administer Blogs</a></li>";
 			if ($userPriv > 1){
-				print "<li class=\"adminButtonOption\"><a href=\"$adminUsers\">Users Administration</a></li>";
+				print "<li class=\"adminButtonOption\"><a href=\"$adminUsers\">Administer Users</a></li>";
 			}
 			print "</ul></div>";
 		}

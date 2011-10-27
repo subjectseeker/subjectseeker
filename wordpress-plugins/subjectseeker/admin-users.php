@@ -1,8 +1,8 @@
 <?php
 /*
-Plugin Name: SubjectSeeker Administrate Users
+Plugin Name: SubjectSeeker Administer Users
 Plugin URI: http://scienceseeker.org/
-Description: Administrate Users for SubjectSeeker tool
+Description: Administer Users for SubjectSeeker tool
 Author: Liminality
 Version: 1
 Author URI: http://www.binaryparticle.com
@@ -79,20 +79,20 @@ function doAdminUsers() {
 			$pagesize = $_REQUEST["n"];
 			$offset = $_REQUEST["offset"];
 			if ($arrange == null) {
-				$arrange = "USER_NAME";
+				$arrange = "USER_ID";
 			}
 			if ($order == null) {
-				$order = "ASC";
+				$order = "DESC";
 			}
 			if ($pagesize == null || is_numeric($pagesize) == FALSE) {
-				$pagesize = "10";
+				$pagesize = "30";
 			}
 			if ($offset == null || is_numeric($offset) == FALSE) {
 				$offset = "0";
 			}
 			print "<form method=\"GET\">\n";
 			print "<input type=\"hidden\" name=\"filters\" value=\"filters\" />";
-			print "Order by: ";
+			print "Sort by: ";
 			print "<select name='arrange'>\n";
 			print "<option value='USER_ID'";
 			if ($arrange == "USER_ID") {
@@ -120,7 +120,7 @@ function doAdminUsers() {
 			}
 			print ">E-mail</option>\n";
 			print "</select>\n";
-			print "<select name='order'>\n";
+			print " | <select name='order'>\n";
 			print "<option value='ASC'";
 			if ($order == "ASC") {
 				print " selected";
@@ -131,10 +131,10 @@ function doAdminUsers() {
 				print " selected";
 			}
 			print ">Descending</option>\n";
-			print "</select>\n";
-			print " | Blogs:<input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/>";
-			print " | Offset:<input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>";
-			print " <input type=\"submit\" value=\"Filter\" />";
+			print "</select><br />\n";
+			print "Entries per page: <input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/>";
+			print " | Start at: <input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>";
+			print " <input class=\"ss-button\" type=\"submit\" value=\"Go\" />";
 			print "</form><br />";
 			if ($step != null) {
 				$userID = stripslashes($_REQUEST["userId"]);
@@ -143,12 +143,36 @@ function doAdminUsers() {
 				$userEmail = stripslashes($_REQUEST["userEmail"]);
 				$userPrivilege = stripslashes($_REQUEST["userPrivilege"]);
 				$oldUserName = getUserName($userID, $db);
-				editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $oldUserName, $displayname, $wpdb, $db);
-				$result = editUser($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $oldUserName, $displayname, $wpdb, $db);
-				if ($result == NULL) {					
-				print "<p>$userName (id $userID) was updated.</p>";  
-				} else {
-					print "<p><font color='red'>$oldUserName (id $userID): $result</font></p>";
+				$result = checkUserData($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $displayname, $db);
+				if ($step == 'edit') {
+					if ($result == NULL) {				
+						editUser ($userID, $userName, $userStatus, $userEmail, $userPrivilege, $oldUserName, $wpdb, $db);
+						print "<p>$userName (id $userID) was updated.</p>";  
+						} 
+					if ($result != NULL) {
+						print "<p>$oldUserName (id $userID):<ul class=\"ss-error\">$result</ul></p>";
+						print "<form class=\"ss-div\" method=\"POST\">
+						<input type=\"hidden\" name=\"step\" value=\"confirm\" />
+						<input type=\"hidden\" name=\"userId\" value=\"$userID\" />
+						<input type=\"hidden\" name=\"userName\" value=\"$userName\" />
+						<input type=\"hidden\" name=\"userStatus\" value=\"$userStatus\" />
+						<input type=\"hidden\" name=\"userEmail\" value=\"$userEmail\" />
+						<input type=\"hidden\" name=\"userPrivilege\" value=\"$userPrivilege\" />
+						<p>There has been an error, are you sure you want to apply these changes?</p>
+						<input class=\"ss-button\" name=\"confirm\" type=\"submit\" value=\"Yes\" /> <input class=\"ss-button\" type=\"Submit\" value=\"No\" />
+						</form>";
+					}
+				}
+				if ($step == 'confirm') {
+					$confirm = $_REQUEST["confirm"];
+					if ($confirm == 'Yes') {
+						editUser ($userID, $userName, $userStatus, $userEmail, $userPrivilege, $oldUserName, $wpdb, $db);
+						print "<p>$userName (id $userID) was updated.</p>";
+					}
+					else {
+						$oldUserName = getUserName($userID, $db);
+						print "<p>$oldUserName (id $userID) was not updated.</p>";
+					}
 				}
 			}
 			$baseUrl = removeParams();
@@ -165,9 +189,10 @@ function doAdminUsers() {
 					$userEmail = $user["email"];
 					$userStatus = ucwords(userStatusIdToName ($userStatusId, $db));
 					$userPrivilege = ucwords(userPrivilegeIdToName ($userPrivilegeId, $db));
-					print "<p>$userID | $userName | $userStatus | $userPrivilege | <a class=\"ss-button\" id=\"showForm-$userID\" href=\"javascript:;\" onmousedown=\"toggleSlide('userForm-$userID');\" onclick=\"toggleButton('showForm-$userID');\">Show</a></p>";
-					print "<div id=\"userForm-$userID\" style=\"display:none; overflow:hidden; height:204px;\">";
-					print "<form method=\"POST\">\n";
+					print "<p>$userID | $userName | $userStatus | $userPrivilege | <a class=\"ss-button\" id=\"showForm-$userID\" href=\"javascript:;\" onmousedown=\"toggleSlide('container-$userID'), toggleButton('showForm-$userID');\">Show</a></p>";
+					print "<div id=\"container-$userID\" style=\"display:none; overflow:hidden; height:204px;\">";
+					print "<div class=\"ss-form\">";
+					print "<form name=\"form-$userID\" method=\"POST\">\n";
 					print "<input type=\"hidden\" name=\"step\" value=\"edit\" />";
 					if ($errormsg !== null) {
 						print "<p><font color='red'>Error: $errormsg</font></p>\n";
@@ -196,20 +221,21 @@ function doAdminUsers() {
 						print ">" . ucwords($row["USER_PRIVILEGE_DESCRIPTION"]) . "</option>\n";
 					}
 					print "</select></p>\n";
-					print "<input type=\"submit\" value=\"Submit\" /><br />\n";
-					print "</form>\n";
-					print "</div>";
+					print "<input id=\"submit-$userID\" class=\"ss-button\"type=\"submit\" value=\"Submit\" /><br />\n";
+					print "</form>
+					</div>
+					</div>";
 				}
 				$nextOffset = $offset + $pagesize;
 				$nextParams = "?filters=filters&arrange=$arrange&order=$order&n=$pagesize&offset=$nextOffset";
 				$nextUrl = $baseUrl . $nextParams;
-				print "<div class=\"alignright\"><h4><a title=\"Next users\" href=\"$nextUrl\"><b>Next Users »</b></a></h4></div>";
+				print "<div class=\"alignright\"><h4><a title=\"Next page\" href=\"$nextUrl\"><b>Next Page »</b></a></h4></div>";
 			}
 			if ($offset > 0) {
 			$previousOffset = $offset - $pagesize;
 			$previousParams = "?filters=filters&arrange=$arrange&order=$order&n=$pagesize&offset=$previousOffset";
 			$previousUrl = $baseUrl . $previousParams;
-			print "<div class=\"alignleft\"><h4><a title=\"Previous users\" href=\"$previousUrl\"><b>« Previous Users</b></a></h4></div><br />";
+			print "<div class=\"alignleft\"><h4><a title=\"Previous page\" href=\"$previousUrl\"><b>« Previous Page</b></a></h4></div><br />";
 			}
 		} else { # not moderator or admin
 			print "You are not authorized to administrate users.<br />";

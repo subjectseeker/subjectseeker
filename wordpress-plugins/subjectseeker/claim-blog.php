@@ -92,7 +92,7 @@ function determineClaimStep() {
     if ($step == null && retrieveVerifiedClaimToken($blogId, $userId, $db)) {
       displayUserAuthorLinkForm($blogId, $userId, $displayName, $db);
     } else if ($step === null) {
-      dsslaimBlog($blogId, $displayName, $email, $db);
+      doClaimBlog($blogId, $displayName, $email, $db);
     } else if ($step === "verify") {
       doVerifyClaim($blogId, $displayName, $db);
     } else if ($step === "userAuthorLinkForm") {
