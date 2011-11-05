@@ -254,10 +254,21 @@ create table BLOG_STATUS
 alter table BLOG_STATUS comment 'The approval status of a blog, e.g., submitted, under review';
 
 /*==============================================================*/
+/* Table: CITATION                                              */
+/*==============================================================*/
+create table CITATION
+(
+   CITATION_ID          int(15) not null auto_increment comment 'A machine-generated unique identifier for a citation.',
+   CITATION_TEXT        text not null comment 'The HTML text of this citation',
+   primary key (CITATION_ID)
+);
+
+/*==============================================================*/
 /* Table: LANGUAGE                                              */
 /*==============================================================*/
 create table LANGUAGE
 (
+
    LANGUAGE_ID          int(15) not null auto_increment comment 'A machine-generated unique identifier for a human language.',
    LANGUAGE_IETF_CODE   varchar(31) not null comment 'IETF BCP 47 code for a language or locale, including language, region, and script information, e.g. en, en-US, en-latn-US.',
    LANGUAGE_ENGLISH_NAME varchar(255) not null comment 'Human-readable English name of an IETF locale or language.',
@@ -306,6 +317,18 @@ create table POST_TOPIC
 );
 
 alter table POST_TOPIC comment 'Subjects of a particular post on a blog of interest.';
+
+/*==============================================================*/
+/* Table: POST_CITATION                                         */
+/*==============================================================*/
+create table POST_CITATION
+(
+   CITATION_ID             int(15) not null comment 'Reference to a citation included in a post.',
+   BLOG_POST_ID         int(15) not null comment 'Reference to a post including a citation.',
+   primary key (CITATION_ID, BLOG_POST_ID)
+);
+
+alter table POST_CITATION comment 'Blog posts containing citations.';
 
 /*==============================================================*/
 /* Table: PRIMARY_BLOG_TOPIC                                    */
@@ -547,6 +570,12 @@ alter table POST_TOPIC add constraint FK_POST_TOPICS foreign key (BLOG_POST_ID)
 
 alter table POST_TOPIC add constraint FK_TOPIC_POSTS foreign key (TOPIC_ID)
       references TOPIC (TOPIC_ID) on delete restrict on update restrict;
+
+alter table POST_CITATION add constraint FK_POST_CITATIONS foreign key (BLOG_POST_ID)
+      references BLOG_POST (BLOG_POST_ID) on delete restrict on update restrict;
+
+alter table POST_CITATION add constraint FK_CITATION_POSTS foreign key (CITATION_ID)
+      references CITATION (CITATION_ID) on delete restrict on update restrict;
 
 alter table PRIMARY_BLOG_TOPIC add constraint FK_BLOG_PRIMARY_TOPICS foreign key (BLOG_ID)
       references BLOG (BLOG_ID) on delete restrict on update restrict;
