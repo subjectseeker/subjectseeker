@@ -62,6 +62,8 @@ drop table if exists PERSONA_ADMINISTRATOR_NOTE;
 
 drop table if exists POST_TOPIC;
 
+drop table if exists POST_CITATION;
+
 drop table if exists PRIMARY_BLOG_TOPIC;
 
 drop table if exists SECONDARY_BLOG_TOPIC;
@@ -85,6 +87,10 @@ drop table if exists USER_ADMINISTRATOR_NOTE;
 drop table if exists USER_PRIVILEGE;
 
 drop table if exists USER_STATUS;
+
+drop table if exists CLAIM_BLOG;
+
+drop table if exists CLAIM_BLOG_STATUS;
 
 /*==============================================================*/
 /* Table: ADMINISTRATOR_NOTE                                    */
@@ -313,6 +319,7 @@ create table POST_TOPIC
 (
    TOPIC_ID             int(15) not null comment 'Reference to a topic covered by a post.',
    BLOG_POST_ID         int(15) not null comment 'Reference to a post covering a topic.',
+   TOPIC_SOURCE		int(15) not null comment 'Reference to the source of this topic',
    primary key (TOPIC_ID, BLOG_POST_ID)
 );
 
@@ -484,6 +491,8 @@ create table USER_STATUS
    primary key (USER_STATUS_ID),
    unique key AK_USER_STATUS_DESCRIPTION (USER_STATUS_DESCRIPTION)
 );
+alter table USER_STATUS comment 'The approval status of a user account, e.g., active';
+
 
 create table CLAIM_BLOG
 (
@@ -503,7 +512,13 @@ create table CLAIM_BLOG_STATUS
    primary key (CLAIM_BLOG_STATUS_ID)
 );
 
-alter table USER_STATUS comment 'The approval status of a user account, e.g., active, under r';
+create table TOPIC_SOURCE
+(
+   TOPIC_SOURCE_ID              int(15) not null comment 'Numeric ID of a topic source',
+   TOPIC_SOURCE_NAME            varchar(255) not null comment 'Textual description of a source.',
+   primary key (TOPIC_SOURCE_ID)
+);
+alter table TOPIC_SOURCE comment 'The source of a topic, e.g., Post (the post itself) or ScienceSeeker (specified on ScienceSeeker site)';
 
 alter table BLOG add constraint FK_BLOG_STATUS foreign key (BLOG_STATUS_ID)
       references BLOG_STATUS (BLOG_STATUS_ID) on delete restrict on update restrict;
