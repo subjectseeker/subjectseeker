@@ -89,7 +89,7 @@ function searchFeeds($type, $ssParams, $httpParams) {
 
   $curl = getSerializerCurl($type, $ssParams, $httpParams);
   $result = curl_exec($curl);
-
+	
   curl_close($curl);
 
   return $result;

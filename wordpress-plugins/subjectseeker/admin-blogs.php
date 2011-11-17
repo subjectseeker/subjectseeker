@@ -202,7 +202,7 @@ function doAdminBlogs() {
 				}
 			}
 			$baseUrl = removeParams();
-			$blogList = getBlogList($arrange, $order, $pagesize, $offset, $db);
+			$blogList = getBlogList(NULL, $arrange, $order, $pagesize, $offset, $db);
 			if ($blogList == null) {
 				print "There are no more blogs in the system.<br />";
 			}

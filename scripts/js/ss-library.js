@@ -100,3 +100,13 @@ function toggleButton(objname) {
 		return;
 	}
 }
+
+function checkAll(objclass, checkall) {
+	var inputs = document.getElementsByTagName('input');
+	var checkboxes = [];
+	for (var i = 0; i < inputs.length; i++) {
+		if (inputs[i].type == 'checkbox' && inputs[i].className == objclass) {
+				inputs[i].checked = checkall.checked? true:false
+		}
+	}
+}

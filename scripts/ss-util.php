@@ -31,6 +31,36 @@ function ssDbClose($dbConnection) {
 }
 
 /*
+ * Crawler
+ */
+
+function crawl($blogs, $db) {
+	foreach ($blogs as $blog) {
+		$blogUri = $blog["syndicationuri"];
+		$blogId = $blog["id"];
+	
+		print "RSS: $blogUri\n";
+		$feed = getSimplePie($blogUri);
+		if ($feed->error()) {
+			print "ERROR: $blogUri (ID $blogId): " . $feed->error() . "\n";
+		}
+	
+		foreach ($feed->get_items() as $item) {
+			addSimplePieItem($item, $feed->get_language(), $blogId, $db);
+			$item->__destruct(); // Do what PHP should be doing on its own.
+			unset ($item);
+		}
+		markCrawled($blogId, $db);
+	
+		$feed->__destruct(); // Do what PHP should be doing on its own.
+		unset($feed);
+	}
+	
+	// clean up - we're done
+	ssDbClose($db);
+	}
+
+/*
  * Curl functions
  */
 
@@ -66,9 +96,10 @@ function getSerializerCurl ($type, $ssParams, $httpParams) {
   curl_setopt($ch, CURLOPT_FAILONERROR, 1);
   curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
-  curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 4s
+  curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
   curl_setopt($ch, CURLOPT_POST, 1); // set POST method
   curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+
   return $ch;
 }
 
@@ -80,7 +111,7 @@ function getDownloadCurl($uri) {
   curl_setopt($ch, CURLOPT_FAILONERROR, 1);
   curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
-  curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 4s
+  curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
   return $ch;
 }
 
@@ -127,6 +158,8 @@ function paramArrayToString($params) {
 function parseHttpParams() {
   $i = 0;
   $params = array();
+	$citationPost = $_REQUEST["citation"];
+	$params['citation'] = $citationPost;
   $filter = stripslashes($_REQUEST["filter$i"]);
   while ($filter !== "" && $filter !== null) {
     $value = stripslashes($_REQUEST["value$i"]);
@@ -323,8 +356,17 @@ function getSparseBlogs($db, $limit=1000) {
 
 // Input: DB handle
 // Output: array of hashes of blogs (id, name, uri, description, syndication uri)
-function getBlogList ($arrange, $order, $pagesize, $offset, $db) {
-  $sql = "SELECT BLOG_ID, BLOG_NAME, BLOG_STATUS_ID, BLOG_URI, BLOG_DESCRIPTION, BLOG_SYNDICATION_URI, ADDED_DATE_TIME, CRAWLED_DATE_TIME FROM BLOG ORDER BY $arrange $order LIMIT $pagesize OFFSET $offset";
+function getBlogList ($blogIds, $arrange, $order, $pagesize, $offset, $db) {
+  $sql = "SELECT BLOG_ID, BLOG_NAME, BLOG_STATUS_ID, BLOG_URI, BLOG_DESCRIPTION, BLOG_SYNDICATION_URI, ADDED_DATE_TIME, CRAWLED_DATE_TIME FROM BLOG ";
+	if ($blogIds != NULL) {
+		$firstBlogId = array_shift($blogIds);
+		$sql .= "WHERE (BLOG_ID = $firstBlogId) ";
+		foreach ($blogIds as $blogId) {
+			$sql .= "OR (BLOG_ID = $blogId) ";
+		}
+	}
+	$sql .= "ORDER BY $arrange $order LIMIT $pagesize OFFSET $offset";
+	
   $blogs = array();
   $results = mysql_query($sql, $db);
   while ($row = mysql_fetch_array($results)) {
@@ -484,13 +526,16 @@ function getPersonaNames ($userId, $db) {
 
 // Input: user ID, DB handle
 // Output: ids of blogs owned by this user
-function getBlogIdsByUserId ($userId, $db) {
+function getBlogIdsByUserId ($userId, $blogId, $db) {
 
   // PERSONA has USER_ID
   // BLOG_AUTHOR has PERSONA_ID
   // BLOG_AUTHOR has BLOG_ID and BLOG_AUTHOR_ACCOUNT_NAME
 
-  $sql = "select ba.BLOG_ID, p.DISPLAY_NAME from PERSONA p, BLOG_AUTHOR ba where p.USER_ID=$userId and ba.PERSONA_ID=p.PERSONA_ID";
+  $sql = "select ba.BLOG_ID, p.DISPLAY_NAME from PERSONA p, BLOG_AUTHOR ba, BLOG pa where p.USER_ID=$userId and ba.PERSONA_ID=p.PERSONA_ID and pa.BLOG_STATUS_ID=0 and pa.BLOG_ID=ba.BLOG_ID";
+	if ($blogId != NULL) {
+		$sql .= " and ba.BLOG_ID=$blogId";
+	}
   $results = mysql_query($sql, $db);
   $blogIds = array();
   if ($results != null) {
@@ -696,6 +741,20 @@ function topicIdsToBlogIds ($topicIds, $db) {
 
 }
 
+// Input: Citation, DB handle
+// Output: Citation ID
+function citationTextToCitationId ($citation, $db) {
+  $sql = "SELECT CITATION_ID FROM CITATION WHERE CITATION_TEXT = '$citation'";
+  $results =  mysql_query($sql, $db);
+	
+  // Convert to array
+	$row = mysql_fetch_array($results);
+  $citationId = $row["CITATION_ID"];
+
+  return $citationId;
+
+}
+
 
 // Input: array of blog IDs, DB handle
 // Output: mysql rows of blog data
@@ -710,6 +769,30 @@ function blogIdsToBlogData ($blogIds, $db) {
   }
   $sql .= " ORDER BY BLOG_NAME";
 
+  $results =  mysql_query($sql, $db);
+
+  if (mysql_error() != null) {
+    print "ERROR: " . mysql_error() . "<br />";
+    return;
+  }
+
+  return $results;
+
+}
+
+// Input: array of blog IDs, DB handle
+// Output: mysql rows of blog data
+function blogIdsToBlogPostData ($blogIds, $arrange, $order, $pagesize, $offset, $db) {
+
+  $firstBlog = array_shift ($blogIds);
+	
+  $sql = "SELECT BLOG_POST_ID, BLOG_ID, BLOG_POST_URI, BLOG_POST_TITLE FROM BLOG_POST WHERE BLOG_ID = $firstBlog AND BLOG_POST_STATUS_ID = 0";
+
+  foreach ($blogIds as $blogId) {
+    $sql .= " OR BLOG_ID = $blogId AND BLOG_POST_STATUS_ID = 0";
+  }
+  $sql .= " ORDER BY $arrange $order LIMIT $pagesize OFFSET $offset";
+	
   $results =  mysql_query($sql, $db);
 
   if (mysql_error() != null) {
@@ -828,7 +911,7 @@ function addSimplePieItem ($item, $language, $blogId, $db) {
       $tag = trim($category->get_label());
       if (strlen($tag) > 0) {
         $topicId = addTopic($tag, $db);
-        linkTopicToPost($dbId, $topicId, $db);
+        linkTopicToPost($dbId, $topicId, 0, $db);
       }
     }
   }
@@ -844,7 +927,7 @@ function uriFetchable ($uri) {
   curl_setopt($ch, CURLOPT_FAILONERROR, 1);
   curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
-  curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 4s
+  curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
   $result = curl_exec($ch);
   $cerror = curl_error($ch);
   if (($cerror != null & strlen($cerror) > 0) || ! hasProtocol($uri)) {
@@ -891,8 +974,8 @@ function getPost ($uri, $db) {
 
 // Input: ID of post, ID of topic, DB handle
 // Action: link IDs of post and topic in DB
-function linkTopicToPost($postId, $topicId, $db) {
-  $sql = "INSERT IGNORE INTO POST_TOPIC (BLOG_POST_ID, TOPIC_ID) VALUES ($postId, $topicId)";
+function linkTopicToPost($postId, $topicId, $source, $db) {
+  $sql = "INSERT IGNORE INTO POST_TOPIC (BLOG_POST_ID, TOPIC_ID, TOPIC_SOURCE) VALUES ($postId, $topicId, $source)";
   mysql_query($sql, $db);
   if (mysql_error()) {
     die ("linkTopicToPost: " . mysql_error() . "\n");
@@ -1126,8 +1209,8 @@ function displayEditBlogsForm ($msg, $db) {
   // If this is the first time this user has tried to interact with
   // the SS system, create a USER entry for them
   $userId = addUser($displayName, $email, $db);
-
-  $blogIds = getBlogIdsByUserId($userId, $db);
+	
+  $blogIds = getBlogIdsByUserId($userId, $blogId, $db);
   if (sizeof($blogIds) == 0) {
     print "<p class='msg'>$displayName has no blogs.</p><br />";
     return;
@@ -1159,7 +1242,7 @@ function displayEditBlogForm($db, $data) {
 
   print "<h2>Edit $blogname</h2>\n";
 
-?>
+?> 
 <form method="POST">
 <input type="hidden" name="step" value="doEdit" />
 <?php
@@ -1707,6 +1790,122 @@ function getSimplePie($uri) {
 
   $feed = new SimplePie($uri, $cachedir);
   return $feed;
+}
+
+/* CitationSeeker */
+
+function checkCitations ($postUri, $blogId, $db) {
+	$ch = curl_init(); // initialize curl handle
+	curl_setopt($ch, CURLOPT_URL, $postUri); // set url
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return into a variable
+	curl_setopt($ch, CURLOPT_HEADER, 0); // do not include the header
+	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // allow redirects
+	curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
+	$html = curl_exec($ch); //Close the connection 
+	curl_close($ch);
+  $doc = new DOMDocument();
+  @$doc->loadHTML($html);
+	$xml = simplexml_import_dom($doc);
+	
+	$citations = $xml->xpath ('//*[@class=\'Z3988\']//self::*');
+	
+
+	return $citations;
+}
+
+function parseCitations ($postId, $data, $db) {
+	$count = count($data);
+	$n = 0;
+	
+	for ($i = 1; $i <= $count / 3; $i++) {
+		$title = $data[$n]["title"];
+		preg_match("/(?<=bpr3.included=)./", $title, $include);
+		if ($include[0][0] == 1) {
+			$result = preg_split("/&/", $title);
+			foreach ($result as $value) {
+				$elements = preg_split("/=/", $value, 2);
+				$attribute = $elements[0];
+				if (isset($values[$i][$attribute]) == TRUE) {
+					$values[$i][$attribute] .= ", ";
+				}
+				$values[$i][$attribute] .= urldecode($elements[1]);
+			}
+		}
+		
+		storeTopics ($postId, $values[$i]["rfe_dat"], $db);
+		preg_match_all("/(?<=info:)[^\/]+|(?<=\/).+/", $values[$i]["rft_id"], $id[$i]);	
+		$values[$i]["id_type"] = $id[$i][0][0];
+		$values[$i]["id"] = $id[$i][0][1];
+		$n = $n + 2;
+		$url = $data[$n]["href"];
+		$n++;
+		$citation[$i] = $values[$i]["rft.au"]." ";
+		if ($values[$i]["rft.date"] != NULL) {
+			$citation[$i] .= "(".$values[$i]["rft.date"].").";
+		}
+		if ($values[$i]["rft.atitle"] != NULL) {
+			$citation[$i] .= " ".$values[$i]["rft.atitle"];
+		}
+		if ($values[$i]["rft.jtitle"] != NULL) {
+			$citation[$i] .= " <span class=\"cs-journal\">".$values[$i]["rft.jtitle"];
+		}
+		if ($values[$i]["rft.jtitle"] != NULL && $values[$i]["rft.volume"] != NULL) {
+			$citation[$i] .= ",";
+		}
+		if ($values[$i]["rft.volume"] != NULL) {
+			$citation[$i] .= " ".$values[$i]["rft.volume"];
+		}
+		if ($values[$i]["rft.jtitle"] != NULL) {
+			$citation[$i] .= " </span>";
+		}
+		if ($values[$i]["rft.issue"] != NULL) {
+			$citation[$i] .= " (".$values[$i]["rft.issue"]."),";
+		}
+		if ($values[$i]["rft.spage"] != NULL) {
+			$citation[$i] .= " ".$values[$i]["rft.spage"];
+		}
+		if ($values[$i]["rft.epage"] != NULL) {
+			$citation[$i] .= "-".$values[$i]["rft.epage"];
+		}
+		if ($values[$i]["id_type"] != NULL) {
+			$citation[$i] .= " ".strtoupper($values[$i]["id_type"]).":";
+		}
+		if ($values[$i]["id"] != NULL) {
+			$citation[$i] .= " <a href=\"$url\">".$values[$i]["id"]."</a>";
+			
+			$citation[$i] = mysql_real_escape_string(stripslashes(htmlentities($citation[$i])));
+		}
+	}
+	return $citation;
+}
+
+function storeTopics ($postId, $data, $db) {
+	preg_match_all("/(?!.+=)[\w\s]+/", $data, $topics);
+	foreach ($topics as $category) {
+		$tag = trim($category);
+		$topicId = addTopic($tag, $db);
+		linkTopicToPost($postId, $topicId, 2, $db);
+	}
+}
+
+function storeCitation ($citation, $postId, $db) {
+	$markCitation = "UPDATE BLOG_POST SET BLOG_POST_HAS_CITATION=1 WHERE BLOG_POST_ID=$postId";
+	mysql_query($markCitation, $db);
+	
+	if (citationTextToCitationId ($citation, $db) == NULL) {
+		$insertCitation = "INSERT IGNORE INTO CITATION (CITATION_TEXT) VALUES ('$citation')";
+		mysql_query($insertCitation, $db);
+		if (mysql_error()) {
+			die ("InsertCitation: " . mysql_error() . "\n");
+		}
+	}
+	
+	$citationId = citationTextToCitationId ($citation, $db);
+	$citationToPost = "INSERT IGNORE INTO POST_CITATION (CITATION_ID, BLOG_POST_ID) VALUES ('$citationId', '$postId')";
+	mysql_query($citationToPost, $db);
+	if (mysql_error()) {
+    die ("CitationToPost: " . mysql_error() . "\n");
+  }
 }
 
 /* Claim stuff */
