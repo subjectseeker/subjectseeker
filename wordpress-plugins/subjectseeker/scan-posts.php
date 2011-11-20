@@ -232,12 +232,11 @@ function scanPosts() {
 					if ($postTitle == NULL) {
 						$postTitle = $postUri;
 					}
-					print "<div class=\"ss-entry-wrapper\"><input type=\"checkbox\" class=\"checkbox\" name=\"check-$postId\" value=\"1\" /> ";
+					print "<div class=\"ss-entry-wrapper\"><input type=\"checkbox\" class=\"checkbox\" name=\"check-$postId\" value=\"1\" /> <span class=\"ss-postTitle\"><a href=\"$postUri\">$postTitle</a></span>";
 					if ($hasCitation == 1) {
-						print "CITATION ";
+						print " CITATION";
 					}
-					print "<span class=\"ss-postTitle\"><a href=\"$postUri\">$postTitle</a></span>
-					<div class=\"ss-div-button\"><div class=\"ss-right\"><span class=\"ss-hidden-text\">Click for details </span><span class=\"arrow-up\"></span></div>
+					print "<div class=\"ss-div-button\"><div class=\"ss-right\"><span class=\"ss-hidden-text\">Click for details </span><span class=\"arrow-up\"></span></div>
 					</div>
 					<div class=\"ss-slide-wrapper\"><span class=\"ss-summary\"><p class=\"ss-bold\">Summary:</p><p>$postSummary</p></span></div>
 					<div class=\"ss-blogTitle\">$blogName</div>

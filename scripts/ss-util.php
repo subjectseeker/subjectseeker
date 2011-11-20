@@ -972,7 +972,7 @@ function getPost ($uri, $db) {
   return $post;
 }
 
-// Input: ID of post, ID of topic, DB handle
+// Input: ID of post, ID of topic, Topic source, DB handle
 // Action: link IDs of post and topic in DB
 function linkTopicToPost($postId, $topicId, $source, $db) {
   $sql = "INSERT IGNORE INTO POST_TOPIC (BLOG_POST_ID, TOPIC_ID, TOPIC_SOURCE) VALUES ($postId, $topicId, $source)";
@@ -1898,9 +1898,9 @@ function parseCitations ($postId, $citationData, $db) {
 
 // Input: Post ID, Topics Data, DB handle
 // Action: Store topics from the citation
-function storeTopics ($postId, $TopicsData, $db) {
-	preg_match_all("/(?!.+=)[\w\s]+/", $TopicsData, $topics);
-	foreach ($topics as $category) {
+function storeTopics ($postId, $topicsData, $db) {
+	preg_match_all("/(?!.+=)[\w\s]+/", $topicsData, $topics);
+	foreach ($topics[0] as $category) {
 		$tag = trim($category);
 		$topicId = addTopic($tag, $db);
 		linkTopicToPost($postId, $topicId, 2, $db);
@@ -1925,13 +1925,16 @@ function storeCitation ($citation, $postId, $db) {
 	}
 	
 	// Get citation ID
-	$citationId = citationTextToCitationId ($citation, $db);
+	$citationId = mysql_insert_id();
+	if ($citationId == 0) {
+		$citationId = citationTextToCitationId ($citation, $db);
+	}
 	// Assign citation ID to post ID
 	$citationToPost = "INSERT IGNORE INTO POST_CITATION (CITATION_ID, BLOG_POST_ID) VALUES ('$citationId', '$postId')";
 	mysql_query($citationToPost, $db);
 	if (mysql_error()) {
-    die ("CitationToPost: " . mysql_error() . "\n");
-  }
+		die ("CitationToPost: " . mysql_error() . "\n");
+	}
 }
 
 /* Claim stuff */
