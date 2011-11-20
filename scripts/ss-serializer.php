@@ -44,7 +44,8 @@ if ( isset( $_REQUEST[ "offset" ] ) and
 $db = ssDbConnect();
 
 print "<?xml version=\"1.0\" encoding=\"utf-8\"?>
-<feed xmlns=\"http://www.w3.org/2005/Atom\" xml:lang=\"en\">
+<feed xmlns=\"http://www.w3.org/2005/Atom\" xml:lang=\"en\"
+      xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">
   <title type=\"text\">ScienceSeeker</title>
   <subtitle type=\"text\">$numPosts Recent Posts</subtitle>
   <link href=\"$myURI\" rel=\"self\"
@@ -110,7 +111,8 @@ function getPostData( $postID, $myHost, $dbHandle ) {
   $postSQL = "SELECT A.BLOG_AUTHOR_ACCOUNT_NAME, B.BLOG_NAME, " .
     "B.BLOG_URI, B.BLOG_SYNDICATION_URI, P.BLOG_POST_ID, " .
     "P.BLOG_POST_URI, P.BLOG_POST_DATE_TIME, P.BLOG_POST_SUMMARY, " .
-    "P.BLOG_POST_TITLE FROM BLOG_AUTHOR AS A, BLOG AS B, BLOG_POST " .
+    "P.BLOG_POST_TITLE, P.BLOG_POST_HAS_CITATION " .
+    "FROM BLOG_AUTHOR AS A, BLOG AS B, BLOG_POST " .
     "AS P WHERE P.BLOG_POST_ID = $postID AND A.BLOG_AUTHOR_ID = " .
     "P.BLOG_AUTHOR_ID AND B.BLOG_ID = P.BLOG_ID;";
 
@@ -136,6 +138,7 @@ function getPostData( $postID, $myHost, $dbHandle ) {
   $postData[ "summary" ] = sanitize( $row[ "BLOG_POST_SUMMARY" ] );
   $postData[ "title" ] = sanitize( $row[ "BLOG_POST_TITLE" ] );
   $postData[ "uri" ] = sanitize( $row[ "BLOG_POST_URI" ] );
+  $postData[ "hasCitation" ] = sanitize( $row[ "BLOG_POST_HAS_CITATION" ] );
 
   // Language is optional.
   $langSQL = "SELECT L.LANGUAGE_IETF_CODE FROM LANGUAGE AS L, " .
@@ -190,7 +193,6 @@ function getRecentPosts( $params, $numPosts, $offset, $dbHandle ) {
   if ( !isset( $numPosts ) ) {
     $numPosts = 100;
   }
-
   // TODO: eventually there will be other params to filter on
   $topicList = $params["topic"];
   $blogIds = array();
@@ -201,14 +203,28 @@ function getRecentPosts( $params, $numPosts, $offset, $dbHandle ) {
       return array();
     }
   }
-
+	
+	if (is_array($params["citation"]) == TRUE) {
+		$params["citation"] = implode($params["citation"]);
+	}
+	
   $postSQL = "SELECT BLOG_POST_ID FROM BLOG_POST ";
+	if (count ($blogIds) > 0 || $params["citation"] == 1) {
+		$postSQL .= "WHERE ";
+	}
+	if ($params["citation"]) {
+		$postSQL .= "BLOG_POST_HAS_CITATION = 1 ";
+	}
   if (count ($blogIds) > 0) {
+		if ($params["citation"] == 1) {
+			$postSQL .= "AND ";
+		}
     $firstBlogId = array_shift($blogIds);
-    $postSQL .= "WHERE (BLOG_ID = $firstBlogId) ";
+    $postSQL .= "((BLOG_ID = $firstBlogId) ";
     foreach ($blogIds as $blogId) {
       $postSQL .= "OR (BLOG_ID = $blogId) ";
     }
+		$postSQL .= ") ";
   }
   $postSQL .= "ORDER BY -BLOG_POST_DATE_TIME " .
     "LIMIT $numPosts OFFSET $offset;";
@@ -248,6 +264,11 @@ function outputAsAtom( $post ) {
   $atomString .= "    <summary type=\"html\">" . $post[ "summary" ] .
     "</summary>
 ";
+
+  // TODO insert RDF for citations here
+  if ($post[ "hasCitation"] ) {
+    $atomString .= "    <rdf:Description rdf:ID=\"citations\">CITATION</rdf:Description>\n";
+  }
 
   foreach ( $post[ "categories" ] as $category ) {
     $atomString .= "    <category term=\"$category\" />

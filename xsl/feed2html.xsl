@@ -2,6 +2,7 @@
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:atom="http://www.w3.org/2005/Atom"
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   version="1.0"
   exclude-result-prefixes="atom">
 
@@ -90,8 +91,14 @@
         <xsl:apply-templates select="atom:source/atom:title"/>
         <xsl:text> | </xsl:text>
         <xsl:apply-templates select="atom:updated" mode="time-only"/>
+	<xsl:apply-templates select="rdf:Description[@rdf:ID='citations']" />
       </span>
     </div>
+  </xsl:template>
+
+  <xsl:template match="rdf:Description">
+  <xsl:text> </xsl:text>  
+  <span class="citation"><xsl:apply-templates /></span>
   </xsl:template>
 
   <xsl:template match="atom:feed">

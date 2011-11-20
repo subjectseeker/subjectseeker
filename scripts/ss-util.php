@@ -786,7 +786,7 @@ function blogIdsToBlogPostData ($blogIds, $arrange, $order, $pagesize, $offset, 
 
   $firstBlog = array_shift ($blogIds);
 	
-  $sql = "SELECT BLOG_POST_ID, BLOG_ID, BLOG_POST_URI, BLOG_POST_TITLE FROM BLOG_POST WHERE BLOG_ID = $firstBlog AND BLOG_POST_STATUS_ID = 0";
+  $sql = "SELECT BLOG_POST_ID, BLOG_ID, BLOG_POST_URI, BLOG_POST_SUMMARY, BLOG_POST_TITLE, BLOG_POST_HAS_CITATION FROM BLOG_POST WHERE BLOG_ID = $firstBlog AND BLOG_POST_STATUS_ID = 0";
 
   foreach ($blogIds as $blogId) {
     $sql .= " OR BLOG_ID = $blogId AND BLOG_POST_STATUS_ID = 0";
@@ -1809,7 +1809,6 @@ function checkCitations ($postUri, $blogId, $db) {
 	
 	$citations = $xml->xpath ('//*[@class=\'Z3988\']//self::*');
 	
-
 	return $citations;
 }
 
