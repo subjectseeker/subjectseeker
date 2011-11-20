@@ -781,7 +781,7 @@ function blogIdsToBlogData ($blogIds, $db) {
 }
 
 // Input: array of blog IDs, DB handle
-// Output: mysql rows of blog data
+// Output: mysql rows of blog post data
 function blogIdsToBlogPostData ($blogIds, $arrange, $order, $pagesize, $offset, $db) {
 
   $firstBlog = array_shift ($blogIds);
@@ -1794,6 +1794,8 @@ function getSimplePie($uri) {
 
 /* CitationSeeker */
 
+// Input: post Uri, Blog ID, DB handle
+// Return: array with citation data or null
 function checkCitations ($postUri, $blogId, $db) {
 	$ch = curl_init(); // initialize curl handle
 	curl_setopt($ch, CURLOPT_URL, $postUri); // set url
@@ -1801,29 +1803,38 @@ function checkCitations ($postUri, $blogId, $db) {
 	curl_setopt($ch, CURLOPT_HEADER, 0); // do not include the header
 	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // allow redirects
 	curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
-	$html = curl_exec($ch); //Close the connection 
-	curl_close($ch);
+	$html = curl_exec($ch); // Execute curl
+	curl_close($ch); // Close the connection
+	
   $doc = new DOMDocument();
   @$doc->loadHTML($html);
 	$xml = simplexml_import_dom($doc);
 	
+	// Search for Z3988 class and return all its contents
 	$citations = $xml->xpath ('//*[@class=\'Z3988\']//self::*');
 	
 	return $citations;
 }
 
-function parseCitations ($postId, $data, $db) {
-	$count = count($data);
+// Input: post ID, citations data as an array, DB handle.
+// Output: Parsed citations. 
+function parseCitations ($postId, $citationData, $db) {
+	// Each citation generates 3 array items, we have to count them and group them.
+	$count = count($citationData);
 	$n = 0;
-	
 	for ($i = 1; $i <= $count / 3; $i++) {
-		$title = $data[$n]["title"];
-		preg_match("/(?<=bpr3.included=)./", $title, $include);
+		// Get attribute of citations with most of the necessary information.
+		$data = $citationData[$n]["title"];
+		// If 1, include this citation
+		preg_match("/(?<=bpr3.included=)./", $data, $include);
 		if ($include[0][0] == 1) {
-			$result = preg_split("/&/", $title);
+			// Split all the different information
+			$result = preg_split("/&/", $data);
 			foreach ($result as $value) {
+				// Split title and value
 				$elements = preg_split("/=/", $value, 2);
 				$attribute = $elements[0];
+				// If there is more than one author, add comma.
 				if (isset($values[$i][$attribute]) == TRUE) {
 					$values[$i][$attribute] .= ", ";
 				}
@@ -1832,12 +1843,18 @@ function parseCitations ($postId, $data, $db) {
 		}
 		
 		storeTopics ($postId, $values[$i]["rfe_dat"], $db);
+		
+		// Get ID and ID type (DOI, PMID, arXiv...)
 		preg_match_all("/(?<=info:)[^\/]+|(?<=\/).+/", $values[$i]["rft_id"], $id[$i]);	
 		$values[$i]["id_type"] = $id[$i][0][0];
 		$values[$i]["id"] = $id[$i][0][1];
 		$n = $n + 2;
-		$url = $data[$n]["href"];
+		
+		// Get post URL
+		$url = $citationData[$n]["href"];
 		$n++;
+		
+		// Generate citation
 		$citation[$i] = $values[$i]["rft.au"]." ";
 		if ($values[$i]["rft.date"] != NULL) {
 			$citation[$i] .= "(".$values[$i]["rft.date"].").";
@@ -1871,15 +1888,18 @@ function parseCitations ($postId, $data, $db) {
 		}
 		if ($values[$i]["id"] != NULL) {
 			$citation[$i] .= " <a href=\"$url\">".$values[$i]["id"]."</a>";
-			
-			$citation[$i] = mysql_real_escape_string(stripslashes(htmlentities($citation[$i])));
+		
+		// Encode and escape special characters
+		$citation[$i] = mysql_real_escape_string(stripslashes(htmlentities($citation[$i])));
 		}
 	}
 	return $citation;
 }
 
-function storeTopics ($postId, $data, $db) {
-	preg_match_all("/(?!.+=)[\w\s]+/", $data, $topics);
+// Input: Post ID, Topics Data, DB handle
+// Action: Store topics from the citation
+function storeTopics ($postId, $TopicsData, $db) {
+	preg_match_all("/(?!.+=)[\w\s]+/", $TopicsData, $topics);
 	foreach ($topics as $category) {
 		$tag = trim($category);
 		$topicId = addTopic($tag, $db);
@@ -1887,11 +1907,16 @@ function storeTopics ($postId, $data, $db) {
 	}
 }
 
+// Input: Citation, Post ID, DB handle
+// Action: Store citation
 function storeCitation ($citation, $postId, $db) {
+	// Post has citation
 	$markCitation = "UPDATE BLOG_POST SET BLOG_POST_HAS_CITATION=1 WHERE BLOG_POST_ID=$postId";
 	mysql_query($markCitation, $db);
 	
+	// Check that the citation isn't already stored
 	if (citationTextToCitationId ($citation, $db) == NULL) {
+		// Insert Citation
 		$insertCitation = "INSERT IGNORE INTO CITATION (CITATION_TEXT) VALUES ('$citation')";
 		mysql_query($insertCitation, $db);
 		if (mysql_error()) {
@@ -1899,7 +1924,9 @@ function storeCitation ($citation, $postId, $db) {
 		}
 	}
 	
+	// Get citation ID
 	$citationId = citationTextToCitationId ($citation, $db);
+	// Assign citation ID to post ID
 	$citationToPost = "INSERT IGNORE INTO POST_CITATION (CITATION_ID, BLOG_POST_ID) VALUES ('$citationId', '$postId')";
 	mysql_query($citationToPost, $db);
 	if (mysql_error()) {

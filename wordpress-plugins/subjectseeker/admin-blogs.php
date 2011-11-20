@@ -89,7 +89,8 @@ function doAdminBlogs() {
 				if ($offset == null || is_numeric($offset) == FALSE) {
 					$offset = "0";
 				}
-				print "<form method=\"GET\">\n";
+				print "<div class=\"ss-div-2\">
+				<form method=\"GET\">";
 				print "<input type=\"hidden\" name=\"filters\" value=\"filters\" />";
 				print "Sort by: ";
 				print "<select name='arrange'>\n";
@@ -143,8 +144,9 @@ function doAdminBlogs() {
 				print "</select><br />\n";
 				print "Entries per page: <input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/>";
 				print " | Start at: <input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>";
-				print " <input class=\"ss-button\" type=\"submit\" value=\"Go\" />";
-				print "</form><br />";
+				print "<br /><input class=\"ss-button\" type=\"submit\" value=\"Go\" />";
+				print "</form>
+				</div>";
 				
 			if ($step != NULL) {
 				$blogId = stripslashes($_REQUEST["blogId"]);
@@ -204,9 +206,10 @@ function doAdminBlogs() {
 			$baseUrl = removeParams();
 			$blogList = getBlogList(NULL, $arrange, $order, $pagesize, $offset, $db);
 			if ($blogList == null) {
-				print "There are no more blogs in the system.<br />";
+				print "<p>There are no more blogs in the system.</p>";
 			}
 			else {
+				print "<hr />";
 				foreach ($blogList as $blog) {
 					$blogId = $blog["id"];
 					$blogName = $blog["name"];
@@ -220,11 +223,14 @@ function doAdminBlogs() {
 					$blogStatus = ucwords(blogStatusIdToName ($blogStatusId, $db));
 					//$topic1 = $_REQUEST["topic1"];
 					//$topic2 = $_REQUEST["topic2"];
-					print "<p>$blogId | <a href=\"$blogUri\" target=\"_blank\">$blogName</a> | $blogStatus | $blogAddedTime | <a class=\"ss-button\" id=\"showForm-$blogId\" href=\"javascript:;\" onmousedown=\"toggleSlide('blogFormContainer-$blogId');\" onclick=\"toggleButton('showForm-$blogId');\">Show</a></p>";
-					print "<div id=\"blogFormContainer-$blogId\" style=\"display:none; overflow:hidden; height:488px;\">";
-					print "<div class=\"ss-form\">";
-					print "<form method=\"POST\">\n";
-					print "<input type=\"hidden\" name=\"step\" value=\"edit\" />";
+					print "<div class=\"ss-entry-wrapper\">
+					<div class=\"ss-div-button\">
+					$blogId | <a href=\"$blogUri\" target=\"_blank\">$blogName</a> | $blogStatus | $blogAddedTime
+					<div class=\"ss-right\"><span class=\"ss-hidden-text\">Click for details</span> <span class=\"arrow-up\"></span></div>
+					</div>
+					<div class=\"ss-slide-wrapper\">
+					<form method=\"POST\">
+					<input type=\"hidden\" name=\"step\" value=\"edit\" />";
 					if ($errormsg !== null) {
 						print "<p><font color='red'>Error: $errormsg</font></p>\n";
 					}
@@ -235,7 +241,7 @@ function doAdminBlogs() {
 					print "<p>*Blog name: <input type=\"text\" name=\"blogname\" size=\"40\" value=\"$blogName\"/></p>\n";
 					print "<p>*<a href=\"$blogUri\" target=\"_blank\">Blog URL:</a> <input type=\"text\" name=\"blogurl\" size=\"40\" value=\"$blogUri\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>";
 					print "<p>*<a href=\"$blogSyndicationUri\" target=\"_blank\">Blog syndication URL:</a> <input type=\"text\" name=\"blogsyndicationuri\" size=\"40\" value=\"$blogSyndicationUri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</p>";
-					print "<p>Blog description:<br /><textarea name=\"blogdescription\" rows=\"5\" cols=\"70\">$blogDescription</textarea></p>\n";
+					print "<p>Blog description:<br /><textarea name=\"blogdescription\" rows=\"5\" cols=\"60\">$blogDescription</textarea></p>\n";
 					print "<p>*Blog topics: <select name='topic1'>\n";
 					print "<option value='-1'>None</option>\n";
 					$topicList = getTopicList(true, $db);
@@ -269,9 +275,12 @@ function doAdminBlogs() {
 					print "</select></p>\n";
 					print "<input class=\"ss-button\" type=\"submit\" value=\"Submit\" /><br />\n";
 					print "</form>\n";
-					print "</div>";
-					print "</div>";
+					print "</div>
+					</div>
+					<hr />";
 				}
+				// Buttons for pages
+				print "<br \>";
 				$nextOffset = $offset + $pagesize;
 				$nextParams = "?filters=filters&arrange=$arrange&order=$order&n=$pagesize&offset=$nextOffset";
 				$nextUrl = $baseUrl . $nextParams;
@@ -283,10 +292,10 @@ function doAdminBlogs() {
 				$previousUrl = $baseUrl . $previousParams;
 				print "<div class=\"alignleft\"><h4><a title=\"Previous page\" href=\"$previousUrl\"><b>« Previous Page</b></a></h4></div><br />";
 			}
-		} else { # not moderator or admin
+		} else { // not moderator or admin
 			print "You are not authorized to administrate blogs.<br />";
 		}
-  } else {
+  } else { // not logged in
     print "Please log in.";
   }
 }

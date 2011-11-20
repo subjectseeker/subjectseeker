@@ -73,6 +73,7 @@ function scanPosts() {
     $email = $current_user->user_email;
 		$userId = addUser($displayName, $email, $db);
 		
+		// Filter panel values.
 		$arrange = $_REQUEST["arrange"];
 		$order = $_REQUEST["order"];
 		$pagesize = $_REQUEST["n"];
@@ -91,18 +92,20 @@ function scanPosts() {
 			$offset = "0";
 		}
 		
+		// Get blog ids of the requested blogs from the user.
 		$userBlogs = getBlogIdsByUserId($userId, $blog, $db);
 		if ($userBlogs == NULL) {
 			return print "$displayName has no active blogs.";
 		}
 		
-		print "<p>Please select the posts that you wish to scan for citations.</p>";
+		print "<p>Please select the posts that you would like to scan for citations.</p>";
 		
-		print "<form method=\"GET\">\n";
-		print "<input type=\"hidden\" name=\"filters\" value=\"filters\" />";
-		print "<div class=\"ss-div\">Sort by: ";
-		print "<select name='arrange'>\n";
-		print "<option value='BLOG_POST_ID'";
+		// Filters
+		print "<div class=\"ss-div-2\">
+		<form method=\"GET\">
+		<input type=\"hidden\" name=\"filters\" value=\"filters\" />
+		Sort by:
+		<select name='arrange'><option value='BLOG_POST_ID'";
 		if ($arrange == "BLOG_POST_ID") {
 			print " selected";
 		}
@@ -137,7 +140,9 @@ function scanPosts() {
 		print "</select>";
 		print " | <select name='blog'>\n";
 		print "<option value=''>All blogs</option>\n";
+		// Get blog ids from all the blogs from the user
 		$userBlogsList = getBlogIdsByUserId($userId, NULL, $db);
+		// Get blog names and ids
 		$blogsList = getBlogList($userBlogsList, 'BLOG_NAME', 'DESC', 100, 0, $db);
 		foreach ($blogsList as $blogs) {
 			$id = $blogs["id"];
@@ -155,71 +160,101 @@ function scanPosts() {
 		</form>
 		</div>";
 		
+		// Get blog posts data from blog ids
 		$blogPostData = blogIdsToBlogPostData($userBlogs, $arrange, $order, $pagesize, $offset, $db);
 		while ($row = mysql_fetch_array($blogPostData)) {
 			$postIds[] = $row["BLOG_POST_ID"];
 			$blogIds[] = $row["BLOG_ID"];
 			$postUris[] = $row["BLOG_POST_URI"];
+			$postSummaries[] = $row["BLOG_POST_SUMMARY"];
 			$postTitles[] = $row["BLOG_POST_TITLE"];
+			$hasCitations[] = $row["BLOG_POST_HAS_CITATION"];
 		}
-		if ($postIds != NULL) {
-			foreach ($blogIds as $id) {
-					$blogNames[] = getBlogName($id, $db);
-			}
-		}
-		
-		if ($step == 'scan') {
-			foreach ($postIds as $i => $value) {
-				$blogId = $blogIds[$i];
-				$postId = $postIds[$i];
-				$postUri = $postUris[$i];
-				$postTitle = $postTitles[$i];
-				$blogName = $blogNames[$i];
-				$check = $_REQUEST["check-$postId"];
-				$scanNow = $_REQUEST["scanNow"];
-				if ($check == 1 || $scanNow == 1) {
-					$citations = checkCitations ($postUri, $blogId, $db);
-					$citation = parseCitations ($postId, $citations, $db);
-					if ($citation != NULL) {
-						foreach ($citation as $value) {
-							print "<p>We found a citation on $blogName: <a href=\"$postUri\">$postTitle</a> </p>";
-							storeCitation ($value, $postId, $db);
-							print "<p>".html_entity_decode($value)."</p>";
-						}
-					}
-				}
-			}
-		}
-		
 		if ($postIds == NULL) {
 			print "<p>There are no more posts in our database.</p>";
 		}
 		else {
-			print "<form method=\"POST\">\n
-			<input type=\"hidden\" name=\"step\" value=\"scan\" />
-			<p><input type=\"checkbox\" id=\"check-all\" onClick=\"checkAll('form-checkbox',this)\"> Check/Uncheck All</p>
-			<div class=\"ss-div\"><hr /></div>";
-			foreach ($postIds as $i => $value) {
-				$blogId = $blogIds[$i];
-				$postId = $postIds[$i];
-				$postUri = $postUris[$i];
-				$postTitle = $postTitles[$i];
-				$blogName = $blogNames[$i];
-				if ($postTitle == NULL) {
-					$postTitle = $postUri;
-				}
-				print "<div class=\"ss-div\">
-				<input type=\"checkbox\" class=\"form-checkbox\" name=\"check-$postId\" value=\"1\" /> <span class=\"ss-postTitle\"><a href=\"$postUri\">$postTitle</a></span> <span class=\"ss-blogTitle\">$blogName</span>
-				</div>";
+			foreach ($blogIds as $id) {
+				// Get blog names from blog ids
+				$blogNames[] = getBlogName($id, $db);
 			}
-			print "<p><input class=\"ss-button\"type=\"submit\" value=\"Submit\" /></p>
-			</form>";
 			
-			$baseUrl = removeParams();
-			$nextOffset = $offset + $pagesize;
-			$nextParams = "?filters=filters&arrange=$arrange&order=$order&n=$pagesize&offset=$nextOffset";
-			$nextUrl = $baseUrl . $nextParams;
-			print "<div class=\"alignright\"><h4><a title=\"Next page\" href=\"$nextUrl\"><b>Next Page »</b></a></h4></div>";
+			if ($step == 'scan') {
+				// Results from the scan
+				print "<hr class=\"ss-div-2\" />";
+				foreach ($postIds as $i => $value) {
+					$blogId = $blogIds[$i];
+					$postId = $postIds[$i];
+					$postUri = $postUris[$i];
+					$postTitle = $postTitles[$i];
+					$blogName = $blogNames[$i];
+					//If 1, check this post
+					$check = $_REQUEST["check-$postId"];
+					//If 1, check the 10 most recent posts
+					$scanNow = $_REQUEST["scanNow"];
+					if ($check == 1 || $scanNow == 1) {
+						$citations = checkCitations ($postUri, $blogId, $db);
+						$citation = parseCitations ($postId, $citations, $db);
+						if ($citation != NULL) {
+							print "<p><span class=\"green-circle\"></span> We found the following citation(s) on $blogName: <a href=\"$postUri\">$postTitle</a></p>";
+							foreach ($citation as $value) {
+								storeCitation ($value, $postId, $db);
+								// Display citation
+								print "<p>".html_entity_decode($value)."</p>";
+							}
+						}
+						else {
+							print "<p><span class=\"red-circle\"></span> No citations found on $blogName: <a href=\"$postUri\">$postTitle</a></p>";
+						}
+						print "<hr class=\"ss-div-2\" />";
+					}
+				}
+				global $homeUrl;
+				global $userPosts;
+				// After the results, go back to scan posts or go to the homepage
+				print "<div class=\"ss-div\"><a href=\"$userPosts\" class=\"ss-button\">Go back to your posts</a> <a href=\"$homeUrl\" class=\"ss-button\">Homepage</a></div>";
+			}
+			
+			if ($step == NULL) {
+				// List of posts
+				print "<form method=\"POST\">\n
+				<input type=\"hidden\" name=\"step\" value=\"scan\" />
+				<div class=\"ss-div-2\"><input type=\"checkbox\" class=\"checkall\"> Check / Uncheck All</div>
+				<hr />";
+				foreach ($postIds as $i => $value) {
+					$blogId = $blogIds[$i];
+					$postId = $postIds[$i];
+					$postUri = $postUris[$i];
+					$postTitle = $postTitles[$i];
+					$postSummary = $postSummaries[$i];
+					$blogName = $blogNames[$i];
+					$hasCitation = $hasCitations[$i];
+					if ($postTitle == NULL) {
+						$postTitle = $postUri;
+					}
+					print "<div class=\"ss-entry-wrapper\"><input type=\"checkbox\" class=\"checkbox\" name=\"check-$postId\" value=\"1\" /> ";
+					if ($hasCitation == 1) {
+						print "CITATION ";
+					}
+					print "<span class=\"ss-postTitle\"><a href=\"$postUri\">$postTitle</a></span>
+					<div class=\"ss-div-button\"><div class=\"ss-right\"><span class=\"ss-hidden-text\">Click for details </span><span class=\"arrow-up\"></span></div>
+					</div>
+					<div class=\"ss-slide-wrapper\"><span class=\"ss-summary\"><p class=\"ss-bold\">Summary:</p><p>$postSummary</p></span></div>
+					<div class=\"ss-blogTitle\">$blogName</div>
+					</div>
+					<hr />";
+				}
+				print "<div class=\"ss-div\"><input class=\"ss-button\"type=\"submit\" value=\"Scan\" /></div>
+				</form>";
+				
+				// Current URL without parameters
+				$baseUrl = removeParams();
+				// Buttons for pages
+				$nextOffset = $offset + $pagesize;
+				$nextParams = "?filters=filters&arrange=$arrange&order=$order&n=$pagesize&offset=$nextOffset";
+				$nextUrl = $baseUrl . $nextParams;
+				print "<div class=\"alignright\"><h4><a title=\"Next page\" href=\"$nextUrl\"><b>Next Page »</b></a></h4></div>";
+			}
 		}
 		if ($offset > 0) {
 			$previousOffset = $offset - $pagesize;
@@ -228,7 +263,7 @@ function scanPosts() {
 			print "<div class=\"alignleft\"><h4><a title=\"Previous page\" href=\"$previousUrl\"><b>« Previous Page</b></a></h4></div><br />";
 		}
 	}
-	else {
+	else { // Not logged in
 		print "Please log in.";
 	}
 }

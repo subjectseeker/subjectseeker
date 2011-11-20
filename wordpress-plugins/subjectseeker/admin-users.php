@@ -90,11 +90,12 @@ function doAdminUsers() {
 			if ($offset == null || is_numeric($offset) == FALSE) {
 				$offset = "0";
 			}
-			print "<form method=\"GET\">\n";
-			print "<input type=\"hidden\" name=\"filters\" value=\"filters\" />";
-			print "Sort by: ";
-			print "<select name='arrange'>\n";
-			print "<option value='USER_ID'";
+			print "<div class=\"ss-div-2\">
+			<form method=\"GET\">
+			<input type=\"hidden\" name=\"filters\" value=\"filters\" />
+			Sort by: 
+			<select name='arrange'>
+			<option value='USER_ID'";
 			if ($arrange == "USER_ID") {
 				print " selected";
 			}
@@ -134,8 +135,8 @@ function doAdminUsers() {
 			print "</select><br />\n";
 			print "Entries per page: <input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/>";
 			print " | Start at: <input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>";
-			print " <input class=\"ss-button\" type=\"submit\" value=\"Go\" />";
-			print "</form><br />";
+			print "<br /><input class=\"ss-button\" type=\"submit\" value=\"Go\" />";
+			print "</form></div>";
 			if ($step != null) {
 				$userID = stripslashes($_REQUEST["userId"]);
 				$userName = stripslashes($_REQUEST["userName"]);
@@ -181,6 +182,7 @@ function doAdminUsers() {
 				print "There are no more users in the system.<br />";
 			}
 			else {
+				print "<hr />";
 				foreach ($userList as $user) {
 					$userID = $user["id"];
 					$userName = $user["name"];
@@ -189,11 +191,14 @@ function doAdminUsers() {
 					$userEmail = $user["email"];
 					$userStatus = ucwords(userStatusIdToName ($userStatusId, $db));
 					$userPrivilege = ucwords(userPrivilegeIdToName ($userPrivilegeId, $db));
-					print "<p>$userID | $userName | $userStatus | $userPrivilege | <a class=\"ss-button\" id=\"showForm-$userID\" href=\"javascript:;\" onmousedown=\"toggleSlide('container-$userID'), toggleButton('showForm-$userID');\">Show</a></p>";
-					print "<div id=\"container-$userID\" style=\"display:none; overflow:hidden; height:204px;\">";
-					print "<div class=\"ss-form\">";
-					print "<form name=\"form-$userID\" method=\"POST\">\n";
-					print "<input type=\"hidden\" name=\"step\" value=\"edit\" />";
+					print "<div class=\"ss-entry-wrapper\">
+					<div class=\"ss-div-button\">
+					$userID | $userName | $userStatus | $userPrivilege
+					<div class=\"ss-right\"><span class=\"ss-hidden-text\">Click for details </span><span class=\"arrow-up\"></span></div>
+					</div>
+					<div class=\"ss-slide-wrapper\">
+					<form class=\"ss-form\" method=\"POST\">
+					<input type=\"hidden\" name=\"step\" value=\"edit\" />";
 					if ($errormsg !== null) {
 						print "<p><font color='red'>Error: $errormsg</font></p>\n";
 					}
@@ -224,8 +229,11 @@ function doAdminUsers() {
 					print "<input id=\"submit-$userID\" class=\"ss-button\"type=\"submit\" value=\"Submit\" /><br />\n";
 					print "</form>
 					</div>
-					</div>";
+					</div>
+					<hr />";
 				}
+				// Buttons for pages
+				print "<br \>";
 				$nextOffset = $offset + $pagesize;
 				$nextParams = "?filters=filters&arrange=$arrange&order=$order&n=$pagesize&offset=$nextOffset";
 				$nextUrl = $baseUrl . $nextParams;
@@ -237,10 +245,10 @@ function doAdminUsers() {
 			$previousUrl = $baseUrl . $previousParams;
 			print "<div class=\"alignleft\"><h4><a title=\"Previous page\" href=\"$previousUrl\"><b>« Previous Page</b></a></h4></div><br />";
 			}
-		} else { # not moderator or admin
+		} else { // not moderator or admin
 			print "You are not authorized to administrate users.<br />";
 		}
-  } else {
+  } else { // not logged in
     print "Please log in.";
   }
 }
