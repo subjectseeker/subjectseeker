@@ -1829,7 +1829,7 @@ function checkCitations ($postUri, $postId, $db) {
 // Action: Store topics from the citation
 function storeTopics ($postId, $topicsData, $db) {
 	preg_match("/(?<=bpr3.tags=).+/", $topicsData, $topics);
-	$topic = preg_split("/,/", $topics[0]);
+	$topic = preg_split("/[,\/]/", $topics[0]);
 	foreach ($topic as $category) {
 		$tag = trim($category);
 		$topicId = addTopic($tag, $db);
