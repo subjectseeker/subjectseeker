@@ -193,7 +193,7 @@ function scanPosts() {
 					//If 1, check the 10 most recent posts
 					$scanNow = $_REQUEST["scanNow"];
 					if ($check == 1 || $scanNow == 1) {
-						$citations = checkCitations ($postUri, $blogId, $db);
+						$citations = checkCitations ($postUri);
 						$citation = parseCitations ($postId, $citations, $db);
 						if ($citation != NULL) {
 							print "<p><span class=\"green-circle\"></span> We found the following citation(s) on $blogName: <a href=\"$postUri\">$postTitle</a></p>";

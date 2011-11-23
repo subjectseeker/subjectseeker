@@ -1796,7 +1796,7 @@ function getSimplePie($uri) {
 
 // Input: post Uri, Blog ID, DB handle
 // Return: array with citation data or null
-function checkCitations ($postUri, $blogId, $db) {
+function checkCitations ($postUri, $db) {
 	$ch = curl_init(); // initialize curl handle
 	curl_setopt($ch, CURLOPT_URL, $postUri); // set url
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return into a variable
@@ -1811,7 +1811,15 @@ function checkCitations ($postUri, $blogId, $db) {
 	$xml = simplexml_import_dom($doc);
 	
 	// Search for Z3988 class and return all its contents
-	$citations = $xml->xpath ('//*[@class=\'Z3988\']//self::*');
+	$getCitations = $xml->xpath('//*[@class=\'Z3988\']');
+	
+	$citations = array();
+	foreach ($getCitations as $data) {
+		$url = $data->xpath('.//a/@href');
+		$citation["values"] = (string)$data->attributes()->title;
+		$citation["url"] = (string)$url[0]->href;
+		array_push($citations, $citation);
+	}
 	
 	return $citations;
 }
@@ -1819,17 +1827,13 @@ function checkCitations ($postUri, $blogId, $db) {
 // Input: post ID, citations data as an array, DB handle.
 // Output: Parsed citations. 
 function parseCitations ($postId, $citationData, $db) {
-	// Each citation generates 3 array items, we have to count them and group them.
-	$count = count($citationData);
-	$n = 0;
-	for ($i = 1; $i <= $count / 3; $i++) {
-		// Get attribute of citations with most of the necessary information.
-		$data = $citationData[$n]["title"];
+	$i = 0;
+	foreach ($citationData as $data) {
+		preg_match("/(?<=bpr3.included=)./", $data["values"], $include);
 		// If 1, include this citation
-		preg_match("/(?<=bpr3.included=)./", $data, $include);
-		if ($include[0][0] == 1) {
+		if ($include[0] == 1) {
 			// Split all the different information
-			$result = preg_split("/&/", $data);
+			$result = preg_split("/&/", $data["values"]);
 			foreach ($result as $value) {
 				// Split title and value
 				$elements = preg_split("/=/", $value, 2);
@@ -1845,14 +1849,9 @@ function parseCitations ($postId, $citationData, $db) {
 		storeTopics ($postId, $values[$i]["rfe_dat"], $db);
 		
 		// Get ID and ID type (DOI, PMID, arXiv...)
-		preg_match_all("/(?<=info:)[^\/]+|(?<=\/).+/", $values[$i]["rft_id"], $id[$i]);	
-		$values[$i]["id_type"] = $id[$i][0][0];
-		$values[$i]["id"] = $id[$i][0][1];
-		$n = $n + 2;
-		
-		// Get post URL
-		$url = $citationData[$n]["href"];
-		$n++;
+		preg_match_all("/(?<=info:)[^\/]+|(?<=\/).+/", $values[$i]["rft_id"], $id);
+		$values[$i]["id_type"] = $id[0][0];
+		$values[$i]["id"] = $id[0][1];
 		
 		// Generate citation
 		$citation[$i] = $values[$i]["rft.au"]." ";
@@ -1887,11 +1886,14 @@ function parseCitations ($postId, $citationData, $db) {
 			$citation[$i] .= " ".strtoupper($values[$i]["id_type"]).":";
 		}
 		if ($values[$i]["id"] != NULL) {
-			$citation[$i] .= " <a href=\"$url\">".$values[$i]["id"]."</a>";
+			$citation[$i] .= " <a href=\"".$data["url"]."\">".$values[$i]["id"]."</a>";
+		}
 		
 		// Encode and escape special characters
 		$citation[$i] = mysql_real_escape_string(stripslashes(htmlentities($citation[$i])));
-		}
+		
+		$i++;
+		
 	}
 	return $citation;
 }
@@ -1915,20 +1917,18 @@ function storeCitation ($citation, $postId, $db) {
 	mysql_query($markCitation, $db);
 	
 	// Check that the citation isn't already stored
-	if (citationTextToCitationId ($citation, $db) == NULL) {
+	$citationId = citationTextToCitationId ($citation, $db);
+	if ($citationId == NULL) {
 		// Insert Citation
 		$insertCitation = "INSERT IGNORE INTO CITATION (CITATION_TEXT) VALUES ('$citation')";
 		mysql_query($insertCitation, $db);
 		if (mysql_error()) {
 			die ("InsertCitation: " . mysql_error() . "\n");
 		}
-	}
-	
 	// Get citation ID
 	$citationId = mysql_insert_id();
-	if ($citationId == 0) {
-		$citationId = citationTextToCitationId ($citation, $db);
 	}
+	
 	// Assign citation ID to post ID
 	$citationToPost = "INSERT IGNORE INTO POST_CITATION (CITATION_ID, BLOG_POST_ID) VALUES ('$citationId', '$postId')";
 	mysql_query($citationToPost, $db);
