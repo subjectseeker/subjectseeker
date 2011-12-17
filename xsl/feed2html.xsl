@@ -47,7 +47,7 @@
   </xsl:template>
 
   <xsl:template match="atom:entry">
-    <div class="post">
+  	<div class="ss-entry-wrapper">
       <!-- this generates all tags, blog- and post-specific -->
       <!--
       <xsl:if test="atom:category | atom:source/atom:category">
@@ -66,33 +66,46 @@
       </xsl:if>
       -->
       <!-- temporarily, we only generate the blog category -->
-      <xsl:if test="atom:source/atom:category">
-        <span class="the_tags">
-          <xsl:for-each select="atom:source/atom:category">
-            <xsl:if
-              test="not(position() = 1)">
-              <xsl:text> | </xsl:text>
-            </xsl:if>
-            <xsl:apply-templates select="."/>
-          </xsl:for-each>
-        </span>
-        <xsl:text> </xsl:text>
-      </xsl:if>
+      <xsl:apply-templates select="atom:updated" mode="time-only"/>
+      <xsl:text> | </xsl:text>
       <a href="{atom:link/@href}" rel="bookmark">
         <xsl:attribute name="title">
           <xsl:text>Permanent link to </xsl:text>
           <xsl:value-of select="atom:title"/>
         </xsl:attribute>
-        <xsl:value-of select="atom:title"
-          disable-output-escaping="yes"/>
+        <span class="ss-postTitle">
+        	<xsl:value-of select="atom:title" disable-output-escaping="yes"/>
+        </span>
       </a>
-      <xsl:text> </xsl:text>
-      <span class="info-post">
-        <xsl:apply-templates select="atom:source/atom:title"/>
-        <xsl:text> | </xsl:text>
-        <xsl:apply-templates select="atom:updated" mode="time-only"/>
-	<xsl:apply-templates select="rdf:Description[@rdf:ID='citations']" />
-      </span>
+      <xsl:apply-templates select="rdf:Description[@rdf:ID='citations']" />
+      <div class="ss-div-button">
+      <span class="arrow-down"></span>
+			</div>
+      <div class="ss-slide-wrapper">
+      	<span class="ss-summary">
+          <p>
+          	<b><xsl:text>Summary: </xsl:text></b>
+      			<xsl:value-of select="atom:summary" disable-output-escaping="yes"/>
+        	</p>
+        </span>
+      </div>
+      <div class="info-post">
+        <span class="ss-blogTitle">
+    		<xsl:apply-templates select="atom:source/atom:title"/>
+        </span>
+        <xsl:if test="atom:source/atom:category">
+          <span class="the_tags">
+            <xsl:text> </xsl:text>
+            <xsl:for-each select="atom:source/atom:category">
+              <xsl:if
+                test="not(position() = 1)">
+                <xsl:text> | </xsl:text>
+              </xsl:if>
+              <xsl:apply-templates select="."/>
+            </xsl:for-each>
+           </span>
+      	</xsl:if>
+      </div>
     </div>
   </xsl:template>
 
