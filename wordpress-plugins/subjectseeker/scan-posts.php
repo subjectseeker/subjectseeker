@@ -181,7 +181,10 @@ function scanPosts() {
 			
 			if ($step == 'scan') {
 				// Results from the scan
-				print "<hr class=\"ss-div-2\" />";
+				print "<hr class=\"ss-div\" />";
+				if ($_REQUEST["addPosts"] == 1) {
+					crawlBlogs($blogsList, $db);
+				}
 				foreach ($postIds as $i => $value) {
 					$blogId = $blogIds[$i];
 					$postId = $postIds[$i];
@@ -205,7 +208,7 @@ function scanPosts() {
 						else {
 							print "<p><span class=\"red-circle\"></span> No citations found on $blogName: <a href=\"$postUri\">$postTitle</a></p>";
 						}
-						print "<hr class=\"ss-div-2\" />";
+						print "<hr class=\"ss-div\" />";
 					}
 				}
 				global $homeUrl;
@@ -218,7 +221,7 @@ function scanPosts() {
 				// List of posts
 				print "<form method=\"POST\">\n
 				<input type=\"hidden\" name=\"step\" value=\"scan\" />
-				<div class=\"ss-div-2\"><input type=\"checkbox\" class=\"checkall\"> Check / Uncheck All</div>
+				<div class=\"ss-div-2\"><input type=\"checkbox\" class=\"checkall\"> Check / Uncheck All <span class=\"alignright\"><input type=\"checkbox\" name=\"addPosts\" value=\"1\" /> Scan blogs for new posts.</span></div>
 				<hr />";
 				foreach ($postIds as $i => $value) {
 					$blogId = $blogIds[$i];
