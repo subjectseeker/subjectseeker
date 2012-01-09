@@ -1,3 +1,5 @@
+#!/usr/local/bin/php
+
 <?php
 
 include_once "ss-globals.php";

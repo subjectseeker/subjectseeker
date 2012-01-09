@@ -108,13 +108,13 @@ function getHost () {
 // all the interesting information about that post.
 function getPostData( $postID, $myHost, $dbHandle ) {
   // Most post information in one statement.
-  $postSQL = "SELECT A.BLOG_AUTHOR_ACCOUNT_NAME, B.BLOG_NAME, " .
-    "B.BLOG_URI, B.BLOG_SYNDICATION_URI, P.BLOG_POST_ID, " .
-    "P.BLOG_POST_URI, P.BLOG_POST_DATE_TIME, P.BLOG_POST_SUMMARY, " .
-    "P.BLOG_POST_TITLE, P.BLOG_POST_HAS_CITATION " .
-    "FROM BLOG_AUTHOR AS A, BLOG AS B, BLOG_POST " .
-    "AS P WHERE P.BLOG_POST_ID = $postID AND A.BLOG_AUTHOR_ID = " .
-    "P.BLOG_AUTHOR_ID AND B.BLOG_ID = P.BLOG_ID;";
+  $postSQL = "SELECT A.BLOG_AUTHOR_ACCOUNT_NAME, B.BLOG_NAME, 
+		B.BLOG_URI, B.BLOG_SYNDICATION_URI, P.BLOG_POST_ID, 
+		P.BLOG_POST_URI, P.BLOG_POST_DATE_TIME, P.BLOG_POST_SUMMARY, 
+		P.BLOG_POST_TITLE, P.BLOG_POST_HAS_CITATION 
+		FROM BLOG_AUTHOR AS A, BLOG AS B, BLOG_POST 
+		AS P WHERE P.BLOG_POST_ID = $postID AND A.BLOG_AUTHOR_ID = 
+		P.BLOG_AUTHOR_ID AND B.BLOG_ID = P.BLOG_ID;";
 
   $result = mysql_query( $postSQL, $dbHandle );
   if ( mysql_error() ) {
@@ -135,10 +135,22 @@ function getPostData( $postID, $myHost, $dbHandle ) {
   $postData[ "date" ] = date( "c", $utcDate );
   $postData[ "feed_uri" ] = sanitize( $row[ "BLOG_SYNDICATION_URI" ] );
   $postData[ "id" ] = $myHost . "/post/" . $row[ "BLOG_POST_ID" ];
-  $postData[ "summary" ] = sanitize( $row[ "BLOG_POST_SUMMARY" ] );
+  $postData[ "summary" ] = sanitize(strip_tags($row[ "BLOG_POST_SUMMARY" ], '<p><div><br>'));
   $postData[ "title" ] = sanitize( $row[ "BLOG_POST_TITLE" ] );
   $postData[ "uri" ] = sanitize( $row[ "BLOG_POST_URI" ] );
   $postData[ "hasCitation" ] = sanitize( $row[ "BLOG_POST_HAS_CITATION" ] );
+	
+	if ($postData["hasCitation"] == 1) {
+		$getCitation = "SELECT C.CITATION_TEXT FROM CITATION AS C, POST_CITATION AS PC WHERE PC.BLOG_POST_ID = $postID AND C.CITATION_ID = PC.CITATION_ID";
+		$results = mysql_query($getCitation, $dbHandle);
+		
+		$postData["citations"] = array();
+		while ($row = mysql_fetch_array($results)) {
+			$citation = sanitize('<p>'.html_entity_decode($row["CITATION_TEXT"]).'</p>');
+			array_push($postData["citations"], $citation);
+		}
+		var_dump($postData["citations"]);
+	}
 
   // Language is optional.
   $langSQL = "SELECT L.LANGUAGE_IETF_CODE FROM LANGUAGE AS L, " .
@@ -207,16 +219,33 @@ function getRecentPosts( $params, $numPosts, $offset, $dbHandle ) {
 	if (is_array($params["citation"]) == TRUE) {
 		$params["citation"] = implode($params["citation"]);
 	}
-	
+	if (is_array($params["editorsPicks"]) == TRUE) {
+		$params["editorsPicks"] = implode($params["editorsPicks"]);
+	}
+	if (is_array($params["usersPicks"]) == TRUE) {
+		$params["usersPicks"] = implode($params["usersPicks"]);
+	}
   $postSQL = "SELECT BLOG_POST_ID FROM BLOG_POST ";
-	if (count ($blogIds) > 0 || $params["citation"] == 1) {
+	if (count ($blogIds) > 0 || $params["citation"] == 1 || $params["editorsPicks"] == 1 || $params["usersPicks"] == 1) {
 		$postSQL .= "WHERE ";
 	}
-	if ($params["citation"]) {
+	if ($params["citation"] == 1) {
 		$postSQL .= "BLOG_POST_HAS_CITATION = 1 ";
 	}
-  if (count ($blogIds) > 0) {
+	if ($params["editorsPicks"] == 1) {
 		if ($params["citation"] == 1) {
+			$postSQL .= "AND ";
+		}
+		$editorsPicks = getEditorsPicks($dbHandle);
+		$firstPost = array_shift($editorsPicks);
+    $postSQL .= "((BLOG_POST_ID = $firstPost) ";
+    foreach ($editorsPicks as $id) {
+      $postSQL .= "OR (BLOG_POST_ID = $id) ";
+    }
+		$postSQL .= ") ";
+	}
+  if (count ($blogIds) > 0) {
+		if ($params["citation"] == 1 || $params["editorsPicks"] == 1) {
 			$postSQL .= "AND ";
 		}
     $firstBlogId = array_shift($blogIds);
@@ -261,9 +290,17 @@ function outputAsAtom( $post ) {
       <name>" . $post[ "author" ] . "</name>
     </author>
 ";
-  $atomString .= "    <summary type=\"html\">" . $post[ "summary" ] .
-    "</summary>
-";
+  $atomString .= "    <summary type=\"html\">" . $post[ "summary" ];
+	
+	if ($post["citations"]) {
+		$atomString .= sanitize("<br /><br /><div class='citation-wrapper'>");
+		foreach ($post["citations"] as $citation) {
+			$atomString .= $citation;
+		}
+		$atomString .= sanitize('</div>');
+	}
+	
+  $atomString .= "</summary>";
 
   // TODO insert RDF for citations here
   if ($post[ "hasCitation"] ) {
