@@ -34,17 +34,21 @@ function ssDbClose($dbConnection) {
  * Crawler
  */
 
-function crawl($blogs, $db) {
+function crawlBlogs($blogs, $db) {
 	foreach ($blogs as $blog) {
 		$blogUri = $blog["syndicationuri"];
 		$blogId = $blog["id"];
+		$blogName = $blog["name"];
 	
-		print "RSS: $blogUri\n";
+		print "<span class=\"green-circle\"></span> $blogName has been scanned for new posts.";
 		$feed = getSimplePie($blogUri);
+		$feed->set_cache_duration(0);
+		$feed->init();
 		if ($feed->error()) {
 			print "ERROR: $blogUri (ID $blogId): " . $feed->error() . "\n";
 		}
-	
+		print "<hr class=\"ss-div\" />";
+		
 		foreach ($feed->get_items() as $item) {
 			addSimplePieItem($item, $feed->get_language(), $blogId, $db);
 			$item->__destruct(); // Do what PHP should be doing on its own.
@@ -55,10 +59,7 @@ function crawl($blogs, $db) {
 		$feed->__destruct(); // Do what PHP should be doing on its own.
 		unset($feed);
 	}
-	
-	// clean up - we're done
-	ssDbClose($db);
-	}
+}
 
 /*
  * Curl functions
@@ -158,8 +159,15 @@ function paramArrayToString($params) {
 function parseHttpParams() {
   $i = 0;
   $params = array();
-	$citationPost = $_REQUEST["citation"];
-	$params['citation'] = $citationPost;
+	if ($_REQUEST["citation"]) {
+		$params['citation'] = $_REQUEST["citation"];
+	}
+	if ($_REQUEST["editorsPicks"]) {
+		$params['editorsPicks'] = $_REQUEST["editorsPicks"];
+	}
+	if ($_REQUEST["usersPicks"]) {
+		$params['usersPicks'] = $_REQUEST["usersPicks"];
+	}
   $filter = stripslashes($_REQUEST["filter$i"]);
   while ($filter !== "" && $filter !== null) {
     $value = stripslashes($_REQUEST["value$i"]);
@@ -259,6 +267,29 @@ function getUsers ($arrange, $order, $pagesize, $offset, $db) {
     array_push($users, $user);
   }
   return $users;
+}
+
+function getPosts ($arrange, $order, $pagesize, $offset, $db) {
+	$sql = "SELECT * from BLOG_POST ORDER BY $arrange $order LIMIT $pagesize OFFSET $offset";
+	
+	$posts = array();
+	$results =  mysql_query($sql, $db);	
+	while ($row = mysql_fetch_array($results)) {
+  // Build post object to return
+		$post["postId"] = $row["BLOG_POST_ID"];
+		$post["blogId"] = $row["BLOG_ID"];
+		$post["title"] = $row["BLOG_POST_TITLE"];
+		$post["content"] = $row["BLOG_POST_SUMMARY"];
+		$post["authorId"] = $row["BLOG_AUTHOR_ID"];
+		$post["postDate"] = $row["BLOG_POST_DATE_TIME"];
+		$post["addedDate"] = $row["BLOG_POST_INGEST_DATE_TIME"];
+		$post["uri"] = $row["BLOG_POST_URI"];
+		$post["language"] = $row["LANGUAGE_ID"];
+		$post["status"] = $row["BLOG_POST_STATUS_ID"];
+		$post["hasCitation"] = $row["BLOG_POST_HAS_CITATION"];
+		array_push($posts, $post);
+	}
+	return $posts;
 }
 
 // Input: Username, DB handle
@@ -422,6 +453,31 @@ function markCrawled ($blogId, $db) {
   mysql_query($sql, $db);
 }
 
+function getRecommendedStatus ($postId, $db) {
+	$sql = "SELECT BLOG_POST_ID FROM RECOMMENDATION WHERE BLOG_POST_ID = $postId";
+	$results = mysql_query($sql, $db);
+	
+	if (mysql_fetch_array($results) != NULL) {
+		return TRUE;
+	}
+	
+	return FALSE;
+}
+
+function getEditorsPicks($db) {
+	$sql = "SELECT rec.BLOG_POST_ID FROM RECOMMENDATION rec,
+PERSONA pers, USER user WHERE user.USER_ID = pers.USER_ID AND
+rec.PERSONA_ID = pers.PERSONA_ID AND user.USER_PRIVILEGE_ID > 0";
+	$results = mysql_query($sql, $db);
+	
+	$posts = array();
+	while ($row = mysql_fetch_array($results)) {
+    array_push ($posts, $row["BLOG_POST_ID"]);
+  }
+	
+  return $posts;
+}
+
 // Input: blog ID, DB handle
 // Return: array of email addresses of people associated with this blog
 function getBlogContacts($blogId, $db) {
@@ -450,6 +506,21 @@ function getBlogStatusId ($blogId, $db) {
   $row = mysql_fetch_array($results);
 
   return $row["BLOG_STATUS_ID"];
+}
+
+// Input: blogId, DB handle
+// Return: status ID of blog
+function getPostStatusId ($postId, $db) {
+  $sql = "SELECT BLOG_POST_STATUS_ID FROM BLOG_POST WHERE BLOG_POST_ID=$postId";
+  $results = mysql_query($sql, $db);
+
+  if (!$results || mysql_num_rows($results) == 0) {
+    return null;
+  }
+
+  $row = mysql_fetch_array($results);
+
+  return $row["BLOG_POST_STATUS_ID"];
 }
 
 // Input: DB handle
@@ -490,6 +561,20 @@ function getBlogStatusList ($db) {
 
   return $results;
 }
+
+// Input: DB handle
+// Return: blog status list
+function getBlogPostStatusList ($db) {
+	$sql = "SELECT BLOG_POST_STATUS_ID, BLOG_POST_STATUS_DESCRIPTION FROM BLOG_POST_STATUS ORDER BY BLOG_POST_STATUS_DESCRIPTION";
+  $results =  mysql_query($sql, $db);
+
+  if (mysql_error() != null) {
+    print "ERROR: " . mysql_error() . "<br />";
+  }
+
+  return $results;
+}
+
 
 // Input: topLevel (bool), DB handle
 // Return: array of topics (topLevel only if topLevel == true)
@@ -645,7 +730,15 @@ function userPrivilegeIdToName ($userPrivilegeId, $db) {
   $name = mysql_fetch_array($results);
 
   return $name["USER_PRIVILEGE_DESCRIPTION"];
+}
 
+function personaIdToPrivilegeId ($personaId, $db) {
+	$sql = "SELECT a.USER_PRIVILEGE_ID FROM USER a, PERSONA b WHERE b.PERSONA_ID = $personaId AND b.USER_ID = a.USER_ID";
+	$results = mysql_query($sql, $db);
+	
+	$privilegeId = mysql_fetch_array($results);
+
+	return $privilegeId["USER_PRIVILEGE_ID"];
 }
 
 // Input: Blog status id, DB handle
@@ -663,6 +756,22 @@ function blogStatusIdToName ($blogStatusId, $db) {
 
   return $name["BLOG_STATUS_DESCRIPTION"];
 
+}
+
+// Input: Blog status id, DB handle
+// Return: blog status name according to id
+function blogPostStatusIdToName ($blogPostStatusId, $db) {
+	
+  $sql = "SELECT BLOG_POST_STATUS_DESCRIPTION FROM BLOG_POST_STATUS WHERE BLOG_POST_STATUS_ID = '$blogPostStatusId'";
+  $results = mysql_query($sql, $db);
+
+  if (!$results || mysql_num_rows($results) == 0) {
+    return null;
+  }
+
+  $name = mysql_fetch_array($results);
+
+  return $name["BLOG_POST_STATUS_DESCRIPTION"];
 }
 
 // Input: array of topic names, DB handle
@@ -1253,11 +1362,11 @@ function displayEditBlogForm($db, $data) {
    }
 
   print "<p>*Required field</p>\n<p>\n";
-  print "*Blog name: <input type=\"text\" name=\"blogname\" size=\"40\" value=\"$blogname\"/>\n</p>\n<p>\n*Blog URL: <input type=\"text\" name=\"blogurl\" size=\"40\" value=\"$blogurl\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)";
-  print "</p><p>*Blog syndication URL: <input type=\"text\" name=\"blogsyndicationuri\" size=\"40\" value=\"$blogsyndicationuri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)";
-  print "</p><p>Blog description:<br /><textarea name=\"blogdescription\" rows=\"5\" cols=\"70\">$blogdescription</textarea><br />\n";
+  print "*Blog name: <input type=\"text\" name=\"blogname\" size=\"40\" value=\"$blogname\"/>\n</p>\n<p>\n*Blog URL: <input type=\"text\" name=\"blogurl\" size=\"40\" value=\"$blogurl\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>";
+  print "<p>*Blog syndication URL: <input type=\"text\" name=\"blogsyndicationuri\" size=\"40\" value=\"$blogsyndicationuri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</p>";
+  print "<p>Blog description:<br /><textarea name=\"blogdescription\" rows=\"5\" cols=\"55\">$blogdescription</textarea></p>\n";
 
-  print "Blog topic: <select name='topic1'>\n";
+  print "<p>*Blog topic: <select name='topic1'>\n";
   print "<option value='-1'>None</option>\n";
   $topicList = getTopicList(true, $db);
   while ($row = mysql_fetch_array($topicList)) {
@@ -1279,7 +1388,7 @@ function displayEditBlogForm($db, $data) {
     }
     print ">" . $row["TOPIC_NAME"] . "</option>\n";
   }
-  print "</select>\n";
+  print "</select></p>\n";
 ?>
 
 <p>
@@ -1313,7 +1422,7 @@ function displayEditPendingBlogs ($db) {
 		print "<p>*Blog name: <input type=\"text\" name=\"blogname[]\" size=\"40\" value=\"$blogName\"/></p>\n";
 		print "<p>*<a href=\"$blogUri\" style=\"none\" target=\"_blank\">Blog URL:</a> <input type=\"text\" name=\"blogurl[]\" size=\"40\" value=\"$blogUri\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>";
 		print "<p>*<a href=\"$blogSyndicationUri\" style=\"none\" target=\"_blank\">Blog syndication URL:</a> <input type=\"text\" name=\"blogsyndicationuri[]\" size=\"40\" value=\"$blogSyndicationUri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</p>";
-		print "<p>Blog description:<br /><textarea name=\"blogdescription[]\" rows=\"5\" cols=\"50\">$blogDescription</textarea></p>\n";
+		print "<p>Blog description:<br /><textarea name=\"blogdescription[]\" rows=\"5\" cols=\"55\">$blogDescription</textarea></p>\n";
 		print "<p>*Blog topics: <select name='topic1[]'>\n";
 		print "<option value='-1'>None</option>\n";
 		$topicList = getTopicList(true, $db);
@@ -1436,7 +1545,6 @@ function doVerifyEditClaim ($db) {
     print "<p>Your claim token ($claimToken) was not found on your blog and/or your syndication feed.</p>\n";
     displayBlogClaimToken($claimToken, $blogId, $displayName, $blogUri, $blogSyndicationUri, $db);
   }
-
 }
 
 
@@ -1531,6 +1639,79 @@ function editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescr
   if ($topic2 != "-1") {
     associateTopic($topic2, $blogId, $db);
   }
+}
+
+function checkPostData($postId, $postTitle, $postSummary, $postUrl, $userId, $displayname, $db) {
+
+  // if not logged in as an author or as admin, fail
+  if (! canEdit($userId, $blogId, $db)) {
+    $result .= "<li>$displayname does not have editing privileges to administer posts.</li>";
+  }
+
+  // user exists? active (0)?
+  $userStatus = getUserStatus($userId, $db);
+  if ($userStatus == null) {
+    $result .= "<li>No such user $displayname.</li>";
+  }
+  if ($userStatus != 0) {
+    $result .= "<li>User $displayname is not active; could not update blog info.</li>";
+  }
+
+  // blog exists? need blog id!
+  $postStatus = getPostStatusId($postId, $db);
+  if ($postStatus == null) {
+    $result .= "<li>No such post $postId.</li>";
+  }
+  
+  // check that there is a name
+  if ($postTitle == null) {
+	  $result .= "<li>You need to submit a title for this post.</li>";
+  }
+
+  // check that blog URL is fetchable
+  if (! uriFetchable($postUrl)) {
+    $result .= ("<li>Unable to fetch the contents of this post at $postUrl. Did you remember to put \"http://\" before the URL when you entered it? If you did, make sure your blog page is actually working, or <a href='/contact-us/'>contact us</a> to ask for help in resolving this problem.</li>");
+  }
+
+  // escape stuff
+  $postTitle = mysql_real_escape_string($postTitle);
+  $postSummary = mysql_real_escape_string($postSummary);
+  // TODO probably should be escaping the URIs as well
+
+  return $result;
+}
+
+// Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, DB handle
+// Action: edit blog metadata
+function editPost ($postId, $postTitle, $postUrl, $postSummary, $postStatus, $recommended, $image, $userId, $displayName, $db) {
+
+	$sql = "UPDATE BLOG_POST SET BLOG_POST_TITLE='$postTitle', BLOG_POST_URI='$postUrl', BLOG_POST_SUMMARY='$postSummary', BLOG_POST_STATUS_ID=$postStatus WHERE BLOG_POST_ID=$postId";
+	mysql_query($sql, $db);
+	
+	if ($recommended == 1) {
+		$personaId = addPersona($userId, $displayName, $db);
+		$timestamp = dateStringToSql("now");
+		$sql = "INSERT IGNORE INTO RECOMMENDATION (PERSONA_ID, BLOG_POST_ID, REC_DATE_TIME) VALUES ($personaId, $postId, '$timestamp')";
+		mysql_query($sql, $db);
+		
+		if ((($image["type"] == "image/gif") || ($image["type"] == "image/jpeg") || ($image["type"] == "image/pjpeg") || ($image["type"] == "image/png")) && ($image["size"] < 1048576)) {
+			if ($image["error"] > 0) {
+				print "<p>Error: " . $image["error"] . "</p>";
+			}
+			else {
+				global $imagedir;
+				move_uploaded_file($image["tmp_name"], "$imagedir/" . $image["name"]);
+				
+				$imgName = $image["name"];
+				$sql = "UPDATE RECOMMENDATION SET REC_IMAGE = '$imgName' WHERE BLOG_POST_ID = $postId";
+				mysql_query($sql, $db);
+			}
+		}
+	}
+	if ($recommended == NULL || $recommended == "") {
+		$sql = "DELETE FROM RECOMMENDATION WHERE BLOG_POST_ID = $postId";
+		mysql_query($sql, $db);
+	}
 }
 
 // Input: user ID, user name, user status, user privilege status, user email, administrator id, administrator privilege, administrator display name, WordPress DB handle, DB handle
@@ -1670,6 +1851,14 @@ function getBlogUri($blogId, $db) {
   return $row["BLOG_URI"];
 }
 
+function getPostImage($postId, $db) {
+	$sql = "SELECT REC_IMAGE FROM RECOMMENDATION WHERE BLOG_POST_ID = $postId";
+	$results = mysql_query($sql, $db);
+	
+	$row = mysql_fetch_array($results);
+  return $row["REC_IMAGE"];
+}
+
 // Input: UserId, DB handle
 // Return: user privilege status or null
 function getUserPrivilegeStatus($userId, $db) {
@@ -1739,7 +1928,8 @@ function addPersona($userId, $displayName, $db) {
 // Input: user ID, display name, DB handle
 // Return: return matching Persona, or null
 function getPersona($userId, $displayName, $db) {
-  $sql = "SELECT PERSONA_ID FROM PERSONA WHERE USER_ID=$userId AND DISPLAY_NAME='" . mysql_real_escape_string($displayName) . "')";
+  $sql = "SELECT PERSONA_ID FROM PERSONA WHERE USER_ID=$userId AND DISPLAY_NAME='" . mysql_real_escape_string($displayName) . "'";
+
   $results = mysql_query($sql, $db);
   if ($results == null || mysql_num_rows($results) == 0) {
     return null;
@@ -1841,7 +2031,7 @@ function storeTopics ($postId, $topicsData, $db) {
 // Action: Store citation
 function storeCitation ($citation, $postId, $db) {
 	
-	$citation = mysql_escape_string(stripslashes(htmlentities($citation)));
+	$citation = mysql_escape_string(utf8_encode($citation));
 	
 	// Post has citation
 	$markCitation = "UPDATE BLOG_POST SET BLOG_POST_HAS_CITATION=1 WHERE BLOG_POST_ID=$postId";
@@ -1856,8 +2046,8 @@ function storeCitation ($citation, $postId, $db) {
 		if (mysql_error()) {
 			die ("InsertCitation: " . mysql_error() . "\n");
 		}
-	// Get citation ID
-	$citationId = mysql_insert_id();
+		// Get citation ID
+		$citationId = mysql_insert_id();
 	}
 	
 	// Assign citation ID to post ID

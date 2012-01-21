@@ -11,7 +11,7 @@
   <xsl:output method="html"/>
 
   <xsl:param name="baseurl" select="'?'"/>
-  <xsl:param name="pagesize" select="50"/>
+  <xsl:param name="pagesize" select="30"/>
   <xsl:param name="offset" select="0"/>
 
   <xsl:key name="post-date" match="atom:entry"
@@ -66,32 +66,35 @@
       </xsl:if>
       -->
       <!-- temporarily, we only generate the blog category -->
-      <xsl:apply-templates select="atom:updated" mode="time-only"/>
-      <xsl:text> | </xsl:text>
-      <a href="{atom:link/@href}" rel="bookmark">
-        <xsl:attribute name="title">
-          <xsl:text>Permanent link to </xsl:text>
-          <xsl:value-of select="atom:title"/>
-        </xsl:attribute>
-        <span class="ss-postTitle">
-        	<xsl:value-of select="atom:title" disable-output-escaping="yes"/>
-        </span>
-      </a>
-      <xsl:apply-templates select="rdf:Description[@rdf:ID='citations']" />
-      <div class="ss-div-button">
-      <span class="arrow-down"></span>
-			</div>
+      <div>
+        <div class="post-header">
+        <xsl:apply-templates select="atom:updated" mode="time-only"/>
+        <xsl:text> | </xsl:text>
+          <a href="{atom:link/@href}" rel="bookmark">
+            <xsl:attribute name="title">
+              <xsl:text>Permanent link to </xsl:text>
+              <xsl:value-of select="atom:title"/>
+            </xsl:attribute>
+            <span class="ss-postTitle">
+              <xsl:value-of select="atom:title" disable-output-escaping="yes"/>
+            </span>
+          </a>
+        <xsl:apply-templates select="rdf:Description[@rdf:ID='citations']" />
+        </div>
+        <div class="ss-div-button">
+          <div class="arrow-down" title="Show Summary"></div>
+       	</div>
+      </div>
       <div class="ss-slide-wrapper">
-      	<span class="ss-summary">
-          <p>
-          	<b><xsl:text>Summary: </xsl:text></b>
-      			<xsl:value-of select="atom:summary" disable-output-escaping="yes"/>
-        	</p>
+        <span class="ss-summary">
+          <div title="Summary" style="padding: 10px;">
+          	<xsl:value-of select="atom:summary" disable-output-escaping="yes"/>
+          </div>
         </span>
       </div>
       <div class="info-post">
         <span class="ss-blogTitle">
-    		<xsl:apply-templates select="atom:source/atom:title"/>
+        	<xsl:apply-templates select="atom:source/atom:title"/>
         </span>
         <xsl:if test="atom:source/atom:category">
           <span class="the_tags">
@@ -104,7 +107,7 @@
               <xsl:apply-templates select="."/>
             </xsl:for-each>
            </span>
-      	</xsl:if>
+        </xsl:if>
       </div>
     </div>
   </xsl:template>

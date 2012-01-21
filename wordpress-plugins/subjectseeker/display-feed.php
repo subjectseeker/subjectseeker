@@ -77,7 +77,6 @@ function displayFeed() {
   $httpParams["offset"] = $_REQUEST["offset"];
 
   $resourceXml = searchFeeds ($type, $ssParams, $httpParams);
-
   printFeeds($resourceXml);
 }
 
@@ -120,7 +119,6 @@ function printFeeds($xmlFeed) {
   $xslt->importStylesheet($xsl);
 
   print $xslt->transformToXML($dom);
-
 }
 
 ?>

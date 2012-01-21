@@ -27,7 +27,7 @@ $params = discoverSearchParams();
 
 // Default number of blog posts to 100.
 // TODO: add to ss-globals.php
-$numPosts = 100;
+$numPosts = 30;
 if ( isset( $_REQUEST[ "n" ] ) and is_numeric( $_REQUEST[ "n" ] ) and
      ( $_REQUEST[ "n" ] > 0 ) ) {
   $numPosts = (string)(int)$_REQUEST[ "n" ];
@@ -135,7 +135,7 @@ function getPostData( $postID, $myHost, $dbHandle ) {
   $postData[ "date" ] = date( "c", $utcDate );
   $postData[ "feed_uri" ] = sanitize( $row[ "BLOG_SYNDICATION_URI" ] );
   $postData[ "id" ] = $myHost . "/post/" . $row[ "BLOG_POST_ID" ];
-  $postData[ "summary" ] = sanitize(strip_tags($row[ "BLOG_POST_SUMMARY" ], '<p><div><br>'));
+  $postData[ "summary" ] = sanitize(strip_tags($row[ "BLOG_POST_SUMMARY" ], '<p><br>'));
   $postData[ "title" ] = sanitize( $row[ "BLOG_POST_TITLE" ] );
   $postData[ "uri" ] = sanitize( $row[ "BLOG_POST_URI" ] );
   $postData[ "hasCitation" ] = sanitize( $row[ "BLOG_POST_HAS_CITATION" ] );
@@ -146,10 +146,9 @@ function getPostData( $postID, $myHost, $dbHandle ) {
 		
 		$postData["citations"] = array();
 		while ($row = mysql_fetch_array($results)) {
-			$citation = sanitize('<p>'.html_entity_decode($row["CITATION_TEXT"]).'</p>');
+			$citation = sanitize('<p>'.utf8_decode($row["CITATION_TEXT"]).'</p>');
 			array_push($postData["citations"], $citation);
 		}
-		var_dump($postData["citations"]);
 	}
 
   // Language is optional.
