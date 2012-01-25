@@ -40,14 +40,16 @@ function crawlBlogs($blogs, $db) {
 		$blogId = $blog["id"];
 		$blogName = $blog["name"];
 	
-		print "<span class=\"green-circle\"></span> $blogName has been scanned for new posts.";
 		$feed = getSimplePie($blogUri);
 		$feed->set_cache_duration(0);
 		$feed->init();
 		if ($feed->error()) {
-			print "ERROR: $blogUri (ID $blogId): " . $feed->error() . "\n";
+			$message .= "<div class=\"ss-div-2\"><span class=\"red-circle\"></span> ERROR: $blogUri (ID $blogId): " . $feed->error() . "</div>\n";
 		}
-		print "<hr class=\"ss-div\" />";
+		else {
+			$message .= "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> $blogName has been scanned for new posts.</div>";
+		}
+		$message .= "<hr />";
 		
 		foreach ($feed->get_items() as $item) {
 			addSimplePieItem($item, $feed->get_language(), $blogId, $db);
@@ -59,6 +61,7 @@ function crawlBlogs($blogs, $db) {
 		$feed->__destruct(); // Do what PHP should be doing on its own.
 		unset($feed);
 	}
+	return $message;
 }
 
 /*
@@ -254,6 +257,8 @@ function insanitize( $htmlString ) {
  * DB query functions
  */
 
+// Input: Arrange type, order, number of users, offset, DB handle
+// Return: Users data
 function getUsers ($arrange, $order, $pagesize, $offset, $db) {
   $sql = "SELECT USER_ID, USER_NAME, USER_STATUS_ID, USER_PRIVILEGE_ID, EMAIL_ADDRESS FROM USER ORDER BY $arrange $order LIMIT $pagesize OFFSET $offset";
   $users = array();
@@ -269,6 +274,8 @@ function getUsers ($arrange, $order, $pagesize, $offset, $db) {
   return $users;
 }
 
+// Input: Arrange type, order, number of posts, offset, DB handle
+// Return: Posts data
 function getPosts ($arrange, $order, $pagesize, $offset, $db) {
 	$sql = "SELECT * from BLOG_POST ORDER BY $arrange $order LIMIT $pagesize OFFSET $offset";
 	
@@ -369,10 +376,21 @@ function getBlogCount($db) {
 	return $count; 
 }
 
+// Input: Post ID, type of count, DB handle
+// Output: Number of recommendations or comments for this post
+function getRecommendationsCount($postId, $type, $db) {
+	$sql = "SELECT COUNT(PERSONA_ID) FROM RECOMMENDATION WHERE BLOG_POST_ID = $postId";
+	if ($type == "comments") {
+		$sql .= " AND REC_COMMENT != ''";
+	}
+	$result = mysql_query($sql, $db);
+	$count = mysql_result($result, 0);
+	return $count; 
+}
+
 // Input: DB handle
 // Output: array of arrays; sub-arrays contain ["uri"] and ["id"]
 function getSparseBlogs($db, $limit=1000) {
-
   // status 0 => active
   $sql = "SELECT BLOG_SYNDICATION_URI, BLOG_ID FROM BLOG WHERE BLOG_STATUS_ID=0 ORDER BY CRAWLED_DATE_TIME LIMIT $limit";
   $blogs = array();
@@ -453,8 +471,10 @@ function markCrawled ($blogId, $db) {
   mysql_query($sql, $db);
 }
 
-function getRecommendedStatus ($postId, $db) {
-	$sql = "SELECT BLOG_POST_ID FROM RECOMMENDATION WHERE BLOG_POST_ID = $postId";
+// Input: postID, personaID, DB handle
+// Action: get post recommendation status for this user
+function getRecommendationStatus ($postId, $personaId, $db) {
+	$sql = "SELECT BLOG_POST_ID FROM RECOMMENDATION WHERE BLOG_POST_ID = $postId AND PERSONA_ID = $personaId";
 	$results = mysql_query($sql, $db);
 	
 	if (mysql_fetch_array($results) != NULL) {
@@ -464,18 +484,30 @@ function getRecommendedStatus ($postId, $db) {
 	return FALSE;
 }
 
-function getEditorsPicks($db) {
-	$sql = "SELECT rec.BLOG_POST_ID FROM RECOMMENDATION rec,
+// Input: DB handle
+// Return: IDs of posts recommended by editors
+function getEditorsPicks($type, $db) {
+	$sql = "SELECT rec.BLOG_POST_ID";
+	if ($type == 'images') {
+		$sql .= ", rec.REC_COMMENT, rec.REC_IMAGE";
+	}
+	$sql .= " FROM RECOMMENDATION rec,
 PERSONA pers, USER user WHERE user.USER_ID = pers.USER_ID AND
 rec.PERSONA_ID = pers.PERSONA_ID AND user.USER_PRIVILEGE_ID > 0";
+	if ($type == 'images') {
+		$sql .= " AND rec.REC_IMAGE != '' ORDER BY REC_DATE_TIME DESC LIMIT 4";
+	}
 	$results = mysql_query($sql, $db);
 	
-	$posts = array();
+	$recommendations = array();
 	while ($row = mysql_fetch_array($results)) {
-    array_push ($posts, $row["BLOG_POST_ID"]);
+		$recommendation["postId"] = $row["BLOG_POST_ID"];
+		$recommendation["comment"] = $row["REC_COMMENT"];
+		$recommendation["image"] = $row["REC_IMAGE"];
+    array_push ($recommendations, $recommendation);
   }
 	
-  return $posts;
+  return $recommendations;
 }
 
 // Input: blog ID, DB handle
@@ -563,7 +595,7 @@ function getBlogStatusList ($db) {
 }
 
 // Input: DB handle
-// Return: blog status list
+// Return: blog post status list
 function getBlogPostStatusList ($db) {
 	$sql = "SELECT BLOG_POST_STATUS_ID, BLOG_POST_STATUS_DESCRIPTION FROM BLOG_POST_STATUS ORDER BY BLOG_POST_STATUS_DESCRIPTION";
   $results =  mysql_query($sql, $db);
@@ -607,6 +639,16 @@ function getPersonaNames ($userId, $db) {
     }
   }
   return $personaNames;
+}
+
+// Input: persona ID, DB handle
+// Output: name of this persona ID
+function getPersonaName ($personaId, $db) {
+	$sql = "SELECT DISPLAY_NAME FROM PERSONA WHERE PERSONA_ID=$personaId";
+  $result = mysql_query($sql, $db);
+  
+	$row = mysql_fetch_array($result);
+  return $row["DISPLAY_NAME"];
 }
 
 // Input: user ID, DB handle
@@ -732,6 +774,8 @@ function userPrivilegeIdToName ($userPrivilegeId, $db) {
   return $name["USER_PRIVILEGE_DESCRIPTION"];
 }
 
+// Input: Persona id, DB handle
+// Return: user id to privilege id
 function personaIdToPrivilegeId ($personaId, $db) {
 	$sql = "SELECT a.USER_PRIVILEGE_ID FROM USER a, PERSONA b WHERE b.PERSONA_ID = $personaId AND b.USER_ID = a.USER_ID";
 	$results = mysql_query($sql, $db);
@@ -803,6 +847,7 @@ function topicNamesToIds ($topicNames, $db) {
 
 }
 
+// Input: DB handle
 // Return: array of blog IDs for all active blogs in the system
 function getBlogIds ($db) {
   $sql = "SELECT BLOG_ID FROM BLOG WHERE BLOG_STATUS_ID=0";
@@ -863,6 +908,21 @@ function citationTextToCitationId ($citation, $db) {
   return $citationId;
 }
 
+// Input: Post ID, DB handle
+// Output: Citation Data
+function postIdToCitation ($postId, $db) {
+  $sql = "SELECT c.* FROM CITATION c, POST_CITATION pc WHERE pc.BLOG_POST_ID = $postId AND c.CITATION_ID = pc.CITATION_ID";
+  $results = mysql_query($sql, $db);
+	
+  $citations = array();
+	while($row = mysql_fetch_array($results)) {
+		$citation["id"] = $row["CITATION_ID"];
+		$citation["text"] = $row["CITATION_TEXT"];
+  	array_push($citations, $citation);
+	}
+
+  return $citations;
+}
 
 // Input: array of blog IDs, DB handle
 // Output: mysql rows of blog data
@@ -962,7 +1022,7 @@ function dateStringToSql($datestr) {
 function addSimplePieItem ($item, $language, $blogId, $db) {
   $itemURI = insanitize( $item->get_permalink() );
 
-  $existing = getPost( $itemURI , $db);
+  $existing = getPost("BLOG_POST_URI", $itemURI , $db);
 
   if ($existing) {
     return $existing["dbId"];
@@ -1044,10 +1104,39 @@ function uriFetchable ($uri) {
   return true;
 }
 
+// Input: ID of post, ID of topic, Topic source, DB handle
+// Action: link IDs of post and topic in DB
+function linkTopicToPost($postId, $topicId, $source, $db) {
+  $sql = "INSERT IGNORE INTO POST_TOPIC (BLOG_POST_ID, TOPIC_ID, TOPIC_SOURCE) VALUES ($postId, $topicId, $source)";
+  mysql_query($sql, $db);
+  if (mysql_error()) {
+    die ("linkTopicToPost: " . mysql_error() . "\n");
+  }
+}
+
+// Input: name of topic, DB handle
+// Action: if this topic does not yet exist, insert it
+// Return: ID of (new or previously existing) topic
+function addTopic ($topic, $db) {
+  $topic = strtolower($topic);
+  $topicId = getTopic($topic, $db);
+  if ($topicId) {
+    return $topicId;
+  }
+  $topic = mysql_real_escape_string($topic);
+
+  $sql = "INSERT INTO TOPIC (TOPIC_NAME, TOPIC_TOP_LEVEL_INDICATOR) VALUES ('$topic', 0)";
+  mysql_query($sql, $db);
+  if (mysql_error()) {
+    die ("addTopic: " . mysql_error());
+  }
+  return mysql_insert_id();
+}
+
 // Input: uri of post to search for, DB handle
 // Return: corresponding post object, or null
-function getPost ($uri, $db) {
-  $sql = "SELECT * from BLOG_POST where BLOG_POST_URI = '$uri'";
+function getPost ($type, $value, $db) {
+  $sql = "SELECT * from BLOG_POST where $type = '$value'";
   $results =  mysql_query($sql, $db);
   if (! $results || mysql_num_rows($results) == 0) {
     return null;
@@ -1080,33 +1169,21 @@ function getPost ($uri, $db) {
   return $post;
 }
 
-// Input: ID of post, ID of topic, Topic source, DB handle
-// Action: link IDs of post and topic in DB
-function linkTopicToPost($postId, $topicId, $source, $db) {
-  $sql = "INSERT IGNORE INTO POST_TOPIC (BLOG_POST_ID, TOPIC_ID, TOPIC_SOURCE) VALUES ($postId, $topicId, $source)";
-  mysql_query($sql, $db);
-  if (mysql_error()) {
-    die ("linkTopicToPost: " . mysql_error() . "\n");
+// Input: Post ID, DB handle
+// Result: Comments data
+function getComments($postId, $db) {
+	$sql = "SELECT PERSONA_ID, REC_DATE_TIME, REC_COMMENT FROM RECOMMENDATION WHERE BLOG_POST_ID=$postId AND REC_COMMENT != ''";
+	$results = mysql_query($sql, $db);
+	
+	$comments = array();
+  while ($row = mysql_fetch_array($results)) {
+    $comment["personaId"] = $row["PERSONA_ID"];
+    $comment["date"] = $row["REC_DATE_TIME"];
+		$comment["comment"] = $row["REC_COMMENT"];
+    array_push($comments, $comment);
   }
-}
-
-// Input: name of topic, DB handle
-// Action: if this topic does not yet exist, insert it
-// Return: ID of (new or previously existing) topic
-function addTopic ($topic, $db) {
-  $topic = strtolower($topic);
-  $topicId = getTopic($topic, $db);
-  if ($topicId) {
-    return $topicId;
-  }
-  $topic = mysql_real_escape_string($topic);
-
-  $sql = "INSERT INTO TOPIC (TOPIC_NAME, TOPIC_TOP_LEVEL_INDICATOR) VALUES ('$topic', 0)";
-  mysql_query($sql, $db);
-  if (mysql_error()) {
-    die ("addTopic: " . mysql_error());
-  }
-  return mysql_insert_id();
+	
+	return $comments;
 }
 
 // Input: name of topic, DB handle
@@ -1641,6 +1718,9 @@ function editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescr
   }
 }
 
+// Input: post ID, post title, post summary, post URL, user ID, user display name, DB handle
+// Action: check post metadata
+// Return: error message or null
 function checkPostData($postId, $postTitle, $postSummary, $postUrl, $userId, $displayname, $db) {
 
   // if not logged in as an author or as admin, fail
@@ -1683,35 +1763,11 @@ function checkPostData($postId, $postTitle, $postSummary, $postUrl, $userId, $di
 
 // Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, DB handle
 // Action: edit blog metadata
-function editPost ($postId, $postTitle, $postUrl, $postSummary, $postStatus, $recommended, $image, $userId, $displayName, $db) {
+function editPost ($postId, $postTitle, $postUrl, $postSummary, $postStatus, $userId, $displayName, $db) {
 
 	$sql = "UPDATE BLOG_POST SET BLOG_POST_TITLE='$postTitle', BLOG_POST_URI='$postUrl', BLOG_POST_SUMMARY='$postSummary', BLOG_POST_STATUS_ID=$postStatus WHERE BLOG_POST_ID=$postId";
 	mysql_query($sql, $db);
-	
-	if ($recommended == 1) {
-		$personaId = addPersona($userId, $displayName, $db);
-		$timestamp = dateStringToSql("now");
-		$sql = "INSERT IGNORE INTO RECOMMENDATION (PERSONA_ID, BLOG_POST_ID, REC_DATE_TIME) VALUES ($personaId, $postId, '$timestamp')";
-		mysql_query($sql, $db);
-		
-		if ((($image["type"] == "image/gif") || ($image["type"] == "image/jpeg") || ($image["type"] == "image/pjpeg") || ($image["type"] == "image/png")) && ($image["size"] < 1048576)) {
-			if ($image["error"] > 0) {
-				print "<p>Error: " . $image["error"] . "</p>";
-			}
-			else {
-				global $imagedir;
-				move_uploaded_file($image["tmp_name"], "$imagedir/" . $image["name"]);
-				
-				$imgName = $image["name"];
-				$sql = "UPDATE RECOMMENDATION SET REC_IMAGE = '$imgName' WHERE BLOG_POST_ID = $postId";
-				mysql_query($sql, $db);
-			}
-		}
-	}
-	if ($recommended == NULL || $recommended == "") {
-		$sql = "DELETE FROM RECOMMENDATION WHERE BLOG_POST_ID = $postId";
-		mysql_query($sql, $db);
-	}
+
 }
 
 // Input: user ID, user name, user status, user privilege status, user email, administrator id, administrator privilege, administrator display name, WordPress DB handle, DB handle
@@ -1851,7 +1907,9 @@ function getBlogUri($blogId, $db) {
   return $row["BLOG_URI"];
 }
 
-function getPostImage($postId, $db) {
+// Input: post ID, persona ID, DB handle
+// Return: get recommendation related image from this post and user
+function getPostImage($postId, $personaId, $db) {
 	$sql = "SELECT REC_IMAGE FROM RECOMMENDATION WHERE BLOG_POST_ID = $postId";
 	$results = mysql_query($sql, $db);
 	
@@ -1983,6 +2041,73 @@ function getSimplePie($uri) {
 
 /* CitationSeeker */
 
+// Input: ID of post, db handle
+// Return: true if post has BLOG_POST_HAS_CITATION=1, false otherwise
+function citedPost ($postId, $db) {
+  $sql = "SELECT * FROM BLOG_POST WHERE BLOG_POST_HAS_CITATION=1 AND BLOG_POST_ID=$postId";
+  $results = mysql_query($sql, $db);
+  return (mysql_num_rows($results) != 0);
+}
+
+function retrieveCrossRefMetadata($uri) {
+  $ch = curl_init();    // initialize curl handle
+  curl_setopt($ch, CURLOPT_URL,$uri); // set url to post to
+  curl_setopt($ch, CURLOPT_FAILONERROR, 1);
+  curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
+  curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
+
+# Send query to CrossRef Metadata Search
+  $result = curl_exec($ch);
+  $cerror = curl_error($ch);
+if (($cerror != null & strlen($cerror) > 0)) {
+  print "ERROR: $cerror\n";
+ }
+
+ return $result;
+}
+
+# Input: string which contains all or part of article title (user-supplied)
+# Output: list of strings, each containing COinS-formatted citation which might match the supplied string
+function titleToCitations($title, $metadata2coins) {
+
+  $uri = "http://api.labs.crossref.org/search?q=" . urlencode($title);
+
+  $ch = curl_init();    // initialize curl handle
+  curl_setopt($ch, CURLOPT_URL,$uri); // set url to post to
+  curl_setopt($ch, CURLOPT_FAILONERROR, 1);
+  curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
+  curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
+
+	# Send query to CrossRef Metadata Search
+  $result = curl_exec($ch);
+  $cerror = curl_error($ch);
+	if (($cerror != null & strlen($cerror) > 0)) {
+		print "ERROR: $cerror\n";
+	 }
+	
+	$resultLinks = array();
+	// extract the links to the metadata for matching articles
+	foreach (explode ("\n", $result) as $line) {
+		if (preg_match("/\[xml\]/", $line)) {
+			$uri;
+			if (preg_match("/<a href='(.*)'/", $line, $matches)) {
+				array_push($resultLinks, $matches[1]);
+			}
+		}
+	}
+
+	$citations = array();
+	foreach ($resultLinks as $uri) {
+		$metadataXml = retrieveCrossRefMetadata ($uri);
+		// TODO put XSL file location in globals
+		$metadataCoins = transformXmlString($metadataXml, $metadata2coins);
+		array_push($citations, $metadataCoins);
+ }
+ return $citations;
+}
+
 // Input: post Uri, post ID, DB handle
 // Return: array with citations or null
 function checkCitations ($postUri, $postId, $db) {
@@ -1993,6 +2118,12 @@ function checkCitations ($postUri, $postId, $db) {
 	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // allow redirects
 	curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
 	$html = curl_exec($ch); // Execute curl
+	
+	$cerror = curl_error($ch);
+	if (($cerror != null & strlen($cerror) > 0)) {
+		return $cerror;
+	}
+	
 	curl_close($ch); // Close the connection
 	
   $doc = new DOMDocument();
@@ -2012,7 +2143,7 @@ function checkCitations ($postUri, $postId, $db) {
 		}
 	}
 	
-	return $citation;
+	return  $citation;
 }
 
 // Input: Post ID, Topics Data, DB handle
@@ -2046,8 +2177,8 @@ function storeCitation ($citation, $postId, $db) {
 		if (mysql_error()) {
 			die ("InsertCitation: " . mysql_error() . "\n");
 		}
-		// Get citation ID
-		$citationId = mysql_insert_id();
+	// Get citation ID
+	$citationId = mysql_insert_id();
 	}
 	
 	// Assign citation ID to post ID
@@ -2056,6 +2187,54 @@ function storeCitation ($citation, $postId, $db) {
 	if (mysql_error()) {
 		die ("CitationToPost: " . mysql_error() . "\n");
 	}
+}
+
+// Input: post ID, citation ID, DB handle.
+// Output: Parsed citations. 
+function removeCitations($postId, $citationId, $db) {
+	$sql = "DELETE FROM POST_CITATION WHERE BLOG_POST_ID = $postId";
+	if ($citationId != NULL) {
+		$sql .= " AND CITATION_ID = $citationIdBLOG_POST_HAS_CITATION";
+	}
+  mysql_query($sql, $db);
+	
+	$sql = "UPDATE BLOG_POST SET BLOG_POST_HAS_CITATION = 0 WHERE BLOG_POST_ID=$postId";
+  mysql_query($sql, $db);
+}
+
+// Input: citation, DB handle.
+// Output: Parsed citations. 
+function parseCitation ($citation, $db) {
+	$dom = new DOMDocument();
+	@$dom->loadHTML($citation);
+	$xml = simplexml_import_dom($dom);
+	$xpath = $xml->xpath("//span[@class=\'Z3988\']");
+	$title = (string)$xpath[0]->title;
+	// Split all the different information
+	$result = preg_split("/&/", $title);
+	$i = 0;
+	foreach ($result as $value) {
+		// Split title and value
+		$elements = preg_split("/=/", $value, 2);
+		$attribute = $elements[0];
+		// If there is more than one author, add to array
+		if ($attribute == "rft.au" || $attribute == "rft.aufirst" || $attribute == "rft.aulast") {
+			$authors[$i][$attribute] = utf8_encode(urldecode($elements[1]));
+			if ($attribute == "rft.aufirst") {
+				$i++;
+			}
+		}
+		else {
+			$values[$attribute] .= utf8_encode(urldecode($elements[1]));
+		}
+	}
+	$values["authors"] = $authors;
+	// Get ID and ID type (DOI, PMID, arXiv...)
+	preg_match_all("/(?<=info:)[^\/]+|(?<=\/).+/", $values["rft_id"], $id);
+	$values["id_type"] = $id[0][0];
+	$values["id"] = $id[0][1];
+
+	return $values;
 }
 
 /* Claim stuff */

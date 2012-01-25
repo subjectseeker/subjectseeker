@@ -54,11 +54,17 @@ while ($row = mysql_fetch_array($results)) {
 }
 
 foreach ($posts as $post) {
+  if (! citedPost($post["id"], $db)) {
 	$citations = checkCitations ($post["url"], $post["id"], $db);
 	foreach ($citations as $citation) {
+          print "Storing citation for post id=" . $post["id"] . " url=" . $post["url"] . " citation=$citation\n";
 		storeCitation ($citation, $post["id"], $db);
 	}
+  } else {
+    print "Skipping already cited post " . $post["id"] . "\n";
+  }
 }
+
 
 print "Done!";
 

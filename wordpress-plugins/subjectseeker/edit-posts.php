@@ -1,8 +1,8 @@
 <?php
 /*
-Plugin Name: SubjectSeeker Scan for Citations
+Plugin Name: SubjectSeeker Edit Posts
 Plugin URI: http://scienceseeker.org/
-Description: Scan for Citations for SubjectSeeker tool
+Description: Edit posts for SubjectSeeker tool
 Author: Liminality
 Version: 1
 Author URI: http://www.binaryparticle.com
@@ -14,9 +14,9 @@ Author URI: http://www.binaryparticle.com
 
 include_once "ss-includes.inc";
 
-if (!class_exists('csScanPosts')) {
-  class csScanPosts {
-    function csScanPosts() {
+if (!class_exists('ssEditPosts')) {
+  class ssEditPosts {
+    function ssEditPosts() {
       $this->version = "0.1";
     }
 
@@ -26,37 +26,37 @@ if (!class_exists('csScanPosts')) {
 
     function setupWidget() {
       if (!function_exists('register_sidebar_widget')) return;
-      function widget_csScanPosts($args) {
+      function widget_ssEditPosts($args) {
         extract($args);
-        $options = get_option('widget_csScanPosts');
+        $options = get_option('widget_ssEditPosts');
         $title = $options['title'];
         echo $before_widget . $before_title . $title . $after_title;
-        get_csScanPosts();
+        get_ssEditPosts();
         echo $after_widget;
       }
-      function widget_csScanPosts_control() {
-        $options = get_option('widget_csScanPosts');
-        if ( $_POST['csScanPosts-submit'] ) {
-          $options['title'] = strip_tags(stripslashes($_POST['csScanPosts-title']));
-          update_option('widget_csScanPosts', $options);
+      function widget_ssEditPosts_control() {
+        $options = get_option('widget_ssEditPosts');
+        if ( $_POST['ssEditPosts-submit'] ) {
+          $options['title'] = strip_tags(stripslashes($_POST['ssEditPosts-title']));
+          update_option('widget_ssEditPosts', $options);
         }
         $title = htmlspecialchars($options['title'], ENT_QUOTES);
         echo
-          '<p><label for="csScanPosts-title">Title:<input class="widefat" name="csScanPosts-title" type="text" value="'.$title.'" /></label></p>'.
-          '<input type="hidden" id="csScanPosts-submit" name="csScanPosts-submit" value="1" />';
+          '<p><label for="ssEditPosts-title">Title:<input class="widefat" name="ssEditPosts-title" type="text" value="'.$title.'" /></label></p>'.
+          '<input type="hidden" id="ssEditPosts-submit" name="ssEditPosts-submit" value="1" />';
       }
-      register_sidebar_widget('csScanPosts', 'widget_csScanPosts');
-      register_widget_control('csScanPosts', 'widget_csScanPosts_control');
+      register_sidebar_widget('ssEditPosts', 'widget_ssEditPosts');
+      register_widget_control('ssEditPosts', 'widget_ssEditPosts_control');
     }
   }
 }
 
-$csScanPosts = new csScanPosts();
-add_action( 'plugins_loaded', array(&$csScanPosts, 'setupWidget') );
-register_activation_hook( __FILE__, array( &$csScanPosts, 'setupActivation' ));
+$ssEditPosts = new ssEditPosts();
+add_action( 'plugins_loaded', array(&$ssEditPosts, 'setupWidget') );
+register_activation_hook( __FILE__, array( &$ssEditPosts, 'setupActivation' ));
 
-function get_csScanPosts($settings = array()) {
-	global $csScanPosts;
+function get_ssEditPosts($settings = array()) {
+	global $ssEditPosts;
   scanPosts();
 }
 
@@ -68,6 +68,8 @@ function scanPosts() {
 		$db  = ssDbConnect();
 		$step = $_REQUEST["step"];
 		global $current_user;
+		global $homeUrl;
+		global $userPosts;
     get_currentuserinfo();
     $displayName = $current_user->display_name;
     $email = $current_user->user_email;
@@ -98,10 +100,16 @@ function scanPosts() {
 			return print "$displayName has no active blogs.";
 		}
 		
-		print "<p>Please select the posts that you would like to scan for citations.</p>";
+		if ($step == NULL) {
+			print "<p>Please select the posts that you would like to scan for citations.</p>";
+		}
 		
 		// Filters
-		print "<div class=\"ss-div-2\">
+		print "<div class=\"filter-button\">
+		Filter Panel
+		</div>
+		<div class=\"ss-slide-wrapper\">
+		<div class=\"ss-div-2\" id=\"filter-panel\">
 		<form method=\"GET\">
 		<input type=\"hidden\" name=\"filters\" value=\"filters\" />
 		Sort by:
@@ -153,13 +161,17 @@ function scanPosts() {
 		}
 			print ">" . ucwords($name) . "</option>\n";
 		}
-		print "</select><br />\n";
-		print "Entries per page: <input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/>";
-		print " | Start at: <input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/><br />";
-		print "<input class=\"ss-button\" type=\"submit\" value=\"Go\" />
+		print "</select><br />
+		Entries per page: <input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/> | Start at: <input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/><br />
+		<input class=\"ss-button\" type=\"submit\" value=\"Go\" />
 		</form>
-		</div>";
+		</div>
+		</div>
+		<br />";
 		
+		if ($_REQUEST["addPosts"] == 1) {
+		  $scanPosts = crawlBlogs($blogsList, $db);
+		}
 		// Get blog posts data from blog ids
 		$blogPostData = blogIdsToBlogPostData($userBlogs, $arrange, $order, $pagesize, $offset, $db);
 		while ($row = mysql_fetch_array($blogPostData)) {
@@ -181,10 +193,8 @@ function scanPosts() {
 			
 			if ($step == 'scan') {
 				// Results from the scan
-				print "<hr class=\"ss-div\" />";
-				if ($_REQUEST["addPosts"] == 1) {
-					crawlBlogs($blogsList, $db);
-				}
+				print "<hr />
+				$scanPosts";
 				foreach ($postIds as $i => $value) {
 					$blogId = $blogIds[$i];
 					$postId = $postIds[$i];
@@ -196,32 +206,34 @@ function scanPosts() {
 					//If 1, check the 10 most recent posts
 					$scanNow = $_REQUEST["scanNow"];
 					if ($check == 1 || $scanNow == 1) {
-						$citations = checkCitations ($postUri, $postId, $db);
-						if ($citations != NULL) {
-							print "<p><span class=\"green-circle\"></span> We found the following citation(s) on $blogName: <a href=\"$postUri\">$postTitle</a></p>";
-							foreach ($citations as $citation) {
+						removeCitations($postId, NULL, $db);
+						$results = checkCitations ($postUri, $postId, $db);
+						if (is_array($results) == TRUE) {
+							print "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> We found the following citation(s) on $blogName: <a href=\"$postUri\">$postTitle</a></div>";
+							foreach ($results as $citation) {
 								storeCitation ($citation, $postId, $db);
 								// Display citation
 								print "<p>$citation</p>";
 							}
 						}
-						else {
-							print "<p><span class=\"red-circle\"></span> No citations found on $blogName: <a href=\"$postUri\">$postTitle</a></p>";
+						elseif ($results == NULL) {
+							print "<div class=\"ss-div-2\"><span class=\"red-circle\"></span> No citations found on $blogName: <a href=\"$postUri\">$postTitle</a></div>";
 						}
-						print "<hr class=\"ss-div\" />";
+						else {
+							print "<div class=\"ss-div-2\"><span class=\"red-circle\"></span> ERROR: $results</div>";
+						}
+						print "<hr />";
 					}
 				}
-				global $homeUrl;
-				global $userPosts;
 				// After the results, go back to scan posts or go to the homepage
-				print "<div class=\"ss-div\"><a href=\"$userPosts\" class=\"ss-button\">Go back to your posts</a> <a href=\"$homeUrl\" class=\"ss-button\">Homepage</a></div>";
+				print "<div class=\"ss-div-2\"><a href=\"$userPosts\" class=\"ss-button\">Go back to your posts</a> <a href=\"$homeUrl\" class=\"ss-button\">Homepage</a></div>";
 			}
 			
 			if ($step == NULL) {
 				// List of posts
 				print "<form method=\"POST\">\n
 				<input type=\"hidden\" name=\"step\" value=\"scan\" />
-				<div class=\"ss-div-2\"><input type=\"checkbox\" class=\"checkall\"> Check / Uncheck All <span class=\"alignright\"><input type=\"checkbox\" name=\"addPosts\" value=\"1\" /> Scan blogs for new posts.</span></div>
+				<div class=\"ss-div-2\"><input type=\"checkbox\" class=\"checkall\"> Check / Uncheck All <span class=\"alignright\"><input type=\"checkbox\" name=\"addPosts\" value=\"1\" /> Scan Blogs for New Posts</span></div>
 				<hr />";
 				foreach ($postIds as $i => $value) {
 					$blogId = $blogIds[$i];
@@ -231,22 +243,39 @@ function scanPosts() {
 					$postSummary = $postSummaries[$i];
 					$blogName = $blogNames[$i];
 					$hasCitation = $hasCitations[$i];
+					$citations = postIdToCitation($postId, $db);
 					if ($postTitle == NULL) {
 						$postTitle = $postUri;
 					}
-					print "<div class=\"ss-entry-wrapper\"><input type=\"checkbox\" class=\"checkbox\" name=\"check-$postId\" value=\"1\" /> <span class=\"ss-postTitle\"><a href=\"$postUri\">$postTitle</a></span>";
+					print "<div class=\"ss-entry-wrapper\"><input type=\"checkbox\" class=\"checkbox\" name=\"check-$postId\" value=\"1\" /> <span class=\"ss-postTitle\"><a href=\"$postUri\" target=\"_blank\">$postTitle</a></span>";
 					if ($hasCitation == 1) {
-						print " CITATION";
+						print " <span class=\"citation-mark\" title=\"Citation\"></span>";
 					}
-					print "<div class=\"ss-div-button\"><div class=\"ss-right\"><span class=\"ss-hidden-text\">Click for details </span><span class=\"arrow-up\"></span></div>
+					print "<div class=\"ss-div-button\">
+					<div class=\"arrow-down\"></div>
 					</div>
-					<div class=\"ss-slide-wrapper\"><span class=\"ss-summary\"><p class=\"ss-bold\">Summary:</p><p>$postSummary</p></span></div>
+					<div class=\"ss-slide-wrapper\">
+					<div class=\"post-contents\">
+					<div class=\"post-summary\">$postSummary</div>";
+					if ($citations) {
+						print "<div class=\"citation-wrapper\">";
+						foreach ($citations as $citation) {
+							$citationId = $citation["id"];
+							$citationText = utf8_decode($citation["text"]);
+							print "<input type=\"hidden\" name=\"citationId[]\" value=\"$citationId\" />
+							<p>$citationText</p>";
+						}
+						print "</div>";
+					}
+					print "</div>
+					</div>
 					<div class=\"ss-blogTitle\">$blogName</div>
 					</div>
 					<hr />";
 				}
 				print "<div class=\"ss-div\"><input class=\"ss-button\"type=\"submit\" value=\"Scan\" /></div>
-				</form>";
+				</form>
+				<br style=\"clear: both;\" />";
 				
 				// Current URL without parameters
 				$baseUrl = removeParams();
