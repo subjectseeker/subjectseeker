@@ -65,7 +65,6 @@ foreach ($posts as $post) {
   }
 }
 
-
 print "Done!";
 
 ssDbClose($db);

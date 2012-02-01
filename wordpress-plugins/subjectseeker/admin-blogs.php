@@ -5,7 +5,7 @@ Plugin URI: http://scienceseeker.org/
 Description: Administer Blogs for SubjectSeeker tool
 Author: Liminality
 Version: 1
-Author URI: http://www.binaryparticle.com
+Author URI: http://www.binaryparticle.com/
 */
 
 /*
@@ -57,10 +57,10 @@ register_activation_hook( __FILE__, array( &$ssAdminBlogs, 'setupActivation' ));
 
 function get_ssAdminBlogs($settings = array()) {
   global $ssAdminBlogs;
-  doAdminBlogs();
+  AdminBlogs();
 }
 
-function doAdminBlogs() {
+function AdminBlogs() {
 	$step = $_REQUEST["step"];
   $db = ssDbConnect();
   if (is_user_logged_in()){
@@ -224,10 +224,10 @@ function doAdminBlogs() {
 					//$topic1 = $_REQUEST["topic1"];
 					//$topic2 = $_REQUEST["topic2"];
 					print "<div class=\"ss-entry-wrapper\">
-					<div class=\"ss-div-button\">
 					$blogId | <a href=\"$blogUri\" target=\"_blank\">$blogName</a> | $blogStatus | $blogAddedTime
-					<div class=\"ss-right\"><span class=\"ss-hidden-text\">Click for details</span> <span class=\"arrow-up\"></span></div>
-					</div>
+					<div class=\"ss-div-button\">
+          <div class=\"arrow-up\" title=\"Show Summary\"></div>
+       		</div>
 					<div class=\"ss-slide-wrapper\">
 					<form method=\"POST\">
 					<input type=\"hidden\" name=\"step\" value=\"edit\" />";
@@ -241,7 +241,7 @@ function doAdminBlogs() {
 					print "<p>*Blog name: <input type=\"text\" name=\"blogname\" size=\"40\" value=\"$blogName\"/></p>\n";
 					print "<p>*<a href=\"$blogUri\" target=\"_blank\">Blog URL:</a> <input type=\"text\" name=\"blogurl\" size=\"40\" value=\"$blogUri\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>";
 					print "<p>*<a href=\"$blogSyndicationUri\" target=\"_blank\">Blog syndication URL:</a> <input type=\"text\" name=\"blogsyndicationuri\" size=\"40\" value=\"$blogSyndicationUri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</p>";
-					print "<p>Blog description:<br /><textarea name=\"blogdescription\" rows=\"5\" cols=\"60\">$blogDescription</textarea></p>\n";
+					print "<p>Blog description:<br /><textarea name=\"blogdescription\" rows=\"5\" cols=\"55\">$blogDescription</textarea></p>\n";
 					print "<p>*Blog topics: <select name='topic1'>\n";
 					print "<option value='-1'>None</option>\n";
 					$topicList = getTopicList(true, $db);

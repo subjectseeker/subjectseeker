@@ -192,10 +192,10 @@ function doAdminUsers() {
 					$userStatus = ucwords(userStatusIdToName ($userStatusId, $db));
 					$userPrivilege = ucwords(userPrivilegeIdToName ($userPrivilegeId, $db));
 					print "<div class=\"ss-entry-wrapper\">
-					<div class=\"ss-div-button\">
 					$userID | $userName | $userStatus | $userPrivilege
-					<div class=\"ss-right\"><span class=\"ss-hidden-text\">Click for details </span><span class=\"arrow-up\"></span></div>
-					</div>
+					<div class=\"ss-div-button\">
+          <div class=\"arrow-up\" title=\"Show Summary\"></div>
+       		</div>
 					<div class=\"ss-slide-wrapper\">
 					<form class=\"ss-form\" method=\"POST\">
 					<input type=\"hidden\" name=\"step\" value=\"edit\" />";
@@ -205,7 +205,7 @@ function doAdminUsers() {
 					print "<input type=\"hidden\" name=\"userId\" value=\"$userID\" />\n";
 					print "<p>*Required field</p>\n\n";
 					print "<p>*User name: <input type=\"text\" name=\"userName\" size=\"40\" value=\"$userName\"/></p>\n";
-					print "<p>*User e-mail: <input type=\"text\" name=\"userEmail\" size=\"40\" value=\"$userEmail\"/></p>\n";
+					print "<p>*User e-mail: <input type=\"text\" name=\"userEmail\" size=\"55\" value=\"$userEmail\"/></p>\n";
 					print "<p>*User Status: <select name='userStatus'>\n";
 					$statusList = getUserStatusList ($db);
 					while ($row = mysql_fetch_array($statusList)) {

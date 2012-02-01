@@ -70,15 +70,83 @@ print "$str -> $esc<br />\n";
 */
 
 #$feed = new SimplePie("http://neurosphere.wordpress.com/?feed=rss2");
-$feed = new SimplePie("http://feeds.feedburner.com/CieciaAoNatural");
+#$feed = new SimplePie("http://feeds.feedburner.com/CieciaAoNatural");
 
-print "Language: " . $feed->get_language() . "\n";
+#print "Language: " . $feed->get_language() . "\n";
 
-foreach ($feed->get_items() as $item) {
-  print "Item title: " . $item->get_title() . "\n";
-  print "Item date: " . dateStringToSql($item->get_local_date()) . "\n";
+#foreach ($feed->get_items() as $item) {
+##  print "Item title: " . $item->get_title() . "\n";
+#  print "Item date: " . dateStringToSql($item->get_local_date()) . "\n";
 #  addSimplePieItem ($item, "en", 782, $db);
+#}
+
+# Multiple citations
+$url = "http://charbonniers.org/2012/01/21/two-sides-of-synchrony/";
+$sql = "SELECT BLOG_POST_ID, BLOG_POST_URI FROM BLOG_POST WHERE BLOG_POST_URI='$url'";
+$results = mysql_query($sql, $db);
+$posts = array();
+while ($row = mysql_fetch_array($results)) {
+  $info["url"] = $row["BLOG_POST_URI"];
+  $info["id"] = $row["BLOG_POST_ID"];
+  array_push($posts, $info);
+ }
+
+foreach ($posts as $post) {
+  if (! citedPost($post["id"], $db)) {
+    $citations = checkCitations ($post["url"], $post["id"], $db);
+    foreach ($citations as $citation) {
+      print "* Storing citation for post id=" . $post["id"] . " url=" . $post["url"] . " citation=$citation\n";
+      storeCitationTest ($citation, $post["id"], $db);
+    }
+  } else {
+    print "Skipping already-parsed post " . $post["id"] . "\n";
+  }
 }
+
+$sql .= " ORDER BY BLOG_POST_INGEST_DATE_TIME DESC LIMIT 400";
+$results = mysql_query($sql, $db);
+
+function citedPost ($postId, $db) {
+  $sql = "SELECT * FROM BLOG_POST WHERE BLOG_POST_HAS_CITATION=1 AND BLOG_POST_ID=$postId";
+  $results = mysql_query($sql, $db);
+  return (mysql_num_rows($results) != 0);
+}
+
+function storeCitationTest ($citation, $postId, $db) {
+	
+	$citation = mysql_escape_string(utf8_encode($citation));
+	
+	// Post has citation
+	$markCitation = "UPDATE BLOG_POST SET BLOG_POST_HAS_CITATION=1 WHERE BLOG_POST_ID=$postId";
+	mysql_query($markCitation, $db);
+	
+	// Check that the citation isn't already stored
+	$citationId = citationTextToCitationId ($citation, $db);
+	print "ID: using old ID ($citationId) for $citation\n";
+
+	if ($citationId == NULL) {
+		// Insert Citation
+		$insertCitation = "INSERT IGNORE INTO CITATION (CITATION_TEXT) VALUES ('$citation')";
+		mysql_query($insertCitation, $db);
+		if (mysql_error()) {
+			die ("InsertCitation: " . mysql_error() . "\n");
+		}
+		// Get citation ID
+		$citationId = mysql_insert_id();
+	print "ID: creating new ID ($citationId) for $citation\n";
+	}
+	
+	// Assign citation ID to post ID
+	$citationToPost = "INSERT IGNORE INTO POST_CITATION (CITATION_ID, BLOG_POST_ID) VALUES ('$citationId', '$postId')";
+	print "citation ID <-> post ID: $citationToPost\n";
+	mysql_query($citationToPost, $db);
+	if (mysql_error()) {
+		die ("CitationToPost: " . mysql_error() . "\n");
+	}
+}
+
+
+
 
 ssDbClose($db);
 

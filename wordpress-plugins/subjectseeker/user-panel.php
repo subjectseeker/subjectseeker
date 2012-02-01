@@ -73,17 +73,14 @@ function doUserPanel() {
 		global $userPosts;
 		print "<div id=\"user-panel-container\">
 		<ul class=\"user-panel\">
-		<li class=\"panel-button\"><a href=\"$userBlogs\">Your blogs</a></li>
-		<li class=\"panel-button\"><a href=\"$userPosts\">Your posts</a></li>
-		<li class=\"panel-button\"><a href=\"http://dev.scienceseeker.org/crawl-blogs/\">Crawl Blogs</a></li>
-		<li class=\"panel-button\"><a href=\"$userPosts/?step=scan&scanNow=1&n=10\">Scan recent posts for citations</a></li>";
+		<li class=\"panel-button\"><a href=\"$userBlogs\">Your blogs</a></li>";
 		if ($userPriv > 0){
 			global $approveUrl;
-			global $adminUsers;
 			global $adminBlogs;
 			print "<li class=\"panel-button\"><a href=\"$approveUrl\">Approve Blogs</a></li>
 			<li class=\"panel-button\"><a href=\"$adminBlogs\">Administer Blogs</a></li>";
 			if ($userPriv > 1){
+				global $adminUsers;
 				print "<li class=\"panel-button\"><a href=\"$adminUsers\">Administer Users</a></li>";
 			}
 		}
