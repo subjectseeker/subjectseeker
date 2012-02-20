@@ -642,3 +642,5 @@ alter table USER_ADMINISTRATOR_NOTE add constraint FK_USER_NOTES foreign key (US
 
 alter table CLAIM_BLOG add constraint FK_CLAIM_STATUS_ID foreign key (CLAIM_STATUS_ID)
       references CLAIM_BLOG_STATUS (CLAIM_BLOG_STATUS_ID) on delete restrict on update restrict;
+
+create index topLevelTopics on TOPIC  (TOPIC_ID, TOPIC_NAME, TOPIC_TOP_LEVEL_INDICATOR);
