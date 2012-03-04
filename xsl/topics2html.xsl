@@ -3,12 +3,21 @@
 
   <xsl:template match="/">
     <ul>
+    	<li><input id="filter" class="categories" type="checkbox" name="category" value="citation" /> Citations</li>
+      <li><input id="filter" class="categories" type="checkbox" name="category" value="editorsPicks" /> Editors' Picks</li>
+			<br />
       <xsl:apply-templates select="//topic[@toplevel='true']"/>
     </ul>
   </xsl:template>
 
   <xsl:template match="topic">
     <li>
+    	<input id="category" class="categories" type="checkbox" name="category">
+        <xsl:attribute name="value">
+            <xsl:apply-templates />
+        </xsl:attribute>
+      </input>
+      <xsl:text> </xsl:text>
       <a>
         <xsl:attribute name="href">
           <xsl:text>/blogs/?type=blog&amp;filter0=topic&amp;value0=</xsl:text>
@@ -16,22 +25,6 @@
         </xsl:attribute>
         <xsl:apply-templates />
       </a>
-      <xsl:text> </xsl:text>
-      <a>
-      <xsl:attribute name="href">
-        <xsl:text>/displayfeed/?type=blog&amp;filter0=topic&amp;value0=</xsl:text>
-        <xsl:apply-templates />
-      </xsl:attribute>
-      <span class="postsub">Posts</span>
-    </a>
-    <xsl:text> </xsl:text>
-    <a>
-      <xsl:attribute name="href">
-        <xsl:text>/subjectseeker/ss-serializer.php?type=blog&amp;filter0=topic&amp;value0=</xsl:text>
-        <xsl:apply-templates />
-      </xsl:attribute>
-      <span class="postsub">Subscribe</span>
-    </a>
     </li>
   </xsl:template>
 </xsl:stylesheet>

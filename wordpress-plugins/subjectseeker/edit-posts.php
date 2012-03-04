@@ -105,9 +105,7 @@ function scanPosts() {
 		}
 		
 		// Filters
-		print "<div class=\"filter-button\">
-		Filter Panel
-		</div>
+		print "<div class=\"filter-button\">Display Options</div>
 		<div class=\"ss-slide-wrapper\">
 		<div class=\"ss-div-2\" id=\"filter-panel\">
 		<form method=\"GET\">
@@ -170,7 +168,10 @@ function scanPosts() {
 		<br />";
 		
 		if ($_REQUEST["addPosts"] == 1) {
-		  $scanPosts = crawlBlogs($blogsList, $db);
+			foreach ($blogsList as $blog) {
+		  	$scanPosts .= crawlBlogs($blog, $db);
+				$scanPosts .= "<hr />";
+			}
 		}
 		// Get blog posts data from blog ids
 		$blogPostData = blogIdsToBlogPostData($userBlogs, $arrange, $order, $pagesize, $offset, $db);
@@ -255,7 +256,7 @@ function scanPosts() {
 					<div class=\"arrow-down\"></div>
 					</div>
 					<div class=\"ss-slide-wrapper\">
-					<div class=\"post-contents\">
+					<div id=\"padding-content\">
 					<div class=\"post-summary\">$postSummary</div>";
 					if ($citations) {
 						print "<div class=\"citation-wrapper\">";
@@ -269,6 +270,7 @@ function scanPosts() {
 					}
 					print "</div>
 					</div>
+					<br />
 					<div class=\"ss-blogTitle\">$blogName</div>
 					</div>
 					<hr />";

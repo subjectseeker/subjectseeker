@@ -130,16 +130,17 @@ function getPostData( $postID, $myHost, $dbHandle ) {
   $postData = array();
   $postData[ "author" ] =
     sanitize( $row[ "BLOG_AUTHOR_ACCOUNT_NAME" ] );
-  $postData[ "blog_name" ] = sanitize( $row[ "BLOG_NAME" ] );
-  $postData[ "blog_uri" ] = sanitize( $row[ "BLOG_URI" ] );
-  $postData[ "date" ] = date( "c", $utcDate );
-  $postData[ "feed_uri" ] = sanitize( $row[ "BLOG_SYNDICATION_URI" ] );
-  $postData[ "id" ] = $myHost . "/post/" . $row[ "BLOG_POST_ID" ];
-  $postData[ "summary" ] = sanitize(strip_tags($row[ "BLOG_POST_SUMMARY" ], '<p><br>'));
-  $postData[ "title" ] = sanitize( $row[ "BLOG_POST_TITLE" ] );
-  $postData[ "uri" ] = sanitize( $row[ "BLOG_POST_URI" ] );
-  $postData[ "hasCitation" ] = sanitize( $row[ "BLOG_POST_HAS_CITATION" ] );
+  $postData["blog_name"] = sanitize( $row[ "BLOG_NAME" ] );
+  $postData["blog_uri"] = sanitize( $row[ "BLOG_URI" ] );
+  $postData["date"] = date( "c", $utcDate );
+  $postData["feed_uri"] = sanitize( $row[ "BLOG_SYNDICATION_URI" ] );
+  $postData["id"] = $myHost . "/post/" . $row[ "BLOG_POST_ID" ];
+  $postData["summary"] = sanitize(strip_tags($row[ "BLOG_POST_SUMMARY" ], '<p><div><br>'));
+  $postData["title"] = sanitize( $row[ "BLOG_POST_TITLE" ] );
+  $postData["uri"] = sanitize( $row[ "BLOG_POST_URI" ] );
+  $postData["hasCitation"] = sanitize( $row[ "BLOG_POST_HAS_CITATION" ] );
 	
+	// Get citations
 	if ($postData["hasCitation"] == 1) {
 		$getCitation = "SELECT C.CITATION_TEXT FROM CITATION AS C, POST_CITATION AS PC WHERE PC.BLOG_POST_ID = $postID AND C.CITATION_ID = PC.CITATION_ID";
 		$results = mysql_query($getCitation, $dbHandle);
@@ -150,6 +151,19 @@ function getPostData( $postID, $myHost, $dbHandle ) {
 			array_push($postData["citations"], $citation);
 		}
 	}
+		// Get user data
+	$postData["personaId"] = $_REQUEST["personaId"];
+	
+	// Check if user has recommended this post
+	if ($postData["personaId"]) {
+		$postData["recStatus"] = getRecommendationStatus($postID, $_REQUEST["personaId"], $dbHandle);
+		$postData["userPriv"] = $_REQUEST["userPriv"];
+	}
+	
+	// Get number of recommendations for this post
+	$postData["recCount"] = getRecommendationsCount($postID, NULL, $dbHandle);
+	// Get number of comments for this post
+	$postData["commentCount"] = getRecommendationsCount($postID, "comments", $dbHandle);
 
   // Language is optional.
   $langSQL = "SELECT L.LANGUAGE_IETF_CODE FROM LANGUAGE AS L, " .
@@ -235,7 +249,9 @@ function getRecentPosts( $params, $numPosts, $offset, $dbHandle ) {
 		if ($params["citation"] == 1) {
 			$postSQL .= "AND ";
 		}
-		$editorsPicks = getEditorsPicks($dbHandle);
+		foreach (getEditorsPicks(NULL, $dbHandle) as $array) {
+			$editorsPicks[] = $array["postId"];
+		}
 		$firstPost = array_shift($editorsPicks);
     $postSQL .= "((BLOG_POST_ID = $firstPost) ";
     foreach ($editorsPicks as $id) {
@@ -275,6 +291,10 @@ function getRecentPosts( $params, $numPosts, $offset, $dbHandle ) {
 function outputAsAtom( $post ) {
   $atomString = "  <entry xml:lang=\"" . $post[ "lang" ] . "\">
 ";
+  $atomString .= "    <userpersona>" . $post["personaId"] . "</userpersona>\n";
+	
+	$atomString .= "    <userpriv>" . $post["userPriv"] . "</userpriv>\n";
+	
   $atomString .= "    <title type=\"html\">" . $post[ "title" ] .
     "</title>
 ";
@@ -291,6 +311,7 @@ function outputAsAtom( $post ) {
 ";
   $atomString .= "    <summary type=\"html\">" . $post[ "summary" ];
 	
+	// Add citation to summary if available
 	if ($post["citations"]) {
 		$atomString .= sanitize("<br /><br /><div class='citation-wrapper'>");
 		foreach ($post["citations"] as $citation) {
@@ -299,12 +320,20 @@ function outputAsAtom( $post ) {
 		$atomString .= sanitize('</div>');
 	}
 	
-  $atomString .= "</summary>";
+  $atomString .= "</summary>\n";
 
   // TODO insert RDF for citations here
-  if ($post[ "hasCitation"] ) {
+  if ($post["hasCitation"] ) {
     $atomString .= "    <rdf:Description rdf:ID=\"citations\">CITATION</rdf:Description>\n";
   }
+	
+	if ($post["recStatus"]) {
+		$atomString .= "    <recstatus>Recommended</recstatus>\n";
+	}
+	
+	$atomString .= "    <recommendations>" . $post["recCount"] . "</recommendations>\n";
+	
+	$atomString .= "    <commentcount>" . $post["commentCount"] . "</commentcount>\n";
 
   foreach ( $post[ "categories" ] as $category ) {
     $atomString .= "    <category term=\"$category\" />

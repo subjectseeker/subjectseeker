@@ -33,9 +33,16 @@ function doTopLevelTopicsList()
 
 function widget_topLevelTopicsList($args) {
   extract($args);
+	global $mainFeed;
+	global $serializerUrl;
   echo $before_widget;
-  echo $before_title;?>View Blogs by Topic<?php echo $after_title;
+  echo $before_title;
+	?>Categories<?php 
+	echo $after_title;
+	echo "<div class=\"categories-wrapper\" data-feed=\"$mainFeed\" data-serializer=\"$serializerUrl\">";
   doTopLevelTopicsList();
+	print "<a class=\"ss-button\" href=\"$mainFeed\">Filter Posts</a> <a class=\"custom-rss\" href=\"$serializerUrl\" target=\"_blank\">Custom RSS</a>
+	</div>";
   echo $after_widget;
 }
 

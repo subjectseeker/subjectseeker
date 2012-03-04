@@ -216,16 +216,20 @@ function doAddBlog ($db) {
   // If this is the first time this user has tried to interact with
   // the SS system, create a USER entry for them
   $userId = addUser($displayName, $email, $db);
-
+	$userPriv = getUserPrivilegeStatus($userId, $db);
+	
   $addBlog = addBlog($blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $db);
 
   $blogId = $addBlog["id"];
 
   if ($addBlog["errormsg"] === null) {
-    displaySuccess();
+    echo "<p>Successfully added blog to the system.</p>";
+		if ($userPriv == 0) {
+			 echo "<p>This blog will not be publicly displayed in the system until it has been approved by a $sitename editor.</p>";
+		}
   } else {
     // Blog is already in the system.
-    print "<p class=\"error\"><font color=\"red\">ERROR: " . $addBlog["errormsg"] . "</font></p>\n";
+    print "<p class=\"ss-error\">ERROR: " . $addBlog["errormsg"] . "</p>\n";
     print "<p class=\"info\">This could be because it was pre-populated in our database, someone else submitted it, or because our editors rejected it.</p><p class=\"info\">If it was rejected, you should have received an email from us explaining why.</p><p class=\"info\">Otherwise, you can <a href=\"/claimblog/?blogId=$blogId\">claim the blog</a> to show that you are (one of) the author(s). See our <a href=\"/help\">help pages</a> for more information.</p>\n";
     return;
   }
@@ -235,7 +239,4 @@ function doAddBlog ($db) {
   }
 }
 
-function displaySuccess() {
-  echo "<p>Successfully added blog to the system. This blog will not be publicly displayed in the system until it has been approved by a $sitename editor.</p>";
-}
 ?>

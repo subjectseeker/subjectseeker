@@ -3,6 +3,7 @@
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:atom="http://www.w3.org/2005/Atom"
   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:php="http://php.net/xsl"
   version="1.0"
   exclude-result-prefixes="atom">
 
@@ -31,7 +32,8 @@
     <a>
       <xsl:if test="parent::atom:source">
         <xsl:attribute name="href">
-          <xsl:text>http://scienceseeker.org/displayfeed?type=blog&amp;filter0=topic&amp;value0=</xsl:text>
+        	<xsl:value-of select="$baseurl"/>
+          <xsl:text>?type=blog&amp;filter0=topic&amp;value0=</xsl:text>
           <xsl:value-of select="@term"/>
         </xsl:attribute>
       </xsl:if>
@@ -48,6 +50,12 @@
 
   <xsl:template match="atom:entry">
   	<div class="ss-entry-wrapper">
+    	<xsl:attribute name="id">
+        <xsl:value-of select="atom:id"/>
+      </xsl:attribute>
+      <xsl:attribute name="data-personaId">
+        <xsl:value-of select="atom:userpersona"/>
+      </xsl:attribute>
       <!-- this generates all tags, blog- and post-specific -->
       <!--
       <xsl:if test="atom:category | atom:source/atom:category">
@@ -66,55 +74,109 @@
       </xsl:if>
       -->
       <!-- temporarily, we only generate the blog category -->
-      <div>
+      <div class="recommendation-wrapper">
+      	<xsl:if test="atom:recstatus">
+      		<div class="recommend" id="remove" title="Remove recommendation" style="background-image: url(http://scienceseeker.org/images/icons/ss-sprite.png); height: 18px; background-position: center -19px; background-repeat: no-repeat;"></div>
+        </xsl:if>
+        <xsl:if test="not(atom:recstatus)">
+        	<div class="recommend" id="recommend" title="Recommend" style="background-image: url(http://scienceseeker.org/images/icons/ss-sprite.png); height: 18px; background-position: center 0px; background-repeat: no-repeat;"></div>
+        </xsl:if>
+        <xsl:value-of select="atom:recommendations" />
+      </div>
+      <div style="display: inline-block; width: 94%;">
         <div class="post-header">
-        <xsl:apply-templates select="atom:updated" mode="time-only"/>
-        <xsl:text> | </xsl:text>
-          <a href="{atom:link/@href}" rel="bookmark">
-            <xsl:attribute name="title">
-              <xsl:text>Permanent link to </xsl:text>
-              <xsl:value-of select="atom:title"/>
-            </xsl:attribute>
-            <span class="ss-postTitle">
-              <xsl:value-of select="atom:title" disable-output-escaping="yes"/>
-            </span>
-          </a>
-        <xsl:apply-templates select="rdf:Description[@rdf:ID='citations']" />
+          <xsl:apply-templates select="atom:updated" mode="time-only"/>
+          <xsl:text> | </xsl:text>
+            <a href="{atom:link/@href}" rel="bookmark">
+              <xsl:attribute name="title">
+                <xsl:text>Permanent link to </xsl:text>
+                <xsl:value-of select="atom:title"/>
+              </xsl:attribute>
+              <span class="ss-postTitle">
+                <xsl:value-of select="atom:title" disable-output-escaping="yes"/>
+                <xsl:if test="atom:title = ''">
+                	<xsl:value-of select="atom:link/@href" />
+                </xsl:if>
+              </span>
+            </a>
+          <xsl:apply-templates select="rdf:Description[@rdf:ID='citations']" />
         </div>
         <div class="ss-div-button">
           <div class="arrow-down" title="Show Summary"></div>
-       	</div>
-      </div>
-      <div class="ss-slide-wrapper">
-        <span class="ss-summary">
-          <div title="Summary" style="padding: 10px;">
-          	<xsl:value-of select="atom:summary" disable-output-escaping="yes"/>
+        </div>
+        <div class="ss-slide-wrapper">
+          <div id="padding-content" title="Summary">
+            <xsl:value-of select="atom:summary" disable-output-escaping="yes"/>
           </div>
-        </span>
-      </div>
-      <div class="info-post">
-        <span class="ss-blogTitle">
-        	<xsl:apply-templates select="atom:source/atom:title"/>
-        </span>
-        <xsl:if test="atom:source/atom:category">
-          <span class="the_tags">
-            <xsl:text> </xsl:text>
-            <xsl:for-each select="atom:source/atom:category">
-              <xsl:if
-                test="not(position() = 1)">
-                <xsl:text> | </xsl:text>
+        </div>
+        <div class="comments-wrapper">
+          <div class="rec-comment">
+          	<div class="ss-div-2">
+              <form method="POST" enctype="multipart/form-data">
+                <p><h4>Leave a comment!</h4></p>
+                <div class="ss-div">
+                <textarea class="textArea" name="comment" rows="3" cols="59"></textarea>
+                <span class="alignright"><span class="charsLeft">120</span> characters left.</span>
+                </div>
+                <input id="submit-comment" class="submit-comment ss-button" type="button" data-step="store" value="Submit" />
+              </form>
+              <xsl:if test="atom:userpriv > 0">
+                <br />
+                <p><h4>Related Image</h4></p>
+                <form method="POST" action="/subjectseeker/upload-file.php" enctype="multipart/form-data">
+                  <input type="hidden" name="postId">
+                  <xsl:attribute name="value">
+                  <xsl:value-of select="atom:id"/>
+                  </xsl:attribute>
+                  </input>
+                  <input type="hidden" name="personaId">
+                  <xsl:attribute name="value">
+                  <xsl:value-of select="atom:userpersona"/>
+                  </xsl:attribute>
+                  </input>
+                  <input type="file" name="image" /> Image Size: 580 x 290 <input type="submit" value="Submit" />
+                </form>
               </xsl:if>
-              <xsl:apply-templates select="."/>
-            </xsl:for-each>
-           </span>
-        </xsl:if>
+            </div>
+          </div>
+        	<div class="comments-list-wrapper">
+          </div>
+          <br />
+        </div>
+        <div class="info-post">
+          <span class="ss-blogTitle">
+            <a href="{atom:source/atom:link[@rel='alternate']/@href}" rel="alternate">
+              <xsl:value-of select="atom:source/atom:title" />
+            </a>
+          </span>
+            <span class="alignright">
+              <xsl:if test="atom:source/atom:category">
+                <span class="the_tags">
+                  <xsl:text>   </xsl:text>
+                  <xsl:for-each select="atom:source/atom:category">
+                    <xsl:if
+                      test="not(position() = 1)">
+                      <xsl:text> | </xsl:text>
+                    </xsl:if>
+                    <xsl:apply-templates select="."/>
+                  </xsl:for-each>
+                </span>
+              </xsl:if>
+              <xsl:text> - </xsl:text>
+              <span class="comment-button"><xsl:value-of select="atom:commentcount" /><xsl:text> Comment</xsl:text>
+                <xsl:if test="atom:commentcount != '1'">
+                  <xsl:text>s</xsl:text>
+                </xsl:if>
+              </span>
+            </span>
+        </div>
       </div>
     </div>
   </xsl:template>
 
   <xsl:template match="rdf:Description">
-  <xsl:text> </xsl:text>  
-  <span class="citation"><xsl:apply-templates /></span>
+    <xsl:text> </xsl:text>  
+    <span class="citation-mark" title="Citation"></span>
   </xsl:template>
 
   <xsl:template match="atom:feed">
@@ -158,7 +220,7 @@
                     <xsl:value-of select="$pagesize"/>
                   </xsl:attribute>
                   <b>
-                    <xsl:text>&#xbb; Newer Entries</xsl:text>
+                    <xsl:text>Newer Entries &#xbb;</xsl:text>
                   </b>
                 </a>
               </h4>
@@ -172,12 +234,6 @@
         </div>
       </xsl:otherwise>
     </xsl:choose>
-  </xsl:template>
-
-  <xsl:template match="atom:source/atom:title">
-    <b>
-      <xsl:apply-templates/>
-    </b>
   </xsl:template>
 
   <xsl:template match="atom:entry" mode="date-group">
