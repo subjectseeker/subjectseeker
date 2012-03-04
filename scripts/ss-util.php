@@ -34,6 +34,8 @@ function ssDbClose($dbConnection) {
  * Crawler
  */
 
+
+//Function based on the blog crawler to add new posts to the system
 function crawlBlogs($blogs, $db) {
 	foreach ($blogs as $blog) {
 		$blogUri = $blog["syndicationuri"];
@@ -183,6 +185,7 @@ function parseHttpParams() {
 
 }
 
+// Get the current url.
 function getURL () {
 	$pageURL = 'http';
 	
@@ -202,6 +205,7 @@ function getURL () {
 	return $pageURL;  
 }
 
+// Remove parameters from the current url
 function removeParams () {
 	$url = getURL ();
 	$parsed = parse_url($url);
@@ -254,6 +258,8 @@ function insanitize( $htmlString ) {
  * DB query functions
  */
 
+// Input: arrangement, descendant or ascendant, limit of results, offset, DB handle
+// Return: List of users with their data
 function getUsers ($arrange, $order, $pagesize, $offset, $db) {
   $sql = "SELECT USER_ID, USER_NAME, USER_STATUS_ID, USER_PRIVILEGE_ID, EMAIL_ADDRESS FROM USER ORDER BY $arrange $order LIMIT $pagesize OFFSET $offset";
   $users = array();
@@ -269,6 +275,8 @@ function getUsers ($arrange, $order, $pagesize, $offset, $db) {
   return $users;
 }
 
+// Input: arrangement, descendant or ascendant, limit of results, offset, DB handle
+// Return: list of posts with their data
 function getPosts ($arrange, $order, $pagesize, $offset, $db) {
 	$sql = "SELECT * from BLOG_POST ORDER BY $arrange $order LIMIT $pagesize OFFSET $offset";
 	
@@ -453,18 +461,9 @@ function markCrawled ($blogId, $db) {
   mysql_query($sql, $db);
 }
 
-function getRecommendedStatus ($postId, $db) {
-	$sql = "SELECT BLOG_POST_ID FROM RECOMMENDATION WHERE BLOG_POST_ID = $postId";
-	$results = mysql_query($sql, $db);
-	
-	if (mysql_fetch_array($results) != NULL) {
-		return TRUE;
-	}
-	
-	return FALSE;
-}
-
-function getEditorsPicks($db) {
+// Input: DB handle
+// Action: Get list of posts that have been recommended by editors
+function getEditorsPicks($limit, $offset, $db) {
 	$sql = "SELECT rec.BLOG_POST_ID FROM RECOMMENDATION rec,
 PERSONA pers, USER user WHERE user.USER_ID = pers.USER_ID AND
 rec.PERSONA_ID = pers.PERSONA_ID AND user.USER_PRIVILEGE_ID > 0";
@@ -732,6 +731,8 @@ function userPrivilegeIdToName ($userPrivilegeId, $db) {
   return $name["USER_PRIVILEGE_DESCRIPTION"];
 }
 
+// Input: User persona id, DB handle
+// Return: user privilege name according to their persona id
 function personaIdToPrivilegeId ($personaId, $db) {
 	$sql = "SELECT a.USER_PRIVILEGE_ID FROM USER a, PERSONA b WHERE b.PERSONA_ID = $personaId AND b.USER_ID = a.USER_ID";
 	$results = mysql_query($sql, $db);
@@ -1641,6 +1642,9 @@ function editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescr
   }
 }
 
+// Input: post ID, post title, post summary, post url, current user id, user display name, DB handle
+// Action: check post metadata
+// Return: error message or null
 function checkPostData($postId, $postTitle, $postSummary, $postUrl, $userId, $displayname, $db) {
 
   // if not logged in as an author or as admin, fail
@@ -1851,6 +1855,8 @@ function getBlogUri($blogId, $db) {
   return $row["BLOG_URI"];
 }
 
+// Input: post ID, DB handle
+// Return: An image associated with this post.
 function getPostImage($postId, $db) {
 	$sql = "SELECT REC_IMAGE FROM RECOMMENDATION WHERE BLOG_POST_ID = $postId";
 	$results = mysql_query($sql, $db);

@@ -81,7 +81,9 @@ function doUserPanel() {
 			<li class=\"panel-button\"><a href=\"$adminBlogs\">Administer Blogs</a></li>";
 			if ($userPriv > 1){
 				global $adminUsers;
+				global $adminPosts;
 				print "<li class=\"panel-button\"><a href=\"$adminUsers\">Administer Users</a></li>";
+				print "<li class=\"panel-button\"><a href=\"$adminUsers\">Administer Posts</a></li>";
 			}
 		}
 		print "</ul></div>";
