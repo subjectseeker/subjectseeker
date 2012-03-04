@@ -31,6 +31,8 @@ print "</subjectseeker>\n";
 
 function searchDB() {
 
+  // The type can currently be "topic" or "blog". We may choose at some point
+  // to add more types (for example, maybe citations?).
   global $type;
 
   $cid = ssDbConnect();
@@ -49,6 +51,8 @@ function searchDB() {
 
 }
 
+// Input: database handle ($cid)
+// Output: list of all topics; if the global $params specifies toplevel=1, then only return toplevel topics; otherwise, return them all (probably unwise to do that at this point -- it would be a huge number!)
 function searchTopics($cid) {
   global $params;
   global $dbName;
@@ -65,6 +69,8 @@ function searchTopics($cid) {
 
 }
 
+// Input: database handle ($cid)
+// Output: list of blogs, including some data for each blog, which match the global $params specified
 function searchBlogs($cid) {
   global $params;
   global $dbName;
@@ -73,6 +79,10 @@ function searchBlogs($cid) {
   $blogIds = array();
   $filtered = false;
 
+  // Go through the global $params and find which topics we are
+  // interested in. Note that we may have something like topic=Biology or
+  // we may have topic=Biology&tioopic=Chemistry, so we have to handle
+  // either a single string topic, or a list/array of topics
   if ($params != null) {
     foreach ($params as $name => $value) {
       if (strcasecmp($name, "topic") == 0) {
@@ -88,9 +98,22 @@ function searchBlogs($cid) {
     }
   }
 
+  // Here, we might at some point look for some other things to filter
+  // blogs on. Right now we are only filtering on "topic" parameter. We
+  // might have other filters later, like author, citation status...
+
+
+  // if $filtered is true, it means that we found some topics (or something else) that we want to filter blog retrieval on.
   if (! $filtered) {
     $blogIds = getBlogIds($cid);
   } else {
+    // Here, we know we want to filter blogs on something.
+    // Right now we just assume we are filtering on topic.
+    // If we are filtering on something else, we'll need to do some more
+    // work here. This is the place where things might get out of hand if we
+    // end up having a lot of if/else (filter by this, not that, but also
+    // this...) so if we start filtering on a lot of things, we will
+    // need to restructure this code.
     $topicIds = topicNamesToIds($topicNames, $cid);
     $blogIds = topicIdsToBlogIds($topicIds, $cid);
   }
@@ -99,6 +122,9 @@ function searchBlogs($cid) {
     return null;
   }
 
+  // We have gotten a list of all the IDs of all the blogs we are interested
+  // in -- that was the hard part. Now just use a utility method to
+  // populate an array with more useful information per blog and return that.
   return blogIdsToBlogData($blogIds, $cid);
 }
 
@@ -127,7 +153,9 @@ function printResults($searchResults) {
     }
     print " </blogs>\n";
 
-    // TODO Authors
+    // Here we might eventually want to return more things. Remember, right
+    // now we can only search for "blogs" or "topics." If we end up searching
+    // for citations, we might want to return a list of citation results here.
   }
 
 }
@@ -158,5 +186,8 @@ function printBlog($row) {
   }
   print "</blog>\n";
 }
+
+// And again we might want a separate printCitation function here
+// (or printAuthor or whatever else we are allowing the user to search for)
 
 ?>
