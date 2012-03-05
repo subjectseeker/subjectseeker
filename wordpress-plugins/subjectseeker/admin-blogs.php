@@ -57,10 +57,10 @@ register_activation_hook( __FILE__, array( &$ssAdminBlogs, 'setupActivation' ));
 
 function get_ssAdminBlogs($settings = array()) {
   global $ssAdminBlogs;
-  AdminBlogs();
+  adminBlogs();
 }
 
-function AdminBlogs() {
+function adminBlogs() {
 	$step = $_REQUEST["step"];
   $db = ssDbConnect();
   if (is_user_logged_in()){
@@ -89,7 +89,9 @@ function AdminBlogs() {
 				if ($offset == null || is_numeric($offset) == FALSE) {
 					$offset = "0";
 				}
-				print "<div class=\"ss-div-2\">
+				print "<div class=\"filter-button\">Display Options</div>
+				<div class=\"ss-slide-wrapper\">
+				<div class=\"ss-div-2\" id=\"filter-panel\">
 				<form method=\"GET\">";
 				print "<input type=\"hidden\" name=\"filters\" value=\"filters\" />";
 				print "Sort by: ";
@@ -146,7 +148,9 @@ function AdminBlogs() {
 				print " | Start at: <input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>";
 				print "<br /><input class=\"ss-button\" type=\"submit\" value=\"Go\" />";
 				print "</form>
-				</div>";
+				</div>
+				</div>
+				<br />";
 				
 			if ($step != NULL) {
 				$blogId = stripslashes($_REQUEST["blogId"]);
@@ -157,50 +161,47 @@ function AdminBlogs() {
 				$topic1 = stripslashes($_REQUEST["topic1"]);
 				$topic2 = stripslashes($_REQUEST["topic2"]);
 				$blogStatus = stripslashes($_REQUEST["blogstatus"]);
+				$crawl = $_REQUEST["crawl"];
 				$oldBlogName = getBlogName($blogId, $db);
 				$result = checkBlogData($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
-				if ($step == 'edit') {
-					if ($result == NULL) {				
+				if ($step == 'confirmed' || ($result == NULL && $step == 'edit')) {
 						editBlogStatus ($blogId, $blogStatus, $db);
 						editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $db);
+						
+						if ($crawl == 1) {
+							$blog = array("syndicationuri"=>$blogsyndicationuri, "id"=>$blogId, "name"=>$blogname);
+							$crawlMessage = crawlBlogs($blog, $db);
+							print "$crawlMessage
+							<hr />";
+						}
+										
 						if ($blogStatus == 2 || $blogStatus == 4) {
 							$contacts = getBlogContacts($blogId, $db);
-							print "<p>Blog $oldBlogName (id $blogId) REJECTED (email contact(s):";
+							print "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> Blog $oldBlogName (id $blogId) REJECTED (email contact(s):";
 							foreach ($contacts as $contact) {
 								print " <a href=\"mailto:$contact\">$contact</a>";
 							}
-							print ")</p>\n";
+							print ")</div>\n";
 						}
-						print "<p>$blogname (id $blogId) was updated.</p>";  
-						} 
-					if ($result != NULL) {
-						print "<p>$oldBlogName (id $blogId): <ul class=\"ss-error\">$result</ul></p>";
-						print "<form class=\"ss-div\" method=\"POST\">
-						<input type=\"hidden\" name=\"step\" value=\"confirm\" />
-						<input type=\"hidden\" name=\"blogId\" value=\"$blogId\" />
-						<input type=\"hidden\" name=\"blogname\" value=\"$blogname\" />
-						<input type=\"hidden\" name=\"blogurl\" value=\"$blogurl\" />
-						<input type=\"hidden\" name=\"blogsyndicationuri\" value=\"$blogsyndicationuri\" />
-						<input type=\"hidden\" name=\"blogdescription\" value=\"$blogdescription\" />
-						<input type=\"hidden\" name=\"topic1\" value=\"$topic1\" />
-						<input type=\"hidden\" name=\"topic2\" value=\"$topic2\" />
-						<input type=\"hidden\" name=\"blogstatus\" value=\"$blogStatus\" />
-						<p>There has been an error, are you sure you want to apply these changes?</p>
-						<input class=\"ss-button\" name=\"confirm\" type=\"submit\" value=\"Yes\" /> <input class=\"ss-button\" type=\"Submit\" value=\"No\" />
-						</form>";
-					}
+						print "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> $blogname (id $blogId) was updated.</div>";  
 				}
-				if ($step == 'confirm') {
-					$confirm = $_REQUEST["confirm"];
-					if ($confirm == 'Yes') {
-						editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $db);
-						editBlogStatus ($blogId, $blogStatus, $db);	
-						print "<p>$blogname (id $blogId) was updated.</p>";
-					}
-					else {
-						$oldBlogName = getBlogName($blogId, $db);
-						print "<p>$oldBlogName (id $blogId) was not updated.</p>";
-					}
+				if ($result != NULL && $step == 'edit') {
+					global $adminBlogs;
+					print "<p>$oldBlogName (id $blogId): <ul class=\"ss-error\">$result</ul></p>";
+					print "<form class=\"ss-div\" method=\"POST\">
+					<input type=\"hidden\" name=\"step\" value=\"confirmed\" />
+					<input type=\"hidden\" name=\"blogId\" value=\"$blogId\" />
+					<input type=\"hidden\" name=\"blogname\" value=\"$blogname\" />
+					<input type=\"hidden\" name=\"blogurl\" value=\"$blogurl\" />
+					<input type=\"hidden\" name=\"blogsyndicationuri\" value=\"$blogsyndicationuri\" />
+					<input type=\"hidden\" name=\"blogdescription\" value=\"$blogdescription\" />
+					<input type=\"hidden\" name=\"topic1\" value=\"$topic1\" />
+					<input type=\"hidden\" name=\"topic2\" value=\"$topic2\" />
+					<input type=\"hidden\" name=\"blogstatus\" value=\"$blogStatus\" />
+					<input type=\"hidden\" name=\"crawl\" value=\"$crawl\" />
+					<p>There has been an error, are you sure you want to apply these changes?</p>
+					<input class=\"ss-button\" name=\"confirm\" type=\"submit\" value=\"Yes\" /> <a class=\"ss-button\" href=\"$adminBlogs\" />No</a>
+					</form>";
 				}
 			}
 			$baseUrl = removeParams();
@@ -226,9 +227,10 @@ function AdminBlogs() {
 					print "<div class=\"ss-entry-wrapper\">
 					$blogId | <a href=\"$blogUri\" target=\"_blank\">$blogName</a> | $blogStatus | $blogAddedTime
 					<div class=\"ss-div-button\">
-          <div class=\"arrow-up\" title=\"Show Summary\"></div>
-       		</div>
+          <div class=\"arrow-down\" title=\"Show Info\"></div>
+        	</div>
 					<div class=\"ss-slide-wrapper\">
+					<br />
 					<form method=\"POST\">
 					<input type=\"hidden\" name=\"step\" value=\"edit\" />";
 					if ($errormsg !== null) {
@@ -272,10 +274,11 @@ function AdminBlogs() {
 									}
 						print ">" . ucwords($row["BLOG_STATUS_DESCRIPTION"]) . "</option>\n";
 					}
-					print "</select></p>\n";
-					print "<input class=\"ss-button\" type=\"submit\" value=\"Submit\" /><br />\n";
-					print "</form>\n";
-					print "</div>
+					print "</select></p>\n
+					<p><input type=\"checkbox\" class=\"checkbox\" name=\"crawl\" value=\"1\" /> Crawl for new posts.</p>
+					<input class=\"ss-button\" type=\"submit\" value=\"Submit\" /><br />\n
+					</form>\n
+					</div>
 					</div>
 					<hr />";
 				}

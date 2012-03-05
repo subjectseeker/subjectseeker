@@ -1,5 +1,9 @@
 <?php
 
+include_once "ss-util.php";
+
+//$cache = new cache();
+
 // Set the response header to indicate that this is Atom XML.
 header( "Content-Type: application/atom+xml" );
 
@@ -364,4 +368,7 @@ function outputAsAtom( $post ) {
 
   return $atomString;
 }
+
+//$cache->close();
+
 ?>

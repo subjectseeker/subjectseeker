@@ -90,7 +90,9 @@ function doAdminUsers() {
 			if ($offset == null || is_numeric($offset) == FALSE) {
 				$offset = "0";
 			}
-			print "<div class=\"ss-div-2\">
+			print "<div class=\"filter-button\">Display Options</div>
+			<div class=\"ss-slide-wrapper\">
+			<div class=\"ss-div-2\" id=\"filter-panel\">
 			<form method=\"GET\">
 			<input type=\"hidden\" name=\"filters\" value=\"filters\" />
 			Sort by: 
@@ -131,12 +133,14 @@ function doAdminUsers() {
 			if ($order == "DESC") {
 				print " selected";
 			}
-			print ">Descending</option>\n";
-			print "</select><br />\n";
-			print "Entries per page: <input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/>";
-			print " | Start at: <input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>";
-			print "<br /><input class=\"ss-button\" type=\"submit\" value=\"Go\" />";
-			print "</form></div>";
+			print ">Descending</option>\n
+			</select><br />\n
+			Entries per page: <input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/> | Start at: <input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>
+			<br /><input class=\"ss-button\" type=\"submit\" value=\"Go\" />
+			</form>
+			</div>
+			</div>
+			<br />";
 			if ($step != null) {
 				$userID = stripslashes($_REQUEST["userId"]);
 				$userName = stripslashes($_REQUEST["userName"]);
@@ -145,35 +149,23 @@ function doAdminUsers() {
 				$userPrivilege = stripslashes($_REQUEST["userPrivilege"]);
 				$oldUserName = getUserName($userID, $db);
 				$result = checkUserData($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $displayname, $db);
-				if ($step == 'edit') {
-					if ($result == NULL) {				
-						editUser ($userID, $userName, $userStatus, $userEmail, $userPrivilege, $oldUserName, $wpdb, $db);
-						print "<p>$userName (id $userID) was updated.</p>";  
-						} 
-					if ($result != NULL) {
-						print "<p>$oldUserName (id $userID):<ul class=\"ss-error\">$result</ul></p>";
-						print "<form class=\"ss-div\" method=\"POST\">
-						<input type=\"hidden\" name=\"step\" value=\"confirm\" />
-						<input type=\"hidden\" name=\"userId\" value=\"$userID\" />
-						<input type=\"hidden\" name=\"userName\" value=\"$userName\" />
-						<input type=\"hidden\" name=\"userStatus\" value=\"$userStatus\" />
-						<input type=\"hidden\" name=\"userEmail\" value=\"$userEmail\" />
-						<input type=\"hidden\" name=\"userPrivilege\" value=\"$userPrivilege\" />
-						<p>There has been an error, are you sure you want to apply these changes?</p>
-						<input class=\"ss-button\" name=\"confirm\" type=\"submit\" value=\"Yes\" /> <input class=\"ss-button\" type=\"Submit\" value=\"No\" />
-						</form>";
-					}
-				}
-				if ($step == 'confirm') {
-					$confirm = $_REQUEST["confirm"];
-					if ($confirm == 'Yes') {
-						editUser ($userID, $userName, $userStatus, $userEmail, $userPrivilege, $oldUserName, $wpdb, $db);
-						print "<p>$userName (id $userID) was updated.</p>";
-					}
-					else {
-						$oldUserName = getUserName($userID, $db);
-						print "<p>$oldUserName (id $userID) was not updated.</p>";
-					}
+				if ($step == 'confirmed' || ($result == NULL && $step == 'edit')) {			
+					editUser ($userID, $userName, $userStatus, $userEmail, $userPrivilege, $oldUserName, $wpdb, $db);
+					print "<p><span class=\"green-circle\"></span> $userName (id $userID) was updated.</p>";  
+				} 
+				if ($result != NULL && $step == 'edit') {
+					global $adminUsers;
+					print "<p><span class=\"red-circle\"></span> $oldUserName (id $userID):<ul class=\"ss-error\">$result</ul></p>";
+					print "<form class=\"ss-div\" method=\"POST\">
+					<input type=\"hidden\" name=\"step\" value=\"confirmed\" />
+					<input type=\"hidden\" name=\"userId\" value=\"$userID\" />
+					<input type=\"hidden\" name=\"userName\" value=\"$userName\" />
+					<input type=\"hidden\" name=\"userStatus\" value=\"$userStatus\" />
+					<input type=\"hidden\" name=\"userEmail\" value=\"$userEmail\" />
+					<input type=\"hidden\" name=\"userPrivilege\" value=\"$userPrivilege\" />
+					<p>There has been an error, are you sure you want to apply these changes?</p>
+					<input class=\"ss-button\" name=\"confirm\" type=\"submit\" value=\"Yes\" /> <a class=\"ss-button\" href=\"$adminUsers\" />No</a>
+					</form>";
 				}
 			}
 			$baseUrl = removeParams();
@@ -194,10 +186,11 @@ function doAdminUsers() {
 					print "<div class=\"ss-entry-wrapper\">
 					$userID | $userName | $userStatus | $userPrivilege
 					<div class=\"ss-div-button\">
-          <div class=\"arrow-up\" title=\"Show Summary\"></div>
-       		</div>
+          <div class=\"arrow-down\" title=\"Show Info\"></div>
+        	</div>
 					<div class=\"ss-slide-wrapper\">
-					<form class=\"ss-form\" method=\"POST\">
+					<br />
+					<form method=\"POST\">
 					<input type=\"hidden\" name=\"step\" value=\"edit\" />";
 					if ($errormsg !== null) {
 						print "<p><font color='red'>Error: $errormsg</font></p>\n";
@@ -205,7 +198,7 @@ function doAdminUsers() {
 					print "<input type=\"hidden\" name=\"userId\" value=\"$userID\" />\n";
 					print "<p>*Required field</p>\n\n";
 					print "<p>*User name: <input type=\"text\" name=\"userName\" size=\"40\" value=\"$userName\"/></p>\n";
-					print "<p>*User e-mail: <input type=\"text\" name=\"userEmail\" size=\"55\" value=\"$userEmail\"/></p>\n";
+					print "<p>*User e-mail: <input type=\"text\" name=\"userEmail\" size=\"40\" value=\"$userEmail\"/></p>\n";
 					print "<p>*User Status: <select name='userStatus'>\n";
 					$statusList = getUserStatusList ($db);
 					while ($row = mysql_fetch_array($statusList)) {

@@ -61,6 +61,11 @@ function get_ssUserPanel($settings = array()) {
 
 function doUserPanel() {
   $db = ssDbConnect();
+	$registerUrl = wp_register( $before = '', $after = '', $echo = false);
+	print "<div id=\"user-panel-container\">
+	<ul class=\"user-panel\">
+	<li class=\"panel-button\">$registerUrl</li>
+	<li class=\"panel-button\">".wp_loginout( $before = '', $after = '', $echo = true)." </li>";
   if (is_user_logged_in()){
 		global $current_user;
     get_currentuserinfo();
@@ -71,22 +76,23 @@ function doUserPanel() {
 		
 		global $userBlogs;
 		global $userPosts;
-		print "<div id=\"user-panel-container\">
-		<ul class=\"user-panel\">
-		<li class=\"panel-button\"><a href=\"$userBlogs\">Your blogs</a></li>";
+		print "<li class=\"panel-button\"><a href=\"$userBlogs\">Your blogs</a></li>
+		<li class=\"panel-button\"><a href=\"$userPosts\">Your posts</a></li>
+		<li class=\"panel-button\"><a href=\"$userPosts/?step=scan&scanNow=1&addPosts=1&n=10\">Scan your recent posts for citations</a></li>";
 		if ($userPriv > 0){
 			global $approveUrl;
 			global $adminBlogs;
 			print "<li class=\"panel-button\"><a href=\"$approveUrl\">Approve Blogs</a></li>
 			<li class=\"panel-button\"><a href=\"$adminBlogs\">Administer Blogs</a></li>";
 			if ($userPriv > 1){
-				global $adminUsers;
 				global $adminPosts;
+				global $adminUsers;
+				print "<li class=\"panel-button\"><a href=\"$adminPosts\">Administer Posts</a></li>";
 				print "<li class=\"panel-button\"><a href=\"$adminUsers\">Administer Users</a></li>";
-				print "<li class=\"panel-button\"><a href=\"$adminUsers\">Administer Posts</a></li>";
 			}
 		}
-		print "</ul></div>";
 	}
+	print "</ul>
+	</div>";
 }
 ?>

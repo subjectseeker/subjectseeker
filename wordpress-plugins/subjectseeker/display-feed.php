@@ -66,19 +66,43 @@ function get_ssDisplayFeed($settings = array()) {
  */
 
 function displayFeed() {
+	
+	// Get persona ID if logged in
+	if (is_user_logged_in()){
+		global $current_user;
+		$db = ssDbConnect();
+		get_currentuserinfo();
+		$displayName = $current_user->display_name;
+		$email = $current_user->user_email;
+		$userId = addUser($displayName, $email, $db);
+		$httpParams["userPriv"] = getUserPrivilegeStatus($userId, $db);
+		$httpParams["personaId"] = addPersona($userId, $displayName, $db);
+		prepareFeed($httpParams);
+	}
+	
+	else {
+		$cache = new cache();
+		
+		if ($cache->caching) {
+			prepareFeed(NULL);
+		}
+		
+		$cache->close();
+	}
+}
 
-  // Params: list of blogs to display
-  // filter1=topic
-  // value1=cdata
-
-  $type = $_REQUEST["type"]; // "blog"
-  $ssParams = parseHttpParams();
-  $httpParams["n"] = $_REQUEST["n"];
-  $httpParams["offset"] = $_REQUEST["offset"];
-
-  $resourceXml = searchFeeds ($type, $ssParams, $httpParams);
-
-  printFeeds($resourceXml);
+function prepareFeed($httpParams) {
+	// Params: list of blogs to display
+	// filter1=topic
+	// value1=cdata
+	
+	$type = $_REQUEST["type"]; // "blog"
+	$ssParams = parseHttpParams();
+	$httpParams["n"] = $_REQUEST["n"];
+	$httpParams["offset"] = $_REQUEST["offset"];
+	
+	$resourceXml = searchFeeds ($type, $ssParams, $httpParams);
+	printFeeds($resourceXml);
 }
 
 // Pass the requested search parameters on to the search module.
@@ -86,7 +110,6 @@ function displayFeed() {
 function searchFeeds($type, $ssParams, $httpParams) {
 
   // Construct search query
-
   $curl = getSerializerCurl($type, $ssParams, $httpParams);
   $result = curl_exec($curl);
 	
@@ -99,14 +122,15 @@ function searchFeeds($type, $ssParams, $httpParams) {
 // Action: Print the contents of this document in HTML.
 function printFeeds($xmlFeed) {
   global $feed2html;
+	global $mainFeed;
 
   $dom = new DOMDocument();
   $dom->loadXML($xmlFeed);
 
   $xslt = new xslTProcessor();
   $xsl = new SimpleXMLElement($feed2html, null, true);
-
-  $baseurl = "http://scienceseeker.org/displayfeed/?type=blog";
+	
+  $baseurl = "$mainFeed/?type=blog";
   $ignoreParams = array("type", "n", "offset");
   $urlParamString = getUrlParamString($ignoreParams);
   if ($urlParamString != null) {
@@ -120,7 +144,6 @@ function printFeeds($xmlFeed) {
   $xslt->importStylesheet($xsl);
 
   print $xslt->transformToXML($dom);
-
 }
 
 ?>
