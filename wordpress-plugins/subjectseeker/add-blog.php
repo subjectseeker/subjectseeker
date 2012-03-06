@@ -72,7 +72,7 @@ function determineStep()
 
     global $current_user;
     get_currentuserinfo();
-    $displayName = $current_user->display_name;
+    $displayName = $current_user->user_login;
     $email = $current_user->user_email;
 
     $step = $_REQUEST["step"];
@@ -110,7 +110,7 @@ function displayBlogForm ($errormsg, $db) {
 
   global $current_user;
   get_currentuserinfo();
-  $displayName = $current_user->display_name;
+  $displayName = $current_user->user_login;
 
   // If this is the first time this user has tried to interact with
   // the SS system, create a USER entry for them
@@ -179,7 +179,7 @@ function doAddBlog ($db) {
 
   global $current_user;
   get_currentuserinfo();
-  $displayName = $current_user->display_name;
+  $displayName = $current_user->user_login;
   $email = $current_user->user_email;
   
   // check that there is a name

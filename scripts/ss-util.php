@@ -1385,7 +1385,7 @@ function displayEditBlogsForm ($msg, $db) {
 
   global $current_user;
   get_currentuserinfo();
-  $displayName = $current_user->display_name;
+  $displayName = $current_user->user_login;
 
   print "Welcome, $displayName<br /><br />\n";
 
@@ -1542,7 +1542,7 @@ function doEditBlog ($db) {
 
   global $current_user;
   get_currentuserinfo();
-  $displayName = $current_user->display_name;
+  $displayName = $current_user->user_login;
   $email = $current_user->user_email;
 
   // If this is the first time this user has tried to interact with
@@ -1590,7 +1590,7 @@ function doVerifyEditClaim ($db) {
 
   global $current_user;
   get_currentuserinfo();
-  $displayName = $current_user->display_name;
+  $displayName = $current_user->user_login;
   $userId = getUser($displayName, $db);
   $result = verifyClaim($blogId, $userId, $blogUri, $blogSyndicationUri, $db);
 

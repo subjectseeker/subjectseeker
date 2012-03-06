@@ -61,22 +61,22 @@ function get_ssUserPanel($settings = array()) {
 
 function doUserPanel() {
   $db = ssDbConnect();
-	$registerUrl = wp_register( $before = '', $after = '', $echo = false);
 	print "<div id=\"user-panel-container\">
-	<ul class=\"user-panel\">
-	<li class=\"panel-button\">$registerUrl</li>
-	<li class=\"panel-button\">".wp_loginout( $before = '', $after = '', $echo = true)." </li>";
+	<ul class=\"user-panel\">";
   if (is_user_logged_in()){
 		global $current_user;
+		global $userProfile;
     get_currentuserinfo();
-    $displayName = $current_user->display_name;
+    $displayName = $current_user->user_login;
     $email = $current_user->user_email;
     $userId = addUser($displayName, $email, $db);
     $userPriv = getUserPrivilegeStatus($userId, $db);
 		
 		global $userBlogs;
 		global $userPosts;
-		print "<li class=\"panel-button\"><a href=\"$userBlogs\">Your blogs</a></li>
+		print "<li class=\"panel-button\"><a href=\"$userProfile\">User Profile</a></li>
+		<li class=\"panel-button\">".wp_loginout( $before = '', $after = '', $echo = true)." </li>
+		<li class=\"panel-button\"><a href=\"$userBlogs\">Your blogs</a></li>
 		<li class=\"panel-button\"><a href=\"$userPosts\">Your posts</a></li>
 		<li class=\"panel-button\"><a href=\"$userPosts/?step=scan&scanNow=1&addPosts=1&n=10\">Scan your recent posts for citations</a></li>";
 		if ($userPriv > 0){
@@ -91,6 +91,11 @@ function doUserPanel() {
 				print "<li class=\"panel-button\"><a href=\"$adminUsers\">Administer Users</a></li>";
 			}
 		}
+	}
+	else {
+		global $registerUrl;
+		print "<li class=\"panel-button\"><a href=\"$registerUrl\">Register</a></li>
+		<li class=\"panel-button\">".wp_loginout( $before = '', $after = '', $echo = true)." </li>";
 	}
 	print "</ul>
 	</div>";

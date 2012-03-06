@@ -26,5 +26,5 @@ if ((($image["type"] == "image/gif") || ($image["type"] == "image/jpeg") || ($im
 	}
 }
 global $homeUrl;
-header( 'Location: $homeUrl' ) ;
+header( 'Location: '.$homeUrl);
 ?>

@@ -76,7 +76,7 @@ function determineClaimStep() {
 
     global $current_user;
     get_currentuserinfo();
-    $displayName = $current_user->display_name;
+    $displayName = $current_user->user_login;
     $email = $current_user->user_email;
 
     $step = $_REQUEST["step"];
