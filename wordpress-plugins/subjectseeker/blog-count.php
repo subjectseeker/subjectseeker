@@ -64,6 +64,11 @@ function get_ssBlogCount($settings = array()) {
 function blogCount (){
 $db = ssDbConnect();
 $count = getBlogCount($db);
-print "We have $count[0] blogs.";
+print "<p class=\"about\">ScienceSeeker collects posts from science blogs around the world, so you can find the latest science news and discussion on any topic.</p>
+<br />
+<p class=\"about\">Current blog count: $count</p>
+<br />
+<p class=\"about\">Are you a science blogger?</p>
+<p class=\"about\"><a href=\"http://scienceseeker.org/submit/\">Submit your blog today</a>.</p>";
 }
 ?>

@@ -2103,7 +2103,6 @@ function titleToCitations($title, $metadata2coins) {
 	$citations = array();
 	foreach ($resultLinks as $uri) {
 		$metadataXml = retrieveCrossRefMetadata ($uri);
-		// TODO put XSL file location in globals
 		$metadataCoins = transformXmlString($metadataXml, $metadata2coins);
 		array_push($citations, $metadataCoins);
  }
@@ -2146,7 +2145,7 @@ function checkCitations ($postUri, $postId, $db) {
 		}
 	}
 	
-	return  $citation;
+	return $citation;
 }
 
 // Input: Post ID, Topics Data, DB handle
