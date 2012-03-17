@@ -63,9 +63,9 @@ function get_ssAdminPosts($settings = array()) {
 function AdminPosts() {
 	$step = $_REQUEST["step"];
   $db = ssDbConnect();
-  if (is_user_logged_in()){
-    global $current_user;
-    get_currentuserinfo();
+		if (is_user_logged_in()){
+			global $current_user;
+			get_currentuserinfo();
     $displayName = $current_user->user_login;
     $email = $current_user->user_email;
     $userId = addUser($displayName, $email, $db);
@@ -78,7 +78,7 @@ function AdminPosts() {
 				$pagesize = $_REQUEST["n"];
 				$offset = $_REQUEST["offset"];
 				if ($arrange == null) {
-					$arrange = "BLOG_POST_ID";
+					$arrange = "8";
 				}
 				if ($order == null) {
 					$order = "DESC";
@@ -89,60 +89,59 @@ function AdminPosts() {
 				if ($offset == null || is_numeric($offset) == FALSE) {
 					$offset = "0";
 				}
-				print "<div class=\"filter-button\">Display Options</div>
+				print "<div class=\"toggle-button\">Display Options</div>
 				<div class=\"ss-slide-wrapper\">
 				<div class=\"ss-div-2\" id=\"filter-panel\">
 				<form method=\"GET\">";
 				print "<input type=\"hidden\" name=\"filters\" value=\"filters\" />";
 				print "Sort by: ";
 				print "<select name='arrange'>\n";
-				print "<option value='BLOG_POST_ID'";
-				if ($arrange == "BLOG_POST_ID") {
+				print "<option value='postId'";
+				if ($arrange == "postId") {
 					print " selected";
 				}
 				print ">ID</option>\n";
-				print "<option value='BLOG_POST_STATUS_ID'";
-				if ($arrange == "BLOG_POST_STATUS_ID") {
+				print "<option value='postStatus'";
+				if ($arrange == "postStatus") {
 					print " selected";
 				}
 				print ">Status</option>\n";
-				print "<option value='BLOG_POST_TITLE'";
-				if ($arrange == "BLOG_POST_TITLE") {
+				print "<option value='postTitle'";
+				if ($arrange == "postTitle") {
 					print " selected";
 				}
-				print ">Name</option>\n";
-				print "<option value='BLOG_POST_URI'";
-				if ($arrange == "BLOG_POST_URI") {
+				print ">Title</option>\n";
+				print "<option value='postTitle'";
+				if ($arrange == "postTitle") {
 					print " selected";
 				}
 				print ">URI</option>\n";
-				print "<option value='BLOG_POST_DATE_TIME'";
-				if ($arrange == "BLOG_POST_DATE_TIME") {
+				print "<option value='publicationTime'";
+				if ($arrange == "publicationTime") {
 					print " selected";
 				}
 				print ">Post Date</option>\n";
-				print "<option value='BLOG_POST_INGEST_DATE_TIME'";
-				if ($arrange == "BLOG_POST_INGEST_DATE_TIME") {
+				print "<option value='ingestTime'";
+				if ($arrange == "ingestTime") {
 					print " selected";
 				}
 				print ">Added Date</option>\n";
 				print "</select>\n";
 				print " | <select name='order'>\n";
-				print "<option value='ASC'";
-				if ($order == "ASC") {
+				print "<option value='ascending'";
+				if ($order == "ascending") {
 					print " selected";
 				}
 				print ">Ascending</option>\n";
-				print "<option value='DESC'";
-				if ($order == "DESC") {
+				print "<option value='descending'";
+				if ($order == "descending") {
 					print " selected";
 				}
-				print ">Descending</option>\n";
-				print "</select><br />\n";
-				print "Entries per page: <input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/>";
-				print " | Start at: <input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>";
-				print "<br /><input class=\"ss-button\" type=\"submit\" value=\"Go\" />";
-				print "</form>
+				print ">Descending</option>\n
+				</select><br />\n
+				Entries per page: <input type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/> | Start at: <input type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/><br />
+				<input class=\"ss-button\" type=\"submit\" value=\"Go\" />
+				</form>
 				</div>
 				</div>
 				<br />";

@@ -78,10 +78,10 @@ function adminBlogs() {
 				$pagesize = $_REQUEST["n"];
 				$offset = $_REQUEST["offset"];
 				if ($arrange == null) {
-					$arrange = "ADDED_DATE_TIME";
+					$arrange = "addedTime";
 				}
 				if ($order == null) {
-					$order = "DESC";
+					$order = "descending";
 				}
 				if ($pagesize == null || is_numeric($pagesize) == FALSE) {
 					$pagesize = "30";
@@ -89,57 +89,57 @@ function adminBlogs() {
 				if ($offset == null || is_numeric($offset) == FALSE) {
 					$offset = "0";
 				}
-				print "<div class=\"filter-button\">Display Options</div>
+				print "<div class=\"toggle-button\">Display Options</div>
 				<div class=\"ss-slide-wrapper\">
 				<div class=\"ss-div-2\" id=\"filter-panel\">
 				<form method=\"GET\">";
 				print "<input type=\"hidden\" name=\"filters\" value=\"filters\" />";
 				print "Sort by: ";
 				print "<select name='arrange'>\n";
-				print "<option value='BLOG_ID'";
-				if ($arrange == "BLOG_ID") {
+				print "<option value='blogId'";
+				if ($arrange == "blogId") {
 					print " selected";
 				}
 				print ">Id</option>\n";
-				print "<option value='BLOG_STATUS_ID'";
-				if ($arrange == "BLOG_STATUS_ID") {
+				print "<option value='blogStatus'";
+				if ($arrange == "blogStatus") {
 					print " selected";
 				}
 				print ">Status</option>\n";
-				print "<option value='BLOG_NAME'";
-				if ($arrange == "BLOG_NAME") {
+				print "<option value='blogName'";
+				if ($arrange == "blogName") {
 					print " selected";
 				}
 				print ">Name</option>\n";
-				print "<option value='BLOG_URI'";
-				if ($arrange == "BLOG_URI") {
+				print "<option value='blogUri'";
+				if ($arrange == "blogUri") {
 					print " selected";
 				}
 				print ">URI</option>\n";
-				print "<option value='BLOG_SYNDICATION_URI'";
-				if ($arrange == "BLOG_SYNDICATION_URI") {
+				print "<option value='blogSyndicationUri'";
+				if ($arrange == "blogSyndicationUri") {
 					print " selected";
 				}
 				print ">Syndication URI</option>\n";
-				print "<option value='ADDED_DATE_TIME'";
-				if ($arrange == "ADDED_DATE_TIME") {
+				print "<option value='addedTime'";
+				if ($arrange == "addedTime") {
 					print " selected";
 				}
 				print ">Added Date</option>\n";
-				print "<option value='CRAWLED_DATE_TIME'";
-				if ($arrange == "CRAWLED_DATE_TIME") {
+				print "<option value='crawledTime'";
+				if ($arrange == "crawledTime") {
 					print " selected";
 				}
 				print ">Crawled Date</option>\n";
 				print "</select>\n";
 				print " | <select name='order'>\n";
-				print "<option value='ASC'";
-				if ($order == "ASC") {
+				print "<option value='ascending'";
+				if ($order == "ascending") {
 					print " selected";
 				}
 				print ">Ascending</option>\n";
-				print "<option value='DESC'";
-				if ($order == "DESC") {
+				print "<option value='descending'";
+				if ($order == "descending") {
 					print " selected";
 				}
 				print ">Descending</option>\n";

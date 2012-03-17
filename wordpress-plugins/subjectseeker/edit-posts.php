@@ -5,7 +5,7 @@ Plugin URI: http://scienceseeker.org/
 Description: Edit posts for SubjectSeeker tool
 Author: Liminality
 Version: 1
-Author URI: http://www.binaryparticle.com
+Author URI: http://www.scienceseeker.org
 */
 
 /*
@@ -82,10 +82,10 @@ function scanPosts() {
 		$offset = $_REQUEST["offset"];
 		$blog = $_REQUEST["blog"];
 		if ($arrange == null) {
-			$arrange = "BLOG_POST_DATE_TIME";
+			$arrange = "publicationTime";
 		}
 		if ($order == null) {
-			$order = "DESC";
+			$order = "descending";
 		}
 		if ($pagesize == null || is_numeric($pagesize) == FALSE) {
 			$pagesize = "30";
@@ -105,41 +105,41 @@ function scanPosts() {
 		}
 		
 		// Filters
-		print "<div class=\"filter-button\">Display Options</div>
+		print "<div class=\"toggle-button\">Display Options</div>
 		<div class=\"ss-slide-wrapper\">
 		<div class=\"ss-div-2\" id=\"filter-panel\">
 		<form method=\"GET\">
 		<input type=\"hidden\" name=\"filters\" value=\"filters\" />
 		Sort by:
-		<select name='arrange'><option value='BLOG_POST_ID'";
-		if ($arrange == "BLOG_POST_ID") {
+		<select name='arrange'><option value='postId'";
+		if ($arrange == "postId") {
 			print " selected";
 		}
 		print ">ID</option>\n";
-		print "<option value='BLOG_POST_TITLE'";
-		if ($arrange == "BLOG_POST_TITLE") {
+		print "<option value='postTitle'";
+		if ($arrange == "postTitle") {
 			print " selected";
 		}
 		print ">Title</option>\n";
-		print "<option value='BLOG_POST_DATE_TIME'";
-		if ($arrange == "BLOG_POST_DATE_TIME") {
+		print "<option value='publicationTime'";
+		if ($arrange == "publicationTime") {
 			print " selected";
 		}
 		print ">Publication Time</option>\n";
-		print "<option value='BLOG_POST_INGEST_DATE_TIME'";
-		if ($arrange == "BLOG_POST_INGEST_DATE_TIME") {
+		print "<option value='ingestTime'";
+		if ($arrange == "ingestTime") {
 			print " selected";
 		}
 		print ">Added Time</option>\n";
 		print "</select>\n";
 		print " | <select name='order'>\n";
-		print "<option value='ASC'";
-		if ($order == "ASC") {
+		print "<option value='ascending'";
+		if ($order == "ascending") {
 			print " selected";
 		}
 		print ">Ascending</option>\n";
-		print "<option value='DESC'";
-		if ($order == "DESC") {
+		print "<option value='descending'";
+		if ($order == "descending") {
 			print " selected";
 		}
 		print ">Descending</option>\n";
@@ -149,7 +149,7 @@ function scanPosts() {
 		// Get blog ids from all the blogs from the user
 		$userBlogsList = getBlogIdsByUserId($userId, NULL, $db);
 		// Get blog names and ids
-		$blogsList = getBlogList($userBlogsList, 'BLOG_NAME', 'DESC', 100, 0, $db);
+		$blogsList = getBlogList($userBlogsList, 'blogName', 'descending', 100, 0, $db);
 		foreach ($blogsList as $blogs) {
 			$id = $blogs["id"];
 			$name = $blogs["name"];

@@ -82,7 +82,7 @@ function searchCitations() {
 	if ($step == "results") {
 		print "<input class=\"ss-button\" type=\"button\" value=\"Go Back\" onClick=\"history.go(-1);return true;\"><br />
 		<h3>Select citation.</h3>
-		<br />";
+		<p>Please select a citation from the list or try using different search parameters if you can't find the appropriate citation.</p>";
 		$title = $_REQUEST["title"];
 		$results = titleToCitations($title, $metadata2coins);
 		if ($results == NULL) {
@@ -207,7 +207,7 @@ function searchCitations() {
 			foreach ($firstName as $key => $first) {
 				$buildFName = "";
 				$last = $lastName[$key];
-				$citation .= "&amp;rft.au=".rawurlencode("$last $first")."&amp;rft.aulast=".rawurlencode($last)."&amp;rft.aufirst=".rawurlencode($first);
+				$citation .= "&amp;rft.au=".urlencode("$last $first")."&amp;rft.aulast=".urlencode($last)."&amp;rft.aufirst=".urlencode($first);
 				
 				preg_match_all("/\w+/", $first, $matchResult);
 				foreach ($matchResult[0] as $fName) {
@@ -241,14 +241,14 @@ function searchCitations() {
 		else {
 			$citation .= "bpr3.included=0";
 		}
+		if ($rbTags && $rbInclude) {
+			$citation .= ";bpr3.tags=".urlencode(implode(",",$rbTags));
+		}
 		if ($ssInclude) {
-			$citation .= "&ss.included=1";
+			$citation .= "&rfs_dat=ss.included=1";
 		}
 		else {
-			$citation .= "&ss.included=0";
-		}
-		if ($rbTags && $rbInclude) {
-			$citation .= ";bpr3.tags=".rawurlencode(implode(",",$rbTags));
+			$citation .= "&rfs_dat=ss.included=0";
 		}
 		$citation .= "\">";
 		$citation .= "$authors $date $title <span style=\"font-style:italic;\">$journal $volume</span> $issue $spage DOI: <a rev=\"review\" href=\"http://dx.doi.org/$id\">$id</a></span>";

@@ -79,10 +79,10 @@ function doAdminUsers() {
 			$pagesize = $_REQUEST["n"];
 			$offset = $_REQUEST["offset"];
 			if ($arrange == null) {
-				$arrange = "USER_ID";
+				$arrange = "userId";
 			}
 			if ($order == null) {
-				$order = "DESC";
+				$order = "descending";
 			}
 			if ($pagesize == null || is_numeric($pagesize) == FALSE) {
 				$pagesize = "30";
@@ -90,47 +90,47 @@ function doAdminUsers() {
 			if ($offset == null || is_numeric($offset) == FALSE) {
 				$offset = "0";
 			}
-			print "<div class=\"filter-button\">Display Options</div>
+			print "<div class=\"toggle-button\">Display Options</div>
 			<div class=\"ss-slide-wrapper\">
 			<div class=\"ss-div-2\" id=\"filter-panel\">
 			<form method=\"GET\">
 			<input type=\"hidden\" name=\"filters\" value=\"filters\" />
 			Sort by: 
 			<select name='arrange'>
-			<option value='USER_ID'";
-			if ($arrange == "USER_ID") {
+			<option value='userId'";
+			if ($arrange == "userId") {
 				print " selected";
 			}
 			print ">Id</option>\n";
-			print "<option value='USER_NAME'";
-			if ($arrange == "USER_NAME") {
+			print "<option value='userName'";
+			if ($arrange == "userName") {
 				print " selected";
 			}
 			print ">Name</option>\n";
-			print "<option value='USER_STATUS_ID'";
-			if ($arrange == "USER_STATUS_ID") {
+			print "<option value='userStatus'";
+			if ($arrange == "userStatus") {
 				print " selected";
 			}
 			print ">Status</option>\n";
-			print "<option value='USER_PRIVILEGE_ID'";
-			if ($arrange == "USER_PRIVILEGE_ID") {
+			print "<option value='userPrivilege'";
+			if ($arrange == "userPrivilege") {
 				print " selected";
 			}
 			print ">Privilege</option>\n";
-			print "<option value='EMAIL_ADDRESS'";
-			if ($arrange == "EMAIL_ADDRESS") {
+			print "<option value='userEmail'";
+			if ($arrange == "userEmail") {
 				print " selected";
 			}
 			print ">E-mail</option>\n";
 			print "</select>\n";
 			print " | <select name='order'>\n";
-			print "<option value='ASC'";
-			if ($order == "ASC") {
+			print "<option value='ascending'";
+			if ($order == "ascending") {
 				print " selected";
 			}
 			print ">Ascending</option>\n";
-			print "<option value='DESC'";
-			if ($order == "DESC") {
+			print "<option value='descending'";
+			if ($order == "descending") {
 				print " selected";
 			}
 			print ">Descending</option>\n

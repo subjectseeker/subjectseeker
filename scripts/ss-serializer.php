@@ -233,38 +233,35 @@ function getRecentPosts( $params, $numPosts, $offset, $dbHandle ) {
     }
   }
 	
-	if (is_array($params["citation"]) == TRUE) {
-		$params["citation"] = implode($params["citation"]);
+	if ($params["modifier"]) {
+		foreach($params["modifier"] as $modifier) {
+			$$modifier = TRUE;
+		}
 	}
-	if (is_array($params["editorsPicks"]) == TRUE) {
-		$params["editorsPicks"] = implode($params["editorsPicks"]);
-	}
-	if (is_array($params["usersPicks"]) == TRUE) {
-		$params["usersPicks"] = implode($params["usersPicks"]);
-	}
+	
   $postSQL = "SELECT BLOG_POST_ID FROM BLOG_POST ";
-	if (count ($blogIds) > 0 || $params["citation"] == 1 || $params["editorsPicks"] == 1 || $params["usersPicks"] == 1) {
+	if (count ($blogIds) > 0 || $citation || $editorsPicks || $usersPicks) {
 		$postSQL .= "WHERE ";
 	}
-	if ($params["citation"] == 1) {
+	if ($citation) {
 		$postSQL .= "BLOG_POST_HAS_CITATION = 1 ";
 	}
-	if ($params["editorsPicks"] == 1) {
-		if ($params["citation"] == 1) {
+	if ($editorsPicks) {
+		if ($citation) {
 			$postSQL .= "AND ";
 		}
-		foreach (getEditorsPicks(NULL, $dbHandle) as $array) {
-			$editorsPicks[] = $array["postId"];
+		foreach (getEditorsPicks(NULL, $dbHandle) as $item) {
+			$editorsPosts[] = $item["postId"];
 		}
-		$firstPost = array_shift($editorsPicks);
+		$firstPost = array_shift($editorsPosts);
     $postSQL .= "((BLOG_POST_ID = $firstPost) ";
-    foreach ($editorsPicks as $id) {
+    foreach ($editorsPosts as $id) {
       $postSQL .= "OR (BLOG_POST_ID = $id) ";
     }
 		$postSQL .= ") ";
 	}
   if (count ($blogIds) > 0) {
-		if ($params["citation"] == 1 || $params["editorsPicks"] == 1) {
+		if ($citation || $editorsPicks) {
 			$postSQL .= "AND ";
 		}
     $firstBlogId = array_shift($blogIds);

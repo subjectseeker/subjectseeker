@@ -162,15 +162,6 @@ function paramArrayToString($params) {
 function parseHttpParams() {
   $i = 0;
   $params = array();
-	if ($_REQUEST["citation"]) {
-		$params['citation'] = $_REQUEST["citation"];
-	}
-	if ($_REQUEST["editorsPicks"]) {
-		$params['editorsPicks'] = $_REQUEST["editorsPicks"];
-	}
-	if ($_REQUEST["usersPicks"]) {
-		$params['usersPicks'] = $_REQUEST["usersPicks"];
-	}
   $filter = stripslashes($_REQUEST["filter$i"]);
   while ($filter !== "" && $filter !== null) {
     $value = stripslashes($_REQUEST["value$i"]);
@@ -262,7 +253,11 @@ function insanitize( $htmlString ) {
 // Input: Arrange type, order, number of users, offset, DB handle
 // Return: Users data
 function getUsers ($arrange, $order, $pagesize, $offset, $db) {
-  $sql = "SELECT USER_ID, USER_NAME, USER_STATUS_ID, USER_PRIVILEGE_ID, EMAIL_ADDRESS FROM USER ORDER BY $arrange $order LIMIT $pagesize OFFSET $offset";
+	global $hashData;
+	$column = $hashData["$arrange"];
+	$direction = $hashData["$order"];
+	
+  $sql = "SELECT USER_ID, USER_NAME, USER_STATUS_ID, USER_PRIVILEGE_ID, EMAIL_ADDRESS FROM USER ORDER BY $column $direction LIMIT $pagesize OFFSET $offset";
   $users = array();
   $results = mysql_query($sql, $db);
   while ($row = mysql_fetch_array($results)) {
@@ -279,7 +274,11 @@ function getUsers ($arrange, $order, $pagesize, $offset, $db) {
 // Input: Arrange type, order, number of posts, offset, DB handle
 // Return: Posts data
 function getPosts ($arrange, $order, $pagesize, $offset, $db) {
-	$sql = "SELECT * from BLOG_POST ORDER BY $arrange $order LIMIT $pagesize OFFSET $offset";
+	global $hashData;
+	$column = $hashData["$arrange"];
+	$direction = $hashData["$order"];
+	
+	$sql = "SELECT * from BLOG_POST ORDER BY $column $direction LIMIT $pagesize OFFSET $offset";
 	
 	$posts = array();
 	$results =  mysql_query($sql, $db);	
@@ -408,6 +407,10 @@ function getSparseBlogs($db, $limit=1000) {
 // Input: DB handle
 // Output: array of hashes of blogs (id, name, uri, description, syndication uri)
 function getBlogList ($blogIds, $arrange, $order, $pagesize, $offset, $db) {
+	global $hashData;
+	$column = $hashData["$arrange"];
+	$direction = $hashData["order"];
+	
   $sql = "SELECT BLOG_ID, BLOG_NAME, BLOG_STATUS_ID, BLOG_URI, BLOG_DESCRIPTION, BLOG_SYNDICATION_URI, ADDED_DATE_TIME, CRAWLED_DATE_TIME FROM BLOG ";
 	if ($blogIds != NULL) {
 		$firstBlogId = array_shift($blogIds);
@@ -416,7 +419,8 @@ function getBlogList ($blogIds, $arrange, $order, $pagesize, $offset, $db) {
 			$sql .= "OR (BLOG_ID = $blogId) ";
 		}
 	}
-	$sql .= "ORDER BY $arrange $order LIMIT $pagesize OFFSET $offset";
+	
+	$sql .= "ORDER BY $column $direction LIMIT $pagesize OFFSET $offset";
 	
   $blogs = array();
   $results = mysql_query($sql, $db);
@@ -491,7 +495,7 @@ function getRecommendationStatus ($postId, $personaId, $db) {
 function getEditorsPicks($type, $db) {
 	$sql = "SELECT rec.BLOG_POST_ID";
 	if ($type == 'images') {
-		$sql .= ", rec.REC_COMMENT, rec.REC_IMAGE";
+		$sql .= ", rec.REC_COMMENT, rec.REC_IMAGE, user.USER_NAME";
 	}
 	$sql .= " FROM RECOMMENDATION rec,
 PERSONA pers, USER user WHERE user.USER_ID = pers.USER_ID AND
@@ -505,6 +509,7 @@ rec.PERSONA_ID = pers.PERSONA_ID AND user.USER_PRIVILEGE_ID > 0";
 	while ($row = mysql_fetch_array($results)) {
 		$recommendation["postId"] = $row["BLOG_POST_ID"];
 		$recommendation["comment"] = $row["REC_COMMENT"];
+		$recommendation["author"] = $row["USER_NAME"];
 		$recommendation["image"] = $row["REC_IMAGE"];
     array_push ($recommendations, $recommendation);
   }
@@ -950,10 +955,13 @@ function blogIdsToBlogData ($blogIds, $db) {
 
 }
 
-// Input: array of blog IDs, DB handle
+// Input: array of blog IDs, arrangement keyword, direction keyword, limit of results, offset, DB handle
 // Output: mysql rows of blog post data
 function blogIdsToBlogPostData ($blogIds, $arrange, $order, $pagesize, $offset, $db) {
-
+	global $hashData;
+	$column = $hashData["$arrange"];
+	$direction = $hashData["$order"];
+	
   $firstBlog = array_shift ($blogIds);
 	
   $sql = "SELECT BLOG_POST_ID, BLOG_ID, BLOG_POST_URI, BLOG_POST_SUMMARY, BLOG_POST_TITLE, BLOG_POST_HAS_CITATION FROM BLOG_POST WHERE BLOG_ID = $firstBlog AND BLOG_POST_STATUS_ID = 0";
@@ -961,7 +969,7 @@ function blogIdsToBlogPostData ($blogIds, $arrange, $order, $pagesize, $offset, 
   foreach ($blogIds as $blogId) {
     $sql .= " OR BLOG_ID = $blogId AND BLOG_POST_STATUS_ID = 0";
   }
-  $sql .= " ORDER BY $arrange $order LIMIT $pagesize OFFSET $offset";
+  $sql .= " ORDER BY $column $direction LIMIT $pagesize OFFSET $offset";
 	
   $results =  mysql_query($sql, $db);
 
@@ -1024,7 +1032,7 @@ function dateStringToSql($datestr) {
 function addSimplePieItem ($item, $language, $blogId, $db) {
   $itemURI = insanitize( $item->get_permalink() );
 
-  $existing = getPost("BLOG_POST_URI", $itemURI , $db);
+  $existing = getPost("blogUri", $itemURI , $db);
 
   if ($existing) {
     return $existing["dbId"];
@@ -1137,8 +1145,11 @@ function addTopic ($topic, $db) {
 
 // Input: uri of post to search for, DB handle
 // Return: corresponding post object, or null
-function getPost ($type, $value, $db) {
-  $sql = "SELECT * from BLOG_POST where $type = '$value'";
+function getPost ($arrange, $value, $db) {
+	global $hashData;
+	$column = $hashData["$arrange"];
+	
+  $sql = "SELECT * from BLOG_POST where $column = '$value'";
   $results =  mysql_query($sql, $db);
   if (! $results || mysql_num_rows($results) == 0) {
     return null;
@@ -2072,8 +2083,9 @@ if (($cerror != null & strlen($cerror) > 0)) {
 # Input: string which contains all or part of article title (user-supplied)
 # Output: list of strings, each containing COinS-formatted citation which might match the supplied string
 function titleToCitations($title, $metadata2coins) {
-
-  $uri = "http://api.labs.crossref.org/search?q=" . urlencode($title);
+	global $crossRefUrl;
+	
+  $uri = $crossRefUrl . urlencode($title);
 
   $ch = curl_init();    // initialize curl handle
   curl_setopt($ch, CURLOPT_URL,$uri); // set url to post to
@@ -2196,7 +2208,7 @@ function storeCitation ($citation, $postId, $db) {
 function removeCitations($postId, $citationId, $db) {
 	$sql = "DELETE FROM POST_CITATION WHERE BLOG_POST_ID = $postId";
 	if ($citationId != NULL) {
-		$sql .= " AND CITATION_ID = $citationIdBLOG_POST_HAS_CITATION";
+		$sql .= " AND CITATION_ID = $citationId";
 	}
   mysql_query($sql, $db);
 	

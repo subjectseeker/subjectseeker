@@ -123,14 +123,14 @@ function searchFeeds($type, $ssParams, $httpParams) {
 function printFeeds($xmlFeed) {
   global $feed2html;
 	global $mainFeed;
-
+	
   $dom = new DOMDocument();
   $dom->loadXML($xmlFeed);
 
   $xslt = new xslTProcessor();
   $xsl = new SimpleXMLElement($feed2html, null, true);
 	
-  $baseurl = "$mainFeed/?type=blog";
+  $baseurl = "$mainFeed/?type=post";
   $ignoreParams = array("type", "n", "offset");
   $urlParamString = getUrlParamString($ignoreParams);
   if ($urlParamString != null) {

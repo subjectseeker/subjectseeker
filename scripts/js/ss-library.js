@@ -2,33 +2,80 @@
 
 $(document).ready(function() {
 	
-	pathArray = window.location.pathname.split( '/' );
-	var baseUrl = pathArray[2];
+	var loadingGif = '<img src="/images/icons/loading.gif" alt="Loading" title="Loading" />'
 	
 	function updateComments (element) {
 		var parent = $(element).parents('.ss-entry-wrapper');
 		var id = $(parent).attr("id");
-		var persona = $(parent).attr("data-personaId");
+		var persona = $(parent).attr('data-personaId');
 		var dataString = 'id='+ id + '&persona='+ persona + '&step=showComments';
 		var insert = $(parent).find('.comments-list-wrapper');
 		if ($(insert).html() == "") {
-		$(insert).html('<img src="http://scienceseeker.org/images/icons/loading.gif" alt="Loading" title="Loading" />').fadeIn('slow');
-			$.ajax({
-				type: "POST",
-				url: baseUrl + "/subjectseeker/comment.php",
-				data: dataString,
-				cache: false,
-				
-				success: function(html) {
-					insert.html(html);
-				} 
-		});
+			$(insert).html(loadingGif).fadeIn('slow');
+				$.ajax({
+					type: "POST",
+					url: "/subjectseeker/comment.php",
+					data: dataString,
+					cache: false,
+					
+					success: function(html) {
+						insert.html(html);
+					} 
+			});
 		}
 	}
 	
+	function toggleSlider (button) {
+		$(button).next('.ss-slide-wrapper').slideToggle('slow', "swing", function() {
+			updateCommentsButton($(this).parents('.ss-entry-wrapper').find('.comment-button'));
+		});
+		$(button).find(".arrow-down,.arrow-up").toggleClass("arrow-up arrow-down");
+	}
+	
+	function updateCommentsButton (element) {
+		var parent = $(element).parents('.ss-entry-wrapper');
+		var button = $(parent).find('.comment-button');
+		var slider = $(parent).find('#post-info.ss-slide-wrapper');
+		var number = $(button).attr('data-number');
+		var commentsContent = $(parent).find('.comments-list-wrapper').html();
+		
+		if (commentsContent != "") {
+			if((slider).is(':visible')){
+				$(button).html('Hide Info');
+			}
+			else {
+				$(button).html(number + ' Comment');
+				if (number != 1) {
+					$(button).append('s');
+				}
+			}
+		}
+	}
+	
+	
+	function updateCoords(c) {
+		$('#x').val(c.x);
+		$('#y').val(c.y);
+		$('#w').val(c.w);
+		$('#h').val(c.h);
+	};
+
+	function checkCoords() {
+		if (parseInt($('#w').val())) return true;
+		alert('Please select a crop region then press submit.');
+		return false;
+	};
+	
 	$("#pikame").PikaChoose({speed:10000, transition:[2,3,5]});
 	
-	$('.ss-slide-wrapper, .comments-wrapper').hide();
+	$('#jcrop-target').Jcrop({
+		minSize: [ 580, 200 ],
+		setSelect: [ 0, 0, 580, 200 ],
+		aspectRatio: 59/20,
+		onSelect: updateCoords
+	});
+	
+	$('.ss-slide-wrapper').hide();
 	
 	$('.recommend').each(function() {
 		if($(this).attr('id') == 'recommend') {
@@ -40,10 +87,10 @@ $(document).ready(function() {
 	
 	$('.toggleHidenOption').change(function() {  
 		if($(this).attr('checked')) {
-			$(this).closest('form').find('.ss-hidden-option').slideDown("fast");
+			$(this).closest('form').find('.ss-hidden-option').slideDown();
 		}
 		else {
-			$(this).closest('form').find('.ss-hidden-option').slideUp("fast");
+			$(this).closest('form').find('.ss-hidden-option').slideUp();
 		}
   });
 	
@@ -55,14 +102,13 @@ $(document).ready(function() {
 		$(this).find('.ss-hidden-text').hide();
 	}); 
 	
-  $('.ss-div-button').click(function() {  
-    $(this).closest('.ss-entry-wrapper').find('.ss-slide-wrapper').slideToggle("fast");
-		$(this).find(".arrow-down,.arrow-up").toggleClass("arrow-up arrow-down");
+  $('.ss-div-button').click(function() {
+    toggleSlider(this);
   });
 	
-	$('.filter-button').click(function() {  
-    $(this).next().slideToggle("fast");
-		$(this).toggleClass("filter-button filter-button-pressed");
+	$('.toggle-button').click(function() {  
+    $(this).next().slideToggle();
+		$(this).toggleClass("toggle-button toggle-button-pressed");
   });
 	
 	$('.checkall').click(function () {
@@ -70,42 +116,56 @@ $(document).ready(function() {
 	});
 	
 	$('.close-parent').click(function () {
-		$(this).parents('.closeable-parent, .comments-wrapper, #notification-area').slideUp('fast');
+		$(this).parents('.closeable-parent, .comments-wrapper, #notification-area').slideUp();
 	});
 	
 	$('div').on('click', '#remove-parent', function() {
 		$(this).parents('.removable-parent').remove();
 	});
 	
-	$('.comments-wrapper').on('click', '.submit-comment', function() {
+	$('.ss-slide-wrapper').on('click', '.submit-comment', function() {
 		var parent = $(this).parents('.ss-entry-wrapper');
 		var id = $(parent).attr("id");
 		var persona = $(parent).attr("data-personaId");
 		var step = $(this).attr("data-step");
 		var comment = $(parent).find('textarea').val();
+		var commentButton = $(parent).find('.comment-button');
 		var dataString = 'id='+ id + '&persona='+ persona + '&comment=' + comment + '&step=' + step;
 		var insert = $(parent).find('.comments-list-wrapper');
 		
-		$(insert).html('<img src="http://scienceseeker.org/images/icons/loading.gif" alt="Loading" title="Loading" />').fadeIn('slow');
+		$(insert).html(loadingGif).fadeIn('slow');
 		$.ajax({
 			type: "POST",
 			enctype: "multipart/form-data",
-			url: baseUrl + "/subjectseeker/comment.php",
+			url: "/subjectseeker/comment.php",
 			data: dataString,
 			dataType: "html",
 			cache: false,
 			
 			success: function(data) {
 				insert.html(data);
+				var count = $(data).filter('div').attr('data-count');
+				updateComments(this);
+				$(parent).find('.comment-button').attr('data-number', count);
 			}
-		});
-		
-		updateComments(this);
+		});	
 	});
 	
 	$('.comment-button').click(function() {
+		var button = $(this);
+		var number = $(button).attr('data-number');
+		var parent = $(button).parents('.ss-entry-wrapper');
+		var slider = $(parent).find('#post-info.ss-slide-wrapper');
+		var sliderButton = $(parent).find('.ss-div-button');
+		var commentsContent = $(parent).find('.comments-list-wrapper').html();
 		updateComments(this);
-		$(this).parents('.ss-entry-wrapper').find('.comments-wrapper').slideToggle("fast");
+		if($(slider).is(':visible')){
+			if (commentsContent == "") {
+				updateCommentsButton (this);
+				return;
+			}
+		}
+		toggleSlider(sliderButton);
 	});
 	
 	$('.recommendation-wrapper').on('click', '.recommend', function() {
@@ -115,18 +175,17 @@ $(document).ready(function() {
 		var persona = $(parent).attr("data-personaId");
 		var dataString = 'id='+ id + '&persona='+ persona + '&step=' + step;
 		var recWrapper = $(this).closest('.recommendation-wrapper');
-		var commentsWrapper = $(parent).find('.comments-wrapper');
 		var commentTextArea = $(parent).find('.rec-comment');
 		
 		if (persona == '') {
-			$('#notification-area').slideDown('fast');
-			$('#notification-content').html('You must register to be able to recommend posts.<br /><br /><a class="ss-button" href="http://dev.scienceseeker.org/wp-login.php">Log In</a> <a class="ss-button" href="http://dev.scienceseeker.org/wp-signup.php">Register</a>');
+			$('#notification-area').slideDown();
+			$('#notification-content').html('<p>You must register to be able to recommend posts.</p><a class="ss-button" href="/wp-login.php">Log In</a> <a class="ss-button" href="/wp-signup.php">Register</a>');
 		}
 		else {
-			$(recWrapper).html('<img src="http://scienceseeker.org/images/icons/loading.gif" alt="Loading" title="Loading" />').fadeIn('slow');
+			$(recWrapper).html(loadingGif).fadeIn('slow');
 			$.ajax({
 				type: "POST",
-				url: baseUrl + "/subjectseeker/recommend.php",
+				url: "/subjectseeker/recommend.php",
 				data: dataString,
 				cache: false,
 				
@@ -135,11 +194,15 @@ $(document).ready(function() {
 				} 
 			});
 			if ($(this).attr("id") == 'recommend') {
-				updateComments(commentsWrapper);
-				$(commentTextArea).add(commentsWrapper).slideDown('fast');
+				updateComments(this);
+				$(commentTextArea).slideDown();
 			}
 			else {
-				$(commentTextArea).add(commentsWrapper).slideUp('fast');
+				if(!(commentTextArea).is(":visible")){
+					$(commentTextArea).hide();
+				}else{
+					$(commentTextArea).slideUp();
+				}
 			}
 		}
 		return false;
@@ -161,20 +224,20 @@ $(document).ready(function() {
 		
 		var dataString = '';
 		var i = 0;
-		$('#category:checked').each(function () {;
+		$('#topic:checked').each(function () {;
 			var value = $(this).attr('value');
-			var extra = ('&filter' + i + '=topic&value' + i + '=')
+			var extra = ('&filter' + i + '=topic&value' + i + '=');
 			dataString += extra + value;
 			i++;
 		});
-		$('#filter:checked').each(function () {;
+		$('#modifier:checked').each(function () {;
 			var value = $(this).attr('value');
-			var attribute = ('&' + value + '=1')
-			dataString += attribute;
+			var extra = ('&filter' + i + '=modifier&value' + i + '=');
+			dataString += extra + value;
 			i++;
 		});
-		$(wrapper).children('.custom-rss').attr('href', serializer + '?type=blog' + encodeURI(dataString));
-		$(wrapper).children('.ss-button').attr('href', feed + '?type=blog' + encodeURI(dataString));
+		$(wrapper).children('.custom-rss').attr('href', serializer + '?type=post' + encodeURI(dataString));
+		$(wrapper).children('.ss-button').attr('href', feed + '?type=post' + encodeURI(dataString));
 	});
 	
 	$('#add-author').click(function() {

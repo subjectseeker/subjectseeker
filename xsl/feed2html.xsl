@@ -33,7 +33,7 @@
       <xsl:if test="parent::atom:source">
         <xsl:attribute name="href">
         	<xsl:value-of select="$baseurl"/>
-          <xsl:text>?type=blog&amp;filter0=topic&amp;value0=</xsl:text>
+          <xsl:text>?type=post&amp;filter0=topic&amp;value0=</xsl:text>
           <xsl:value-of select="@term"/>
         </xsl:attribute>
       </xsl:if>
@@ -76,10 +76,10 @@
       <!-- temporarily, we only generate the blog category -->
       <div class="recommendation-wrapper">
       	<xsl:if test="atom:recstatus">
-      		<div class="recommend" id="remove" title="Remove recommendation" style="background-image: url(http://scienceseeker.org/images/icons/ss-sprite.png); height: 18px; background-position: center -19px; background-repeat: no-repeat;"></div>
+      		<div class="recommend" id="remove" title="Remove recommendation" style="background-image: url(/images/icons/ss-sprite.png); height: 18px; background-position: center -19px; background-repeat: no-repeat;"></div>
         </xsl:if>
         <xsl:if test="not(atom:recstatus)">
-        	<div class="recommend" id="recommend" title="Recommend" style="background-image: url(http://scienceseeker.org/images/icons/ss-sprite.png); height: 18px; background-position: center 0px; background-repeat: no-repeat;"></div>
+        	<div class="recommend" id="recommend" title="Recommend" style="background-image: url(/images/icons/ss-sprite.png); height: 18px; background-position: center 0px; background-repeat: no-repeat;"></div>
         </xsl:if>
         <xsl:value-of select="atom:recommendations" />
       </div>
@@ -102,19 +102,19 @@
           <xsl:apply-templates select="rdf:Description[@rdf:ID='citations']" />
         </div>
         <div class="ss-div-button">
-          <div class="arrow-down" title="Show Summary"></div>
+          <div class="arrow-down" title="Show Extra Info"></div>
         </div>
-        <div class="ss-slide-wrapper">
+        <div id="post-info" class="ss-slide-wrapper">
           <div id="padding-content" title="Summary">
             <xsl:value-of select="atom:summary" disable-output-escaping="yes"/>
           </div>
-        </div>
-        <div class="comments-wrapper">
+          <div class="comments-list-wrapper">
+          </div>
           <div class="rec-comment">
-          	<div class="ss-div-2">
+            <div class="ss-div-2">
               <form method="POST" enctype="multipart/form-data">
-                <p><h4>Leave a comment!</h4></p>
-                <div class="ss-div">
+                <span class="subtle-text">Leave a comment!</span>
+                <div class="ss-div-2">
                 <textarea class="textArea" name="comment" rows="3" cols="59"></textarea>
                 <span class="alignright"><span class="charsLeft">120</span> characters left.</span>
                 </div>
@@ -122,26 +122,34 @@
               </form>
               <xsl:if test="atom:userpriv > 0">
                 <br />
-                <p><h4>Related Image</h4></p>
-                <form method="POST" action="/subjectseeker/upload-file.php" enctype="multipart/form-data">
-                  <input type="hidden" name="postId">
-                  <xsl:attribute name="value">
-                  <xsl:value-of select="atom:id"/>
-                  </xsl:attribute>
-                  </input>
-                  <input type="hidden" name="personaId">
-                  <xsl:attribute name="value">
-                  <xsl:value-of select="atom:userpersona"/>
-                  </xsl:attribute>
-                  </input>
-                  <input type="file" name="image" /> Image Size: 580 x 290 <input type="submit" value="Submit" />
-                </form>
+                <div class="toggle-button">Related Image</div>
+                <div class="ss-slide-wrapper">
+                  <div class="ss-div-2" id="filter-panel">
+                    <p>Please submit your comment before submiting an image.</p>
+                    <form method="POST" action="/edit-image/" enctype="multipart/form-data">
+                      <input type="hidden" name="postId">
+                      <xsl:attribute name="value">
+                      <xsl:value-of select="atom:id"/>
+                      </xsl:attribute>
+                      </input>
+                      <div>
+                        <div class="alignleft">
+                          <h4>Maximum Size</h4>
+                          <span class="subtle-text">1 MB</span>
+                        </div>
+                        <div class="alignleft" style="margin-left: 40px;">
+                          <h4>Minimum Width/Height</h4>
+                          <span class="subtle-text">580px x 200px</span>
+                        </div>
+                      </div>
+                      <br style="clear: both;" />
+                      <div class="ss-div-2"><input type="file" name="image" /> <input class="ss-button" type="submit" value="Upload" /></div>
+                    </form>
+                  </div>
+                </div>
               </xsl:if>
             </div>
           </div>
-        	<div class="comments-list-wrapper">
-          </div>
-          <br />
         </div>
         <div class="info-post">
           <span class="ss-blogTitle">
@@ -163,7 +171,11 @@
                 </span>
               </xsl:if>
               <xsl:text> - </xsl:text>
-              <span class="comment-button"><xsl:value-of select="atom:commentcount" /><xsl:text> Comment</xsl:text>
+              <span class="comment-button">
+              	<xsl:attribute name="data-number">
+                	<xsl:value-of select="atom:commentcount" />
+                </xsl:attribute>
+              	<xsl:value-of select="atom:commentcount" /><xsl:text> Comment</xsl:text>
                 <xsl:if test="atom:commentcount != '1'">
                   <xsl:text>s</xsl:text>
                 </xsl:if>
@@ -176,7 +188,7 @@
 
   <xsl:template match="rdf:Description">
     <xsl:text> </xsl:text>  
-    <span class="citation-mark" title="Citation"></span>
+    <span class="citation-mark" title="Post citing a peer-reviewed source"></span>
   </xsl:template>
 
   <xsl:template match="atom:feed">

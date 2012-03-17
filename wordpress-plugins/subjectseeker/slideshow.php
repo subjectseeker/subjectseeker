@@ -69,10 +69,11 @@ function displaySlideShow() {
 	foreach ($recommendations as $recommendation) {
 		$comment = $recommendation["comment"];
 		$imageName = $recommendation["image"];
-		$postData = getPost("BLOG_POST_ID", $recommendation["postId"], $db);
+		$author = $recommendation["author"];
+		$postData = getPost("postId", $recommendation["postId"], $db);
 		$title = $postData["title"];
 		$url = $postData["uri"];
-		print "<li><a href=\"$url\"><img src=\"$imagesUrl/headers/$imageName\"/></a><span><h3>$title</h3>$comment</span></li>";
+		print "<li><a href=\"$url\"><img src=\"$imagesUrl/headers/$imageName\"/></a><span><h3><a href=\"$url\">$title</a></h3>$comment - $author</span></li>";
 	}
 	print "</ul></div>";
 }

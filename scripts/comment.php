@@ -40,6 +40,9 @@ if ($step == "store" || $step == "confirm") {
 
 // Get comments list
 $commentList = getComments($postId, $db);
+$commentCount = count($commentList);
+
+print "<div id=\"comment-list\" data-count=\"$commentCount\">";
 
 if ($commentList == NULL) {
 	print "<div id=\"padding-content\">There are no comments for this post.</div>";
@@ -57,6 +60,7 @@ else {
 		<div id=\"padding-content\">$comment</div>
 		</div>";
 	}
+print "</div>";
 }
 
 ?>
