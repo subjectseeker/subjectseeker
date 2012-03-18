@@ -112,16 +112,20 @@
           </div>
           <div class="rec-comment">
             <div class="ss-div-2">
-              <form method="POST" enctype="multipart/form-data">
-                <span class="subtle-text">Leave a comment!</span>
-                <div class="ss-div-2">
-                <textarea class="textArea" name="comment" rows="3" cols="59"></textarea>
-                <span class="alignright"><span class="charsLeft">120</span> characters left.</span>
-                </div>
-                <input id="submit-comment" class="submit-comment ss-button" type="button" data-step="store" value="Submit" />
-              </form>
-              <xsl:if test="atom:userpriv > 0">
+            	<div class="text-area">
+                <form method="POST" enctype="multipart/form-data">
+                  <span class="subtle-text">Leave a comment!</span>
+                  <div class="ss-div-2">
+                  <textarea class="textArea" name="comment" rows="3" cols="59"></textarea>
+                  <span class="alignright"><span class="charsLeft">120</span> characters left.</span>
+                  </div>
+                  <input id="submit-comment" class="submit-comment ss-button" type="button" data-step="store" value="Submit" />
+                </form>
                 <br />
+              </div>
+              <div class="comment-notification">
+              </div>
+              <xsl:if test="atom:userpriv > 0">
                 <div class="toggle-button">Related Image</div>
                 <div class="ss-slide-wrapper">
                   <div class="ss-div-2" id="filter-panel">

@@ -132,6 +132,7 @@ $(document).ready(function() {
 		var commentButton = $(parent).find('.comment-button');
 		var dataString = 'id='+ id + '&persona='+ persona + '&comment=' + comment + '&step=' + step;
 		var insert = $(parent).find('.comments-list-wrapper');
+		var commentTextArea = $(parent).find('.text-area');
 		
 		$(insert).html(loadingGif).fadeIn('slow');
 		$.ajax({
@@ -143,6 +144,7 @@ $(document).ready(function() {
 			cache: false,
 			
 			success: function(data) {
+				commentTextArea.slideUp().next('.comment-notification').html('<p><span class="ss-bold">Your comment has been submitted.</span></p>').delay(6000).slideUp();
 				insert.html(data);
 				var count = $(data).filter('div').attr('data-count');
 				updateComments(this);
@@ -195,7 +197,8 @@ $(document).ready(function() {
 			});
 			if ($(this).attr("id") == 'recommend') {
 				updateComments(this);
-				$(commentTextArea).slideDown();
+				commentTextArea.slideDown();
+				commentTextArea.find('.text-area').show();
 			}
 			else {
 				if(!(commentTextArea).is(":visible")){

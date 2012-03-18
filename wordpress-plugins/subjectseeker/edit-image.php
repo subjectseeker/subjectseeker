@@ -104,7 +104,7 @@ function editImage() {
 			}
 			else {
 				print "<p><h4>Name</h4><span class=\"subtle-text\">$imageName</span></p>
-				<p><h4>Size</h4><span class=\"subtle-text\">$size</span></p>
+				<p><h4>Size</h4><span class=\"subtle-text\">".($size / 1024)." KB</span></p>
 				<p><h4>Extension</h4><span class=\"subtle-text\">$extension</span></p>
 				<p><form action=\"/subjectseeker/upload-file.php\" method=\"post\" onsubmit=\"return checkCoords();\">
 				<input type=\"hidden\" id=\"x\" name=\"x\">

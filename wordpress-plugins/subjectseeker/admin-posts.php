@@ -78,10 +78,10 @@ function AdminPosts() {
 				$pagesize = $_REQUEST["n"];
 				$offset = $_REQUEST["offset"];
 				if ($arrange == null) {
-					$arrange = "8";
+					$arrange = "postId";
 				}
 				if ($order == null) {
-					$order = "DESC";
+					$order = "descending";
 				}
 				if ($pagesize == null || is_numeric($pagesize) == FALSE) {
 					$pagesize = "30";
