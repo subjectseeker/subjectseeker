@@ -1,6 +1,6 @@
 #!/bin/sh
 
-rm /home/sciseek/public_html/cache/* /home/sciseek/public_html/dev/cache/* /home/sciseek/public_html/staging/cache/* >> /home/sciseek/public_html/subjectseeker/logs/crawler.log
+rm /home/sciseek/public_html/cache/* /home/sciseek/public_html/dev/cache/* /home/sciseek/public_html/staging/cache/* /home/sciseek/public_html/images/tmp/* >> /home/sciseek/public_html/subjectseeker/logs/crawler.log
 
 date >> /home/sciseek/public_html/subjectseeker/logs/crawler.log
 /home/sciseek/public_html/subjectseeker/ss-crawler.php >> /home/sciseek/public_html/subjectseeker/logs/crawler.log

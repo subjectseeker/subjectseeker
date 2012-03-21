@@ -139,21 +139,14 @@ function getPostData( $postID, $myHost, $dbHandle ) {
   $postData["date"] = date( "c", $utcDate );
   $postData["feed_uri"] = sanitize( $row[ "BLOG_SYNDICATION_URI" ] );
   $postData["id"] = $myHost . "/post/" . $row[ "BLOG_POST_ID" ];
-  $postData["summary"] = sanitize(strip_tags($row[ "BLOG_POST_SUMMARY" ], '<p><div><br>'));
+  $postData["summary"] = sanitize(strip_tags($row[ "BLOG_POST_SUMMARY" ], '<br>'));
   $postData["title"] = sanitize( $row[ "BLOG_POST_TITLE" ] );
   $postData["uri"] = sanitize( $row[ "BLOG_POST_URI" ] );
   $postData["hasCitation"] = sanitize( $row[ "BLOG_POST_HAS_CITATION" ] );
 	
 	// Get citations
 	if ($postData["hasCitation"] == 1) {
-		$getCitation = "SELECT C.CITATION_TEXT FROM CITATION AS C, POST_CITATION AS PC WHERE PC.BLOG_POST_ID = $postID AND C.CITATION_ID = PC.CITATION_ID";
-		$results = mysql_query($getCitation, $dbHandle);
-		
-		$postData["citations"] = array();
-		while ($row = mysql_fetch_array($results)) {
-			$citation = sanitize('<p>'.utf8_decode($row["CITATION_TEXT"]).'</p>');
-			array_push($postData["citations"], $citation);
-		}
+		$postData["citations"] = postIdToCitation($postID, $dbHandle);
 	}
 		// Get user data
 	$postData["personaId"] = $_REQUEST["personaId"];
@@ -164,6 +157,7 @@ function getPostData( $postID, $myHost, $dbHandle ) {
 		$postData["userPriv"] = $_REQUEST["userPriv"];
 	}
 	
+	$postData["epStatus"] = getEditorsPicksStatus($postID, $dbHandle);
 	// Get number of recommendations for this post
 	$postData["recCount"] = getRecommendationsCount($postID, NULL, $dbHandle);
 	// Get number of comments for this post
@@ -239,33 +233,25 @@ function getRecentPosts( $params, $numPosts, $offset, $dbHandle ) {
 		}
 	}
 	
-  $postSQL = "SELECT BLOG_POST_ID FROM BLOG_POST ";
-	if (count ($blogIds) > 0 || $citation || $editorsPicks || $usersPicks) {
-		$postSQL .= "WHERE ";
-	}
+  $postSQL = "SELECT BLOG_POST_ID FROM BLOG_POST WHERE BLOG_POST_STATUS_ID = 0 ";
+
 	if ($citation) {
-		$postSQL .= "BLOG_POST_HAS_CITATION = 1 ";
+		$postSQL .= " AND BLOG_POST_HAS_CITATION = 1 ";
 	}
 	if ($editorsPicks) {
-		if ($citation) {
-			$postSQL .= "AND ";
-		}
 		foreach (getEditorsPicks(NULL, $dbHandle) as $item) {
 			$editorsPosts[] = $item["postId"];
 		}
 		$firstPost = array_shift($editorsPosts);
-    $postSQL .= "((BLOG_POST_ID = $firstPost) ";
+    $postSQL .= "AND ((BLOG_POST_ID = $firstPost) ";
     foreach ($editorsPosts as $id) {
       $postSQL .= "OR (BLOG_POST_ID = $id) ";
     }
 		$postSQL .= ") ";
 	}
   if (count ($blogIds) > 0) {
-		if ($citation || $editorsPicks) {
-			$postSQL .= "AND ";
-		}
     $firstBlogId = array_shift($blogIds);
-    $postSQL .= "((BLOG_ID = $firstBlogId) ";
+    $postSQL .= "AND ((BLOG_ID = $firstBlogId) ";
     foreach ($blogIds as $blogId) {
       $postSQL .= "OR (BLOG_ID = $blogId) ";
     }
@@ -314,11 +300,11 @@ function outputAsAtom( $post ) {
 	
 	// Add citation to summary if available
 	if ($post["citations"]) {
-		$atomString .= sanitize("<br /><br /><div class='citation-wrapper'>");
+		$atomString .= sanitize("<div class='ss-div-2'><div class='citation-wrapper'>");
 		foreach ($post["citations"] as $citation) {
-			$atomString .= $citation;
+			$atomString .= sanitize("<p>".utf8_decode($citation["text"])."</p>");
 		}
-		$atomString .= sanitize('</div>');
+		$atomString .= sanitize('</div></div>');
 	}
 	
   $atomString .= "</summary>\n";
@@ -335,6 +321,8 @@ function outputAsAtom( $post ) {
 	$atomString .= "    <recommendations>" . $post["recCount"] . "</recommendations>\n";
 	
 	$atomString .= "    <commentcount>" . $post["commentCount"] . "</commentcount>\n";
+	
+	$atomString .= "    <editorspicks>" . $post["epStatus"] . "</editorspicks>\n";
 
   foreach ( $post[ "categories" ] as $category ) {
     $atomString .= "    <category term=\"$category\" />

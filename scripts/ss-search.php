@@ -66,15 +66,15 @@ function searchDB() {
 
 // Input: string of text to search, filters, arrangement of results, DESC or ASC, offset
 // Return: as
-function findPosts ($searchQuery, $filters, $arrange, $order, $pagesize, $offset, $cid) {
+function findPosts ($params, $arrange, $order, $pagesize, $offset, $cid) {
 	
 	$tables = "BLOG_POST post, BLOG b, BLOG_AUTHOR bauthor";
 	
-	if ($filters) {
+	if ($params) {
 		$a = 1;
 		$sqlFilters .= " (";
 		
-		foreach ($filters as $filterName => $filterValue) {
+		foreach ($params as $filterName => $filterValue) {
 			$sqlFilters .= " (";
 			
 			if ($filterName == "topic") {
@@ -93,9 +93,6 @@ function findPosts ($searchQuery, $filters, $arrange, $order, $pagesize, $offset
 			if ($filterName == "modifier") {
 				$c = 1;
 				foreach ($filterValue as $filter) {
-					if ($filter == "citation") {
-						$sqlFilters .= " post.BLOG_POST_HAS_CITATION = 1";
-					}
 					if ($filter == "editorsPicks") {
 						$tables .= " , RECOMMENDATION rec, PERSONA pers, USER user";
 						$sqlFilters .= "post.BLOG_POST_ID = rec.BLOG_POST_ID AND user.USER_ID = pers.USER_ID AND rec.PERSONA_ID = pers.PERSONA_ID AND user.USER_PRIVILEGE_ID > 0";
@@ -106,28 +103,45 @@ function findPosts ($searchQuery, $filters, $arrange, $order, $pagesize, $offset
 					}
 				}
 			}
+			
+			if ($filterName == "recommender-status") {
+				$tables .= " , RECOMMENDATION rec, PERSONA pers, USER user";
+				$sqlFilters .= "post.BLOG_POST_ID = rec.BLOG_POST_ID AND user.USER_ID = pers.USER_ID AND rec.PERSONA_ID = pers.PERSONA_ID AND user.USER_PRIVILEGE_ID >= ".$filterValue[0];
+			}
+			
+			if ($filterName == "is-recommended") {
+				if ($filterValue[0] != FALSE) {
+					$tables .= " , RECOMMENDATION rec";
+					$sqlFilters .= " post.BLOG_POST_ID = rec.BLOG_POST_ID";
+				}
+			}
+			
+			if ($filterName == "min-recommendations") {
+				$count = "GROUP BY post.BLOG_POST_ID HAVING COUNT(post.BLOG_POST_ID) >= ".$filterValue[0];
+				$tables .= " , RECOMMENDATION rec";
+				$sqlFilters .= " post.BLOG_POST_ID = rec.BLOG_POST_ID";
+			}
+			
+			if ($filterName == "has-citation") {
+				if ($filterValue[0] != FALSE) {
+					$sqlFilters .= "  post.BLOG_POST_HAS_CITATION = 1";
+				}
+			}
 		
-			if ($filterName == "searchBy") {
+			if ($filterName == "title" || $filterName == "url" || $filterName == "summary") {
 				$d = 1;
-				foreach ($filterValue as $filter) {
-					if ($filter == "title") {
-						$column = "post.BLOG_POST_TITLE";
-					}
-					if ($filter == "summary") {
-						$column = "post.BLOG_POST_SUMMARY";
-					}
-					if ($filter == "url") {
-						$column = "post.BLOG_POST_URI";
-					}
-					$sqlFilters .= " $column LIKE '%".mysql_escape_string($searchQuery)."%'";
-					if (count($filterValue) != $d) {
-						$sqlFilters .= " OR";
-						$d++;
-					}
+				if ($filterName == "title") $column = "post.BLOG_POST_TITLE";
+				if ($filterName == "summary") $column = "post.BLOG_POST_SUMMARY";
+				if ($filterName == "url") $column = "post.BLOG_POST_URI";
+				
+				$sqlFilters .= " $column LIKE '%".mysql_escape_string($filterValue[0])."%'";
+				if (count($filterValue) != $d) {
+					$sqlFilters .= " AND";
+					$d++;
 				}
 			}
 			$sqlFilters .= " )";
-			if (count($filters) != $a) {
+			if (count($params) != $a) {
 				$sqlFilters .= " AND";
 				$a++;
 			}
@@ -135,11 +149,11 @@ function findPosts ($searchQuery, $filters, $arrange, $order, $pagesize, $offset
 		$sqlFilters .= " ) AND ";
 	}
 	
-	$sql = "SELECT DISTINCT post.*, b.BLOG_NAME, bauthor.BLOG_AUTHOR_ACCOUNT_NAME FROM $tables WHERE $sqlFilters b.BLOG_ID = post.BLOG_ID AND bauthor.BLOG_ID = post.BLOG_ID AND bauthor.BLOG_AUTHOR_ID = post.BLOG_AUTHOR_ID ORDER BY post.$arrange $order LIMIT $pagesize OFFSET $offset";
-	
+	$sql = "SELECT DISTINCT post.*, b.BLOG_NAME, bauthor.BLOG_AUTHOR_ACCOUNT_NAME FROM $tables WHERE $sqlFilters b.BLOG_ID = post.BLOG_ID AND bauthor.BLOG_ID = post.BLOG_ID AND bauthor.BLOG_AUTHOR_ID = post.BLOG_AUTHOR_ID $count ORDER BY post.$arrange $order LIMIT $pagesize OFFSET $offset";
+	var_dump($sql);
 	$posts = array();
 	
-	$results =  mysql_query(mysql_escape_string($sql), $cid);
+	$results =  mysql_query($sql, $cid);
 	
 	while ($row = mysql_fetch_array($results)) {
   // Build post object to return
@@ -169,7 +183,7 @@ function searchPosts($cid) {
 	$filters = NULL;
 	$topicNames = array();
 
-  if ($params != null) {
+  /*if ($params != null) {
     foreach ($params as $name => $value) {
       if (strcasecmp($name, "topic") == 0) {
         if (is_array($value)) {
@@ -210,9 +224,9 @@ function searchPosts($cid) {
 				}
 			}
     }
-  }
+  }*/
 
-  return findPosts($searchQuery, $filters, "BLOG_POST_DATE_TIME", "DESC", 100, 0, $cid);
+  return findPosts($params, "BLOG_POST_DATE_TIME", "DESC", 100, 0, $cid);
 
 }
 
@@ -312,11 +326,14 @@ function printResults($searchResults) {
 	
 	if (strcasecmp($type, "post") == 0) {
 
-    print "  <posts>\n";
+    print "<?xml version=\"1.0\" ?>
+		<subjectseeker>
+			<posts>\n";
 		foreach ($searchResults as $post) {
     	printPost($post);
 		}
-    print " </posts>\n";
+    print " </posts>\n
+		</subjectseeker>";
   }
 
   if (strcasecmp($type, "blog") == 0) {
@@ -355,13 +372,14 @@ function printPost($row) {
 	$blogName = sanitize( $row["blogName"] );
 	$authorName = sanitize( $row["authorName"] );
 
-  print "   <post>\n
-	<id>$postId</id>\n
-	<blog>$blogName</blog>\n
-	<title>$postTitle</title>\n
-	<author>$authorName</author>\n
-	<uri>$postUri</uri>\n
-	<summary>$postSummary</summary>\n   </post>\n";
+  print "	<post>\n
+			<id>$postId</id>\n
+			<blog>$blogName</blog>\n
+			<title>$postTitle</title>\n
+			<author>$authorName</author>\n
+			<uri>$postUri</uri>\n
+			<summary>$postSummary</summary>\n
+		</post>\n";
 }
 
 // Input: mysql row with info about a Blog

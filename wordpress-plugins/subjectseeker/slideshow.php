@@ -67,13 +67,11 @@ function displaySlideShow() {
 	<ul id=\"pikame\">";
 	$recommendations = getEditorsPicks("images", $db);
 	foreach ($recommendations as $recommendation) {
-		$comment = $recommendation["comment"];
 		$imageName = $recommendation["image"];
-		$author = $recommendation["author"];
 		$postData = getPost("postId", $recommendation["postId"], $db);
 		$title = $postData["title"];
 		$url = $postData["uri"];
-		print "<li><a href=\"$url\"><img src=\"$imagesUrl/headers/$imageName\"/></a><span><h3><a href=\"$url\">$title</a></h3>$comment - $author</span></li>";
+		print "<li><a href=\"$url\"><img src=\"$imagesUrl/headers/$imageName\"/></a><span><a class=\"ss-bold\" href=\"$url\">$title</a></h3></span></li>";
 	}
 	print "</ul></div>";
 }

@@ -80,10 +80,17 @@ function searchCitations() {
 		</form>";
 	}
 	if ($step == "results") {
+		$title = $_REQUEST["title"];
 		print "<input class=\"ss-button\" type=\"button\" value=\"Go Back\" onClick=\"history.go(-1);return true;\"><br />
 		<h3>Select citation.</h3>
-		<p>Please select a citation from the list or try using different search parameters if you can't find the appropriate citation.</p>";
-		$title = $_REQUEST["title"];
+		<p>Please select a citation from the results below or modify your search to refine the results.</p>
+		<form id=\"center-text\" method=\"GET\">
+		<input type=\"hidden\" name=\"step\" value=\"results\" />
+		<input class=\"big-input\" type=\"text\" name=\"title\" value=\"$title\" />
+		<div class=\"ss-div\"><input class=\"big-button\" type=\"submit\" value=\"Modify Search\"></div>
+		<div id=\"loading-message\" class=\"ss-div-2\">Please wait while we search the Crossref database for your citation.<br />
+		<img src=\"/images/icons/loading.gif\" alt=\"Loading\" title=\"Loading\" /></div>
+		</form>";
 		$results = titleToCitations($title, $metadata2coins);
 		if ($results == NULL) {
 			print "<p>No results found for your search.</p>";
@@ -118,7 +125,7 @@ function searchCitations() {
 		<input type=\"hidden\" name=\"rfrId\" value=\"".$values["rfr_id"]."\" />
 		<p>Please confirm the data is correct before generating the citation.</p>
 		<p id=\"padding-content\">$citation</p>
-		<div id=\"add-author\" class=\"alignright\">+ Add Author</div>
+		<input type=\"button\" id=\"add-author\" class=\"alignright\" value=\"+ Add Author\" />
 		<br />
 		<div class=\"ss-div-2\">
 		<h4>Title</h4>
@@ -234,6 +241,12 @@ function searchCitations() {
 		if ($issue) {
 			$issue = "($issue),";
 		}
+		if ($ssInclude) {
+			$citation .= "&rfs_dat=ss.included=1";
+		}
+		else {
+			$citation .= "&rfs_dat=ss.included=0";
+		}
 		$citation .= "&rfe_dat=";
 		if ($rbInclude) {
 			$citation .= "bpr3.included=1";
@@ -243,12 +256,6 @@ function searchCitations() {
 		}
 		if ($rbTags && $rbInclude) {
 			$citation .= ";bpr3.tags=".urlencode(implode(",",$rbTags));
-		}
-		if ($ssInclude) {
-			$citation .= "&rfs_dat=ss.included=1";
-		}
-		else {
-			$citation .= "&rfs_dat=ss.included=0";
 		}
 		$citation .= "\">";
 		$citation .= "$authors $date $title <span style=\"font-style:italic;\">$journal $volume</span> $issue $spage DOI: <a rev=\"review\" href=\"http://dx.doi.org/$id\">$id</a></span>";

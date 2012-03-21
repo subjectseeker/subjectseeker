@@ -491,11 +491,11 @@ function getRecommendationStatus ($postId, $personaId, $db) {
 }
 
 // Input: DB handle
-// Return: IDs of posts recommended by editors
+// Return: IDs (and optionally comment and related image) of posts recommended by editors
 function getEditorsPicks($type, $db) {
 	$sql = "SELECT rec.BLOG_POST_ID";
 	if ($type == 'images') {
-		$sql .= ", rec.REC_COMMENT, rec.REC_IMAGE, user.USER_NAME";
+		$sql .= ", rec.REC_COMMENT, rec.REC_IMAGE";
 	}
 	$sql .= " FROM RECOMMENDATION rec,
 PERSONA pers, USER user WHERE user.USER_ID = pers.USER_ID AND
@@ -515,6 +515,21 @@ rec.PERSONA_ID = pers.PERSONA_ID AND user.USER_PRIVILEGE_ID > 0";
   }
 	
   return $recommendations;
+}
+
+// Input: Post ID, DB handle
+// Action: Check if this post has been recommended by an editor.
+function getEditorsPicksStatus($postId, $db) {
+	$sql = "SELECT rec.BLOG_POST_ID FROM RECOMMENDATION rec, PERSONA pers, USER user WHERE rec.BLOG_POST_ID = $postId AND pers.PERSONA_ID =  rec.PERSONA_ID AND pers.USER_ID = user.USER_ID AND user.USER_PRIVILEGE_ID > 0";
+	$results = mysql_query($sql, $db);
+	
+	$row = mysql_fetch_array($results);
+
+  if($row["BLOG_POST_ID"]) {
+		return "TRUE";
+	}
+	
+  return "FALSE";
 }
 
 // Input: blog ID, DB handle
@@ -1163,7 +1178,9 @@ function getPost ($arrange, $value, $db) {
   $post["author"] = $row["BLOG_AUTHOR_ID"];
   $post["datetime"] = $row["BLOG_POST_DATE_TIME"];
   $post["uri"] = $row["BLOG_POST_URI"];
+	$post["blogId"] = $row["BLOG_ID"];
   $post["language"] = $row["LANGUAGE_ID"];
+	$post["hasCitation"] = $row["BLOG_POST_HAS_CITATION"];
 
   // build topic list
   $sql = "SELECT TOPIC_ID FROM TOPIC WHERE POST_ID=" . $post["dbId"];
@@ -2163,7 +2180,7 @@ function checkCitations ($postUri, $postId, $db) {
 // Input: Post ID, Topics Data, DB handle
 // Action: Store topics from the citation
 function storeTopics ($postId, $topicsData, $db) {
-	preg_match("/(?<=bpr3.tags=).+/", $topicsData, $topics);
+	preg_match("/(?<=bpr3.tags=)[^&;]+/", $topicsData, $topics);
 	$topic = preg_split("/[,\/]/", $topics[0]);
 	foreach ($topic as $category) {
 		$tag = trim($category);
@@ -2233,7 +2250,7 @@ function parseCitation ($citation, $db) {
 		$elements = preg_split("/=/", $value, 2);
 		$attribute = $elements[0];
 		// If there is more than one author, add to array
-		if ($attribute == "rft.au" || $attribute == "rft.aufirst" || $attribute == "rft.aulast") {
+		if (($attribute == "rft.au" || $attribute == "rft.aufirst" || $attribute == "rft.aulast") && $i != 10) {
 			$authors[$i][$attribute] = urldecode($elements[1]);
 			if ($attribute == "rft.aufirst") {
 				$i++;

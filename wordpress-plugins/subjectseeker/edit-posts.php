@@ -241,7 +241,7 @@ function scanPosts() {
 					$postId = $postIds[$i];
 					$postUri = $postUris[$i];
 					$postTitle = $postTitles[$i];
-					$postSummary = $postSummaries[$i];
+					$postSummary = strip_tags($postSummaries[$i], '<br>');
 					$blogName = $blogNames[$i];
 					$hasCitation = $hasCitations[$i];
 					$citations = postIdToCitation($postId, $db);
@@ -257,7 +257,8 @@ function scanPosts() {
 					</div>
 					<div class=\"ss-slide-wrapper\">
 					<div id=\"padding-content\">
-					<div class=\"post-summary\">$postSummary</div>";
+					<div class=\"post-summary\">$postSummary</div>
+					<br />";
 					if ($citations) {
 						print "<div class=\"citation-wrapper\">";
 						foreach ($citations as $citation) {

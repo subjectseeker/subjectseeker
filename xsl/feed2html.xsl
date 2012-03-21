@@ -49,142 +49,150 @@
   </xsl:template>
 
   <xsl:template match="atom:entry">
-  	<div class="ss-entry-wrapper">
-    	<xsl:attribute name="id">
+    <div class="ss-entry-wrapper">
+    <div class="data-carrier">
+      <xsl:attribute name="id">
         <xsl:value-of select="atom:id"/>
       </xsl:attribute>
       <xsl:attribute name="data-personaId">
         <xsl:value-of select="atom:userpersona"/>
       </xsl:attribute>
-      <!-- this generates all tags, blog- and post-specific -->
-      <!--
-      <xsl:if test="atom:category | atom:source/atom:category">
-        <span class="the_tags">
-          <xsl:apply-templates select="atom:source/atom:category"/>
-          <xsl:for-each select="atom:category">
-            <xsl:if
-              test="../atom:source/atom:category or
-                    not(position() = 1)">
-              <xsl:text> | </xsl:text>
-            </xsl:if>
-            <xsl:apply-templates select="."/>
-          </xsl:for-each>
-        </span>
-        <xsl:text> </xsl:text>
-      </xsl:if>
-      -->
-      <!-- temporarily, we only generate the blog category -->
-      <div class="recommendation-wrapper">
-      	<xsl:if test="atom:recstatus">
-      		<div class="recommend" id="remove" title="Remove recommendation" style="background-image: url(/images/icons/ss-sprite.png); height: 18px; background-position: center -19px; background-repeat: no-repeat;"></div>
-        </xsl:if>
-        <xsl:if test="not(atom:recstatus)">
-        	<div class="recommend" id="recommend" title="Recommend" style="background-image: url(/images/icons/ss-sprite.png); height: 18px; background-position: center 0px; background-repeat: no-repeat;"></div>
-        </xsl:if>
-        <xsl:value-of select="atom:recommendations" />
-      </div>
-      <div style="display: inline-block; width: 94%;">
-        <div class="post-header">
-          <xsl:apply-templates select="atom:updated" mode="time-only"/>
-          <xsl:text> | </xsl:text>
-            <a href="{atom:link/@href}" rel="bookmark">
-              <xsl:attribute name="title">
-                <xsl:text>Permanent link to </xsl:text>
-                <xsl:value-of select="atom:title"/>
-              </xsl:attribute>
-              <span class="ss-postTitle">
-                <xsl:value-of select="atom:title" disable-output-escaping="yes"/>
-                <xsl:if test="atom:title = ''">
-                	<xsl:value-of select="atom:link/@href" />
-                </xsl:if>
-              </span>
-            </a>
-          <xsl:apply-templates select="rdf:Description[@rdf:ID='citations']" />
-        </div>
-        <div class="ss-div-button">
-          <div class="arrow-down" title="Show Extra Info"></div>
-        </div>
-        <div id="post-info" class="ss-slide-wrapper">
-          <div id="padding-content" title="Summary">
-            <xsl:value-of select="atom:summary" disable-output-escaping="yes"/>
-          </div>
-          <div class="comments-list-wrapper">
-          </div>
-          <div class="rec-comment">
-            <div class="ss-div-2">
-            	<div class="text-area">
-                <form method="POST" enctype="multipart/form-data">
-                  <span class="subtle-text">Leave a comment!</span>
-                  <div class="ss-div-2">
-                  <textarea class="textArea" name="comment" rows="3" cols="59"></textarea>
-                  <span class="alignright"><span class="charsLeft">120</span> characters left.</span>
-                  </div>
-                  <input id="submit-comment" class="submit-comment ss-button" type="button" data-step="store" value="Submit" />
-                </form>
-                <br />
-              </div>
-              <div class="comment-notification">
-              </div>
-              <xsl:if test="atom:userpriv > 0">
-                <div class="toggle-button">Related Image</div>
-                <div class="ss-slide-wrapper">
-                  <div class="ss-div-2" id="filter-panel">
-                    <p>Please submit your comment before submiting an image.</p>
-                    <form method="POST" action="/edit-image/" enctype="multipart/form-data">
-                      <input type="hidden" name="postId">
-                      <xsl:attribute name="value">
-                      <xsl:value-of select="atom:id"/>
-                      </xsl:attribute>
-                      </input>
-                      <div>
-                        <div class="alignleft">
-                          <h4>Maximum Size</h4>
-                          <span class="subtle-text">1 MB</span>
-                        </div>
-                        <div class="alignleft" style="margin-left: 40px;">
-                          <h4>Minimum Width/Height</h4>
-                          <span class="subtle-text">580px x 200px</span>
-                        </div>
-                      </div>
-                      <br style="clear: both;" />
-                      <div class="ss-div-2"><input type="file" name="image" /> <input class="ss-button" type="submit" value="Upload" /></div>
-                    </form>
-                  </div>
-                </div>
+        <!-- this generates all tags, blog- and post-specific -->
+        <!--
+        <xsl:if test="atom:category | atom:source/atom:category">
+          <span class="the_tags">
+            <xsl:apply-templates select="atom:source/atom:category"/>
+            <xsl:for-each select="atom:category">
+              <xsl:if
+                test="../atom:source/atom:category or
+                      not(position() = 1)">
+                <xsl:text> | </xsl:text>
               </xsl:if>
+              <xsl:apply-templates select="."/>
+            </xsl:for-each>
+          </span>
+          <xsl:text> </xsl:text>
+        </xsl:if>
+        -->
+        <!-- temporarily, we only generate the blog category -->
+        <div class="post-extras alignleft">
+          <div class="recommendation-wrapper">
+            <xsl:if test="atom:recstatus">
+              <div class="recommend" id="remove" title="Remove recommendation" style="background-image: url(/images/icons/ss-sprite.png); height: 18px; background-position: center -19px; background-repeat: no-repeat;"></div>
+            </xsl:if>
+            <xsl:if test="not(atom:recstatus)">
+              <div class="recommend" id="recommend" title="Recommend" style="background-image: url(/images/icons/ss-sprite.png); height: 18px; background-position: center 0px; background-repeat: no-repeat;"></div>
+            </xsl:if>
+            <xsl:value-of select="atom:recommendations" />
+          </div>
+        </div>
+        <div style="display: inline-block; width: 94%;">
+          <div class="post-header">
+            <xsl:apply-templates select="atom:updated" mode="time-only"/>
+            <xsl:text> | </xsl:text>
+              <a href="{atom:link/@href}" rel="bookmark">
+                <xsl:attribute name="title">
+                  <xsl:text>Permanent link to </xsl:text>
+                  <xsl:value-of select="atom:title"/>
+                </xsl:attribute>
+                <span class="ss-postTitle">
+                  <xsl:value-of select="atom:title" disable-output-escaping="yes"/>
+                  <xsl:if test="atom:title = ''">
+                    <xsl:value-of select="atom:link/@href" />
+                  </xsl:if>
+                </span>
+              </a>
+            <xsl:apply-templates select="rdf:Description[@rdf:ID='citations']" />
+            <xsl:if test="atom:editorspicks = 'TRUE'">
+            	<xsl:text> </xsl:text>
+              <span class="editors-medal" title="Recommended by our editors"></span>
+            </xsl:if>
+          </div>
+          <div class="ss-div-button">
+            <div class="arrow-down" title="Show Extra Info"></div>
+          </div>
+          <div id="post-info" class="ss-slide-wrapper">
+            <div id="padding-content" title="Summary">
+              <xsl:value-of select="atom:summary" disable-output-escaping="yes"/>
+            </div>
+            <div class="comments-list-wrapper">
+            </div>
+            <div class="rec-comment">
+              <div class="ss-div-2">
+                <div class="text-area">
+                  <form method="POST" enctype="multipart/form-data">
+                    <span class="subtle-text">Leave a comment!</span>
+                    <div class="ss-div-2">
+                    <textarea class="textArea" name="comment" rows="3" cols="59"></textarea>
+                    <span class="alignright"><span class="charsLeft">120</span> characters left.</span>
+                    </div>
+                    <input id="submit-comment" class="submit-comment ss-button" type="button" data-step="store" value="Submit" />
+                  </form>
+                  <br />
+                </div>
+                <div class="comment-notification">
+                </div>
+                <xsl:if test="atom:userpriv > 0">
+                  <div class="toggle-button">Related Image</div>
+                  <div class="ss-slide-wrapper">
+                    <div class="ss-div-2" id="filter-panel">
+                      <p>Please submit your comment before submiting an image.</p>
+                      <form method="POST" action="/edit-image/" enctype="multipart/form-data">
+                        <input type="hidden" name="postId">
+                        <xsl:attribute name="value">
+                        <xsl:value-of select="atom:id"/>
+                        </xsl:attribute>
+                        </input>
+                        <div>
+                          <div class="alignleft">
+                            <h4>Maximum Size</h4>
+                            <span class="subtle-text">1 MB</span>
+                          </div>
+                          <div class="alignleft" style="margin-left: 40px;">
+                            <h4>Minimum Width/Height</h4>
+                            <span class="subtle-text">580px x 200px</span>
+                          </div>
+                        </div>
+                        <br style="clear: both;" />
+                        <div class="ss-div-2"><input type="file" name="image" /> <input class="ss-button" type="submit" value="Upload" /></div>
+                      </form>
+                    </div>
+                  </div>
+                </xsl:if>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="info-post">
-          <span class="ss-blogTitle">
-            <a href="{atom:source/atom:link[@rel='alternate']/@href}" rel="alternate">
-              <xsl:value-of select="atom:source/atom:title" />
-            </a>
-          </span>
-            <span class="alignright">
-              <xsl:if test="atom:source/atom:category">
-                <span class="the_tags">
-                  <xsl:text>   </xsl:text>
-                  <xsl:for-each select="atom:source/atom:category">
-                    <xsl:if
-                      test="not(position() = 1)">
-                      <xsl:text> | </xsl:text>
-                    </xsl:if>
-                    <xsl:apply-templates select="."/>
-                  </xsl:for-each>
-                </span>
-              </xsl:if>
-              <xsl:text> - </xsl:text>
-              <span class="comment-button">
-              	<xsl:attribute name="data-number">
-                	<xsl:value-of select="atom:commentcount" />
-                </xsl:attribute>
-              	<xsl:value-of select="atom:commentcount" /><xsl:text> Comment</xsl:text>
-                <xsl:if test="atom:commentcount != '1'">
-                  <xsl:text>s</xsl:text>
-                </xsl:if>
-              </span>
+          <div class="info-post">
+            <span class="ss-blogTitle">
+              <a href="{atom:source/atom:link[@rel='alternate']/@href}" rel="alternate">
+                <xsl:value-of select="atom:source/atom:title" />
+              </a>
             </span>
+              <span class="alignright">
+                <xsl:if test="atom:source/atom:category">
+                  <span class="the_tags">
+                    <xsl:text>   </xsl:text>
+                    <xsl:for-each select="atom:source/atom:category">
+                      <xsl:if
+                        test="not(position() = 1)">
+                        <xsl:text> | </xsl:text>
+                      </xsl:if>
+                      <xsl:apply-templates select="."/>
+                    </xsl:for-each>
+                  </span>
+                </xsl:if>
+                <xsl:text> - </xsl:text>
+                <span class="comment-button">
+                  <xsl:attribute name="data-number">
+                    <xsl:value-of select="atom:commentcount" />
+                  </xsl:attribute>
+                  <xsl:value-of select="atom:commentcount" /><xsl:text> Note</xsl:text>
+                  <xsl:if test="atom:commentcount != '1'">
+                    <xsl:text>s</xsl:text>
+                  </xsl:if>
+                </span>
+              </span>
+          </div>
         </div>
       </div>
     </div>

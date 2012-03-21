@@ -11,7 +11,7 @@ $postId = implode($matchResult);
 $step = $_REQUEST["step"];
 
 // Display all comments
-print "<h3>Comments</h3>";
+print "<h3>Notes</h3>";
 
 // Check if a comment must be stored
 if ($step == "store" || $step == "confirm") {
@@ -45,7 +45,7 @@ $commentCount = count($commentList);
 print "<div id=\"comment-list\" data-count=\"$commentCount\">";
 
 if ($commentList == NULL) {
-	print "<div id=\"padding-content\">There are no comments for this post.</div>";
+	print "<div id=\"padding-content\">There are no notes for this post.</div>";
 }
 else {
 	// Display comments

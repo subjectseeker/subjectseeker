@@ -12,38 +12,39 @@ Author URI: http://www.arborius.net/~jphekman/
  * PHP widget methods
  */
 
-include_once "ss-includes.inc";
-
-function doTopLevelTopicsList()
-{
-  global $topics2html;
-
-  // Download results of searching on toplevel topics
-  $params["toplevel"] = 1;
-  $curl = getSearchCurl("topic", $params);
-
-  $result = curl_exec($curl);
-  curl_close($curl);
-
-  print transformXmlString($result, $topics2html);
-
-  // print "RESULT: $result\n";
-
-}
-
 function widget_topLevelTopicsList($args) {
-  extract($args);
 	global $mainFeed;
 	global $serializerUrl;
-  echo $before_widget;
+	extract($args);
+	$params = parseHttpParams();
+	$db = ssDbConnect();
+	echo $before_widget;
   echo $before_title;
-	?>Categories<?php 
+	echo "Categories";
 	echo $after_title;
-	echo "<div class=\"categories-wrapper\" data-feed=\"$mainFeed\" data-serializer=\"$serializerUrl\">";
-  doTopLevelTopicsList();
-	print "<a class=\"ss-button\" href=\"$mainFeed\">Filter Posts</a> <a class=\"custom-rss\" href=\"$serializerUrl\" target=\"_blank\">Custom RSS</a>
+	
+	print "<div class=\"categories-wrapper\" data-feed=\"$mainFeed\" data-serializer=\"$serializerUrl\">
+	<ul>
+	<li><input id=\"modifier\" class=\"categories\" type=\"checkbox\" name=\"category\" value=\"citation\"";
+	if ($params["modifier"] && array_search("citation", $params["modifier"]) !== FALSE) print " checked=\"checked\"";
+	print " /> Citations</li>
+  <li><input id=\"modifier\" class=\"categories\" type=\"checkbox\" name=\"category\" value=\"editorsPicks\"";
+	if ($params["modifier"] && array_search("editorsPicks", $params["modifier"]) !== FALSE) print " checked=\"checked\"";
+	print " /> Editors' Picks</li>
+	<br />";
+	
+	$topicList = getTopicList (1, $db);
+	while ($row = mysql_fetch_array($topicList)) {
+		$topicName = $row["TOPIC_NAME"];
+  	print "<li><input id=\"topic\" class=\"categories\" type=\"checkbox\" name=\"category\" value=\"$topicName\"";
+		if ($params["topic"] && array_search("$topicName", $params["topic"]) !== FALSE) print " checked=\"checked\"";
+		print " /> $topicName</li>";
+	}
+	
+	print "</ul>
+	<a class=\"ss-button\" href=\"$mainFeed\">Filter Posts</a> <a class=\"custom-rss\" href=\"$serializerUrl\" target=\"_blank\">Custom RSS</a>
 	</div>";
-  echo $after_widget;
+	echo $after_widget;
 }
 
 function topLevelTopicsList_init()

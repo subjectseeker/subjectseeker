@@ -77,10 +77,12 @@ function displayFeed() {
 		$userId = addUser($displayName, $email, $db);
 		$httpParams["userPriv"] = getUserPrivilegeStatus($userId, $db);
 		$httpParams["personaId"] = addPersona($userId, $displayName, $db);
-		prepareFeed($httpParams);
 	}
 	
-	else {
+	prepareFeed($httpParams);
+	
+	// Disabled until the Empty string bug is fixed.
+	/*else {
 		$cache = new cache();
 		
 		if ($cache->caching) {
@@ -88,7 +90,7 @@ function displayFeed() {
 		}
 		
 		$cache->close();
-	}
+	}*/
 }
 
 function prepareFeed($httpParams) {

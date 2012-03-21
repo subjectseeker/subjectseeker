@@ -5,7 +5,7 @@ $(document).ready(function() {
 	var loadingGif = '<img src="/images/icons/loading.gif" alt="Loading" title="Loading" />'
 	
 	function updateComments (element) {
-		var parent = $(element).parents('.ss-entry-wrapper');
+		var parent = $(element).parents('.data-carrier');
 		var id = $(parent).attr("id");
 		var persona = $(parent).attr('data-personaId');
 		var dataString = 'id='+ id + '&persona='+ persona + '&step=showComments';
@@ -27,13 +27,13 @@ $(document).ready(function() {
 	
 	function toggleSlider (button) {
 		$(button).next('.ss-slide-wrapper').slideToggle('slow', "swing", function() {
-			updateCommentsButton($(this).parents('.ss-entry-wrapper').find('.comment-button'));
+			updateCommentsButton($(this).parents('.data-carrier').find('.comment-button'));
 		});
 		$(button).find(".arrow-down,.arrow-up").toggleClass("arrow-up arrow-down");
 	}
 	
 	function updateCommentsButton (element) {
-		var parent = $(element).parents('.ss-entry-wrapper');
+		var parent = $(element).parents('.data-carrier');
 		var button = $(parent).find('.comment-button');
 		var slider = $(parent).find('#post-info.ss-slide-wrapper');
 		var number = $(button).attr('data-number');
@@ -44,7 +44,7 @@ $(document).ready(function() {
 				$(button).html('Hide Info');
 			}
 			else {
-				$(button).html(number + ' Comment');
+				$(button).html(number + ' Note');
 				if (number != 1) {
 					$(button).append('s');
 				}
@@ -75,11 +75,11 @@ $(document).ready(function() {
 		onSelect: updateCoords
 	});
 	
-	$('.ss-slide-wrapper').hide();
+	$('.ss-slide-wrapper, #loading-message').hide();
 	
 	$('.recommend').each(function() {
 		if($(this).attr('id') == 'recommend') {
-			$(this).parents('.ss-entry-wrapper').find('.rec-comment').hide();
+			$(this).parents('.data-carrier').find('.rec-comment').hide();
 		}
 	});
 	
@@ -121,10 +121,14 @@ $(document).ready(function() {
 	
 	$('div').on('click', '#remove-parent', function() {
 		$(this).parents('.removable-parent').remove();
+		if ($('.removable-parent').length >= 10) {
+			$('#add-author').removeAttr('disabled');
+			return;
+		}
 	});
 	
-	$('.ss-slide-wrapper').on('click', '.submit-comment', function() {
-		var parent = $(this).parents('.ss-entry-wrapper');
+	$('.data-carrier').on('click', '.submit-comment', function() {
+		var parent = $(this).parents('.data-carrier');
 		var id = $(parent).attr("id");
 		var persona = $(parent).attr("data-personaId");
 		var step = $(this).attr("data-step");
@@ -148,6 +152,7 @@ $(document).ready(function() {
 				insert.html(data);
 				var count = $(data).filter('div').attr('data-count');
 				updateComments(this);
+				updateCommentsButton(commentButton);
 				$(parent).find('.comment-button').attr('data-number', count);
 			}
 		});	
@@ -156,7 +161,7 @@ $(document).ready(function() {
 	$('.comment-button').click(function() {
 		var button = $(this);
 		var number = $(button).attr('data-number');
-		var parent = $(button).parents('.ss-entry-wrapper');
+		var parent = $(button).parents('.data-carrier');
 		var slider = $(parent).find('#post-info.ss-slide-wrapper');
 		var sliderButton = $(parent).find('.ss-div-button');
 		var commentsContent = $(parent).find('.comments-list-wrapper').html();
@@ -171,7 +176,7 @@ $(document).ready(function() {
 	});
 	
 	$('.recommendation-wrapper').on('click', '.recommend', function() {
-		var parent = $(this).parents('.ss-entry-wrapper');
+		var parent = $(this).parents('.data-carrier');
 		var id = $(parent).attr("id");
 		var step = $(this).attr("id");
 		var persona = $(parent).attr("data-personaId");
@@ -244,6 +249,12 @@ $(document).ready(function() {
 	});
 	
 	$('#add-author').click(function() {
+		if ($('.removable-parent').length >= 10) {
+			$(this).attr("disabled", true);
+			$('#notification-content').html('Only 10 authors allowed for citations.');
+			$('#notification-area').slideDown();
+			return;
+		}
 		$('#journal').before('<div class="removable-parent"><div class="ss-div-2"><h4>Author <span id="remove-parent" class="alignright">X</span></h4><span class="subtle-text">First Name:</span> <textarea name="firstName[]" rows="1" cols="56"></textarea><br /><br /><span class="subtle-text">Last Name:</span> <textarea name="lastName[]" rows="1" cols="56"></textarea></div></div>');
 	});
 	
