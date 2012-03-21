@@ -409,7 +409,7 @@ function getSparseBlogs($db, $limit=1000) {
 function getBlogList ($blogIds, $arrange, $order, $pagesize, $offset, $db) {
 	global $hashData;
 	$column = $hashData["$arrange"];
-	$direction = $hashData["order"];
+	$direction = $hashData["$order"];
 	
   $sql = "SELECT BLOG_ID, BLOG_NAME, BLOG_STATUS_ID, BLOG_URI, BLOG_DESCRIPTION, BLOG_SYNDICATION_URI, ADDED_DATE_TIME, CRAWLED_DATE_TIME FROM BLOG ";
 	if ($blogIds != NULL) {

@@ -100,7 +100,7 @@ function adminBlogs() {
 				if ($arrange == "blogId") {
 					print " selected";
 				}
-				print ">Id</option>\n";
+				print ">ID</option>\n";
 				print "<option value='blogStatus'";
 				if ($arrange == "blogStatus") {
 					print " selected";
