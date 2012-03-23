@@ -78,7 +78,7 @@
         <div class="post-extras alignleft">
           <div class="recommendation-wrapper">
             <xsl:if test="atom:recstatus">
-              <div class="recommend" id="remove" title="Remove recommendation" style="background-image: url(/images/icons/ss-sprite.png); height: 18px; background-position: center -19px; background-repeat: no-repeat;"></div>
+              <div class="recommend" id="remove" title="Remove recommendation and note" style="background-image: url(/images/icons/ss-sprite.png); height: 18px; background-position: center -19px; background-repeat: no-repeat;"></div>
             </xsl:if>
             <xsl:if test="not(atom:recstatus)">
               <div class="recommend" id="recommend" title="Recommend" style="background-image: url(/images/icons/ss-sprite.png); height: 18px; background-position: center 0px; background-repeat: no-repeat;"></div>
@@ -90,23 +90,33 @@
           <div class="post-header">
             <xsl:apply-templates select="atom:updated" mode="time-only"/>
             <xsl:text> | </xsl:text>
-              <a href="{atom:link/@href}" rel="bookmark">
+            <span class="ss-postTitle">
+              <a href="{atom:link/@href}" target="_blank" rel="bookmark">
                 <xsl:attribute name="title">
                   <xsl:text>Permanent link to </xsl:text>
                   <xsl:value-of select="atom:title"/>
                 </xsl:attribute>
-                <span class="ss-postTitle">
-                  <xsl:value-of select="atom:title" disable-output-escaping="yes"/>
-                  <xsl:if test="atom:title = ''">
-                    <xsl:value-of select="atom:link/@href" />
-                  </xsl:if>
-                </span>
+                <xsl:value-of select="atom:title" disable-output-escaping="yes"/>
+                <xsl:if test="atom:title = ''">
+                  <xsl:value-of select="atom:link/@href" />
+                </xsl:if>
               </a>
-            <xsl:apply-templates select="rdf:Description[@rdf:ID='citations']" />
-            <xsl:if test="atom:editorspicks = 'TRUE'">
-            	<xsl:text> </xsl:text>
-              <span class="editors-medal" title="Recommended by our editors"></span>
+            </span>
+            <xsl:if test="rdf:Description">
+            	<xsl:text> | </xsl:text> 
+            	<div class="badges">
+                <xsl:if test="rdf:Description[@rdf:ID='citations']">
+                  <span class="citation-mark" title="Post citing a peer-reviewed source"></span>
+                  <xsl:if test="rdf:Description[@rdf:ID='editorRecommended']">
+                  	<xsl:text> </xsl:text> 
+                	</xsl:if>
+                </xsl:if>
+                <xsl:if test="rdf:Description[@rdf:ID='editorRecommended']">
+                  <span class="editors-medal" title="Recommended by our editors"></span>
+                </xsl:if>
+              </div>
             </xsl:if>
+            <!-- <xsl:apply-templates select="rdf:Description[@rdf:ID='citations']" /> -->
           </div>
           <div class="ss-div-button">
             <div class="arrow-down" title="Show Extra Info"></div>
@@ -121,7 +131,7 @@
               <div class="ss-div-2">
                 <div class="text-area">
                   <form method="POST" enctype="multipart/form-data">
-                    <span class="subtle-text">Leave a comment!</span>
+                    <span class="subtle-text">Leave a note!</span>
                     <div class="ss-div-2">
                     <textarea class="textArea" name="comment" rows="3" cols="59"></textarea>
                     <span class="alignright"><span class="charsLeft">120</span> characters left.</span>
@@ -164,7 +174,7 @@
           </div>
           <div class="info-post">
             <span class="ss-blogTitle">
-              <a href="{atom:source/atom:link[@rel='alternate']/@href}" rel="alternate">
+              <a href="{atom:source/atom:link[@rel='alternate']/@href}" target="_blank" rel="alternate">
                 <xsl:value-of select="atom:source/atom:title" />
               </a>
             </span>

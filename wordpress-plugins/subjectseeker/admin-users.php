@@ -101,7 +101,7 @@ function doAdminUsers() {
 			if ($arrange == "userId") {
 				print " selected";
 			}
-			print ">Id</option>\n";
+			print ">ID</option>\n";
 			print "<option value='userName'";
 			if ($arrange == "userName") {
 				print " selected";

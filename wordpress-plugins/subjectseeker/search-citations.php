@@ -241,6 +241,9 @@ function searchCitations() {
 		if ($issue) {
 			$issue = "($issue),";
 		}
+		if ($spage) {
+			$spage = "$spage.";
+		}
 		if ($ssInclude) {
 			$citation .= "&rfs_dat=ss.included=1";
 		}

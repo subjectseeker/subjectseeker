@@ -71,7 +71,7 @@ function displaySlideShow() {
 		$postData = getPost("postId", $recommendation["postId"], $db);
 		$title = $postData["title"];
 		$url = $postData["uri"];
-		print "<li><a href=\"$url\"><img src=\"$imagesUrl/headers/$imageName\"/></a><span><a class=\"ss-bold\" href=\"$url\">$title</a></h3></span></li>";
+		print "<li><a href=\"$url\" target=\"_blank\"><img src=\"$imagesUrl/headers/$imageName\"/></a><span><a class=\"ss-bold\" href=\"$url\" target=\"_blank\">$title</a></span></li>";
 	}
 	print "</ul></div>";
 }

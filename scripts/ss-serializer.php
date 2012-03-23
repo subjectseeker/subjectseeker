@@ -29,11 +29,11 @@ $myURI = $myHost . $_SERVER[ "SCRIPT_NAME" ];
 // What are we looking for?
 $params = discoverSearchParams();
 
-// Default number of blog posts to 100.
+// Default number of blog posts to 30.
 // TODO: add to ss-globals.php
 $numPosts = 30;
 if ( isset( $_REQUEST[ "n" ] ) and is_numeric( $_REQUEST[ "n" ] ) and
-     ( $_REQUEST[ "n" ] > 0 ) ) {
+     ( $_REQUEST[ "n" ] > 0  and $_REQUEST[ "n" ] <= 500) ) {
   $numPosts = (string)(int)$_REQUEST[ "n" ];
 }
 // Default offset to 0.
@@ -314,6 +314,10 @@ function outputAsAtom( $post ) {
     $atomString .= "    <rdf:Description rdf:ID=\"citations\">CITATION</rdf:Description>\n";
   }
 	
+	if ($post["epStatus"]) {
+		$atomString .= "    <rdf:Description rdf:ID=\"editorRecommended\">RECOMMENDED</rdf:Description>\n";
+	}
+	
 	if ($post["recStatus"]) {
 		$atomString .= "    <recstatus>Recommended</recstatus>\n";
 	}
@@ -321,8 +325,6 @@ function outputAsAtom( $post ) {
 	$atomString .= "    <recommendations>" . $post["recCount"] . "</recommendations>\n";
 	
 	$atomString .= "    <commentcount>" . $post["commentCount"] . "</commentcount>\n";
-	
-	$atomString .= "    <editorspicks>" . $post["epStatus"] . "</editorspicks>\n";
 
   foreach ( $post[ "categories" ] as $category ) {
     $atomString .= "    <category term=\"$category\" />

@@ -100,7 +100,7 @@ function getSerializerCurl ($type, $ssParams, $httpParams) {
   curl_setopt($ch, CURLOPT_FAILONERROR, 1);
   curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
   curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
-  curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
+  curl_setopt($ch, CURLOPT_TIMEOUT, 10); // times out after 10s
   curl_setopt($ch, CURLOPT_POST, 1); // set POST method
   curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
 
@@ -520,16 +520,16 @@ rec.PERSONA_ID = pers.PERSONA_ID AND user.USER_PRIVILEGE_ID > 0";
 // Input: Post ID, DB handle
 // Action: Check if this post has been recommended by an editor.
 function getEditorsPicksStatus($postId, $db) {
-	$sql = "SELECT rec.BLOG_POST_ID FROM RECOMMENDATION rec, PERSONA pers, USER user WHERE rec.BLOG_POST_ID = $postId AND pers.PERSONA_ID =  rec.PERSONA_ID AND pers.USER_ID = user.USER_ID AND user.USER_PRIVILEGE_ID > 0";
+	$sql = "SELECT rec.PERSONA_ID FROM RECOMMENDATION rec, PERSONA pers, USER user WHERE rec.BLOG_POST_ID = $postId AND pers.PERSONA_ID =  rec.PERSONA_ID AND pers.USER_ID = user.USER_ID AND user.USER_PRIVILEGE_ID > 0";
 	$results = mysql_query($sql, $db);
 	
 	$row = mysql_fetch_array($results);
 
-  if($row["BLOG_POST_ID"]) {
-		return "TRUE";
+  if($row["PERSONA_ID"]) {
+		return TRUE;
 	}
 	
-  return "FALSE";
+  return NULL;
 }
 
 // Input: blog ID, DB handle
@@ -1047,7 +1047,7 @@ function dateStringToSql($datestr) {
 function addSimplePieItem ($item, $language, $blogId, $db) {
   $itemURI = insanitize( $item->get_permalink() );
 
-  $existing = getPost("blogUri", $itemURI , $db);
+  $existing = getPost("postUri", $itemURI , $db);
 
   if ($existing) {
     return $existing["dbId"];
@@ -1202,7 +1202,7 @@ function getPost ($arrange, $value, $db) {
 // Input: Post ID, DB handle
 // Result: Comments data
 function getComments($postId, $db) {
-	$sql = "SELECT PERSONA_ID, REC_DATE_TIME, REC_COMMENT FROM RECOMMENDATION WHERE BLOG_POST_ID=$postId AND REC_COMMENT != ''";
+	$sql = "SELECT PERSONA_ID, REC_DATE_TIME, REC_COMMENT FROM RECOMMENDATION WHERE BLOG_POST_ID=$postId AND REC_COMMENT != '' ORDER BY REC_DATE_TIME ASC";
 	$results = mysql_query($sql, $db);
 	
 	$comments = array();

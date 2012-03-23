@@ -10,19 +10,19 @@ $(document).ready(function() {
 		var persona = $(parent).attr('data-personaId');
 		var dataString = 'id='+ id + '&persona='+ persona + '&step=showComments';
 		var insert = $(parent).find('.comments-list-wrapper');
-		if ($(insert).html() == "") {
-			$(insert).html(loadingGif).fadeIn('slow');
-				$.ajax({
-					type: "POST",
-					url: "/subjectseeker/comment.php",
-					data: dataString,
-					cache: false,
-					
-					success: function(html) {
-						insert.html(html);
-					} 
-			});
-		}
+		
+		$(insert).html(loadingGif).fadeIn('slow');
+			$.ajax({
+				type: "POST",
+				url: "/subjectseeker/comment.php",
+				data: dataString,
+				cache: false,
+				
+				success: function(html) {
+					insert.html(html);
+				} 
+		});
+		
 	}
 	
 	function toggleSlider (button) {
@@ -52,7 +52,6 @@ $(document).ready(function() {
 		}
 	}
 	
-	
 	function updateCoords(c) {
 		$('#x').val(c.x);
 		$('#y').val(c.y);
@@ -67,6 +66,8 @@ $(document).ready(function() {
 	};
 	
 	$("#pikame").PikaChoose({speed:10000, transition:[2,3,5]});
+	
+	$('.ssSlideShow').fadeIn();
 	
 	$('#jcrop-target').Jcrop({
 		minSize: [ 580, 200 ],
@@ -137,6 +138,7 @@ $(document).ready(function() {
 		var dataString = 'id='+ id + '&persona='+ persona + '&comment=' + comment + '&step=' + step;
 		var insert = $(parent).find('.comments-list-wrapper');
 		var commentTextArea = $(parent).find('.text-area');
+		var commentNotification = commentTextArea.next('.comment-notification');
 		
 		$(insert).html(loadingGif).fadeIn('slow');
 		$.ajax({
@@ -148,12 +150,20 @@ $(document).ready(function() {
 			cache: false,
 			
 			success: function(data) {
-				commentTextArea.slideUp().next('.comment-notification').html('<p><span class="ss-bold">Your comment has been submitted.</span></p>').delay(6000).slideUp();
+				commentTextArea.slideUp();
+				commentNotification.html('<p><span class="ss-bold">Your note has been submitted and linked to your recommendation.</span></p>').show();
+				setTimeout(function(){
+					if(commentNotification.is(':visible')){
+						commentNotification.slideUp();
+					}
+					else{
+						commentNotification.hide();
+					}
+				},6000);
 				insert.html(data);
-				var count = $(data).filter('div').attr('data-count');
 				updateComments(this);
 				updateCommentsButton(commentButton);
-				$(parent).find('.comment-button').attr('data-number', count);
+				$(parent).find('.comment-button').attr('data-number', $(data).filter('div').attr('data-count'));
 			}
 		});	
 	});
@@ -201,7 +211,6 @@ $(document).ready(function() {
 				} 
 			});
 			if ($(this).attr("id") == 'recommend') {
-				updateComments(this);
 				commentTextArea.slideDown();
 				commentTextArea.find('.text-area').show();
 			}
@@ -212,6 +221,8 @@ $(document).ready(function() {
 					$(commentTextArea).slideUp();
 				}
 			}
+			updateComments(recWrapper);
+			updateCommentsButton($(parent).find('.comment-button'));
 		}
 		return false;
 	});

@@ -45,7 +45,7 @@ $commentCount = count($commentList);
 print "<div id=\"comment-list\" data-count=\"$commentCount\">";
 
 if ($commentList == NULL) {
-	print "<div id=\"padding-content\">There are no notes for this post.</div>";
+	print "<div id=\"padding-content\">There are no notes for this post. Recommend this post to leave a note.</div>";
 }
 else {
 	// Display comments
@@ -54,7 +54,7 @@ else {
 		$postDate = $data["date"];
 		$comment = $data["comment"];
 		$personaName = getPersonaName($commentPersonaId, $db);
-		print "<div class=\"comment-wrapper\">
+		print "<div class=\"comment-wrapper\" data-commenterPersonaId=\"$commentPersonaId\">
 		<div class=\"comment-header\">$personaName<span class=\"alignright\">$postDate</span></div>
 		<br />
 		<div id=\"padding-content\">$comment</div>
