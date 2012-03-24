@@ -15,6 +15,7 @@ Author URI: http://www.arborius.net/~jphekman/
 function widget_topLevelTopicsList($args) {
 	global $mainFeed;
 	global $serializerUrl;
+	$blogsUrl = "http://dev.scienceseeker.org/blogs/";
 	extract($args);
 	$params = parseHttpParams();
 	$db = ssDbConnect();
@@ -23,14 +24,14 @@ function widget_topLevelTopicsList($args) {
 	echo "Categories";
 	echo $after_title;
 	
-	print "<div class=\"categories-wrapper\" data-feed=\"$mainFeed\" data-serializer=\"$serializerUrl\">
+	print "<div class=\"categories-wrapper\" data-posts=\"$mainFeed\" data-blogs=\"$blogsUrl\" data-rss=\"$serializerUrl\">
 	<ul>
 	<li><input id=\"modifier\" class=\"categories\" type=\"checkbox\" name=\"category\" value=\"citation\"";
 	if ($params["modifier"] && array_search("citation", $params["modifier"]) !== FALSE) print " checked=\"checked\"";
-	print " /> Citations</li>
+	print " /> <a href=\"$mainFeed/?type=post&filter0=modifier&value0=citation\">Citations</a></li>
   <li><input id=\"modifier\" class=\"categories\" type=\"checkbox\" name=\"category\" value=\"editorsPicks\"";
 	if ($params["modifier"] && array_search("editorsPicks", $params["modifier"]) !== FALSE) print " checked=\"checked\"";
-	print " /> Editors' Picks</li>
+	print " /> <a href=\"$mainFeed/?type=post&filter0=modifier&value0=editorsPicks\">Editors' Picks</a></li>
 	<br />";
 	
 	$topicList = getTopicList (1, $db);
@@ -38,11 +39,11 @@ function widget_topLevelTopicsList($args) {
 		$topicName = $row["TOPIC_NAME"];
   	print "<li><input id=\"topic\" class=\"categories\" type=\"checkbox\" name=\"category\" value=\"$topicName\"";
 		if ($params["topic"] && array_search("$topicName", $params["topic"]) !== FALSE) print " checked=\"checked\"";
-		print " /> $topicName</li>";
+		print " /> <a href=\"$mainFeed/?type=post&filter0=topic&value0=".urlencode($topicName)."\">$topicName</a></li>";
 	}
 	
 	print "</ul>
-	<a class=\"ss-button\" href=\"$mainFeed\">Filter Posts</a> <a class=\"custom-rss\" href=\"$serializerUrl\" target=\"_blank\">Custom RSS</a>
+	<div id=\"center-text\"><a id=\"filter-posts\" class=\"button-small-red\" href=\"$mainFeed\">Posts</a><a id=\"filter-blogs\" class=\"button-small-red\" href=\"$blogsUrl\">Blogs</a><a id=\"filter-rss\" class=\"button-small-yellow\" href=\"$serializerUrl\" target=\"_blank\">RSS</a></div>
 	</div>";
 	echo $after_widget;
 }

@@ -2,7 +2,7 @@
 
 $(document).ready(function() {
 	
-	var loadingGif = '<img src="/images/icons/loading.gif" alt="Loading" title="Loading" />'
+	var loadingGif = '<div id="center-text"><img src="/images/icons/loading.gif" alt="Loading" title="Loading" /></div>'
 	
 	function updateComments (element) {
 		var parent = $(element).parents('.data-carrier');
@@ -10,7 +10,6 @@ $(document).ready(function() {
 		var persona = $(parent).attr('data-personaId');
 		var dataString = 'id='+ id + '&persona='+ persona + '&step=showComments';
 		var insert = $(parent).find('.comments-list-wrapper');
-		
 		$(insert).html(loadingGif).fadeIn('slow');
 			$.ajax({
 				type: "POST",
@@ -18,16 +17,22 @@ $(document).ready(function() {
 				data: dataString,
 				cache: false,
 				
-				success: function(html) {
-					insert.html(html);
+				success: function(data) {
+					insert.html(data);
+					insert.height('auto');
+					parent.find('.comment-button').attr('data-number', $(data).filter('div').attr('data-count'));
+					updateCommentsButton(insert);
+					if(insert.is(':visible')){
+						insert.css({ 'height' : ($(insert).height())});
+					}
 				} 
 		});
 		
 	}
 	
 	function toggleSlider (button) {
-		$(button).next('.ss-slide-wrapper').slideToggle('slow', "swing", function() {
-			updateCommentsButton($(this).parents('.data-carrier').find('.comment-button'));
+		$(button).next('.ss-slide-wrapper').slideToggle(400, "swing", function() {
+			updateCommentsButton(this);
 		});
 		$(button).find(".arrow-down,.arrow-up").toggleClass("arrow-up arrow-down");
 	}
@@ -140,7 +145,7 @@ $(document).ready(function() {
 		var commentTextArea = $(parent).find('.text-area');
 		var commentNotification = commentTextArea.next('.comment-notification');
 		
-		$(insert).html(loadingGif).fadeIn('slow');
+		insert.html(loadingGif).fadeIn('slow');
 		$.ajax({
 			type: "POST",
 			enctype: "multipart/form-data",
@@ -150,20 +155,20 @@ $(document).ready(function() {
 			cache: false,
 			
 			success: function(data) {
+				commentNotification.html(data);
+				if (commentNotification.html() == '') {
+					commentNotification.html('<p><span class="ss-bold">Your note has been submitted and linked to your recommendation.</span></p>').show();
+					setTimeout(function(){
+						if(commentNotification.is(':visible')){
+							commentNotification.slideUp();
+						}
+						else{
+							commentNotification.hide();
+						}
+					},6000);
+				}
+				updateComments(commentButton);
 				commentTextArea.slideUp();
-				commentNotification.html('<p><span class="ss-bold">Your note has been submitted and linked to your recommendation.</span></p>').show();
-				setTimeout(function(){
-					if(commentNotification.is(':visible')){
-						commentNotification.slideUp();
-					}
-					else{
-						commentNotification.hide();
-					}
-				},6000);
-				insert.html(data);
-				updateComments(this);
-				updateCommentsButton(commentButton);
-				$(parent).find('.comment-button').attr('data-number', $(data).filter('div').attr('data-count'));
 			}
 		});	
 	});
@@ -175,10 +180,10 @@ $(document).ready(function() {
 		var slider = $(parent).find('#post-info.ss-slide-wrapper');
 		var sliderButton = $(parent).find('.ss-div-button');
 		var commentsContent = $(parent).find('.comments-list-wrapper').html();
-		updateComments(this);
+		
+		if (commentsContent == "") updateComments(this);
 		if($(slider).is(':visible')){
 			if (commentsContent == "") {
-				updateCommentsButton (this);
 				return;
 			}
 		}
@@ -206,8 +211,9 @@ $(document).ready(function() {
 				data: dataString,
 				cache: false,
 				
-				success: function(html) {
-					recWrapper.html(html);
+				success: function(data) {
+					updateComments(commentTextArea);
+					recWrapper.html(data);
 				} 
 			});
 			if ($(this).attr("id") == 'recommend') {
@@ -221,8 +227,6 @@ $(document).ready(function() {
 					$(commentTextArea).slideUp();
 				}
 			}
-			updateComments(recWrapper);
-			updateCommentsButton($(parent).find('.comment-button'));
 		}
 		return false;
 	});
@@ -238,25 +242,28 @@ $(document).ready(function() {
 	
 	$('.categories').click(function() {
 		var wrapper = $(this).parents('.categories-wrapper');
-		var feed = $(wrapper).attr('data-feed');
-		var serializer = $(wrapper).attr('data-serializer');
+		var posts = $(wrapper).attr('data-posts');
+		var blogs = $(wrapper).attr('data-blogs');
+		var serializer = $(wrapper).attr('data-rss');
 		
-		var dataString = '';
+		var topicsString = '';
+		var modifiersString = '';
 		var i = 0;
 		$('#topic:checked').each(function () {;
 			var value = $(this).attr('value');
 			var extra = ('&filter' + i + '=topic&value' + i + '=');
-			dataString += extra + value;
+			topicsString += extra + value;
 			i++;
 		});
 		$('#modifier:checked').each(function () {;
 			var value = $(this).attr('value');
 			var extra = ('&filter' + i + '=modifier&value' + i + '=');
-			dataString += extra + value;
+			modifiersString += extra + value;
 			i++;
 		});
-		$(wrapper).children('.custom-rss').attr('href', serializer + '?type=post' + encodeURI(dataString));
-		$(wrapper).children('.ss-button').attr('href', feed + '?type=post' + encodeURI(dataString));
+		wrapper.find('#filter-rss').attr('href', serializer + '?type=post' + encodeURI(topicsString + modifiersString));
+		wrapper.find('#filter-posts').attr('href', posts + '?type=post' + encodeURI(topicsString + modifiersString));
+		wrapper.find('#filter-blogs').attr('href', blogs + '?type=blog' + encodeURI(topicsString));
 	});
 	
 	$('#add-author').click(function() {

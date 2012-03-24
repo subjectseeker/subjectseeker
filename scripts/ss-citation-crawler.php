@@ -37,6 +37,7 @@ foreach ($links as $link) {
 			}
 		}
 	}
+	unset($feed);
 }
 
 // Connect to the database.
