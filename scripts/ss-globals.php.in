@@ -25,4 +25,7 @@ $cachedir = "$basedir/cache";
 $resources2html = "$basedir/subjectseeker/xsl/resources2html.xsl";
 $topics2html = "$basedir/subjectseeker/xsl/topics2html.xsl";
 $feed2html = "$basedir/subjectseeker/xsl/feed2html.xsl";
+
+// Parameters
+$numResults = 30;
 ?>
