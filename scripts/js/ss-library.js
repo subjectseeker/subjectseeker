@@ -100,13 +100,10 @@ $(document).ready(function() {
 		}
   });
 	
-	$('.ss-div-button').mouseover(function() {
-		$(this).find('.ss-hidden-text').show();
-	});
-	
-	$('.ss-div-button').mouseleave(function() {
-		$(this).find('.ss-hidden-text').hide();
-	}); 
+	$('.ss-entry-wrapper').hover(
+		function(){$(this).find('#etiquettes.ss-slide-wrapper').delay(400).slideDown(300); },
+		function(){$(this).find('#etiquettes.ss-slide-wrapper').stop(true, true).slideUp(300); }
+	);
 	
   $('.ss-div-button').click(function() {
     toggleSlider(this);

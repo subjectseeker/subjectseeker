@@ -75,6 +75,7 @@
         </xsl:if>
         -->
         <!-- temporarily, we only generate the blog category -->
+        <span style="height:0px; width:100%;float: right;"></span>
         <div class="post-extras alignleft">
           <div class="recommendation-wrapper">
             <xsl:if test="atom:recstatus">
@@ -102,20 +103,6 @@
                 </xsl:if>
               </a>
             </span>
-            <xsl:if test="rdf:Description">
-            	<xsl:text> | </xsl:text> 
-            	<div class="badges">
-                <xsl:if test="rdf:Description[@rdf:ID='citations']">
-                  <span class="citation-mark" title="Post citing a peer-reviewed source"></span>
-                  <xsl:if test="rdf:Description[@rdf:ID='editorRecommended']">
-                  	<xsl:text> </xsl:text> 
-                	</xsl:if>
-                </xsl:if>
-                <xsl:if test="rdf:Description[@rdf:ID='editorRecommended']">
-                  <span class="editors-medal" title="Recommended by our editors"></span>
-                </xsl:if>
-              </div>
-            </xsl:if>
             <!-- <xsl:apply-templates select="rdf:Description[@rdf:ID='citations']" /> -->
           </div>
           <div class="ss-div-button">
@@ -204,6 +191,28 @@
               </span>
           </div>
         </div>
+        <xsl:if test="rdf:Description">
+          <div class="badges">
+            <xsl:if test="rdf:Description[@rdf:ID='citations']">
+              <span class="citation-mark"></span>
+            </xsl:if>
+            <xsl:if test="rdf:Description[@rdf:ID='editorRecommended']">
+              <span class="editors-mark"></span>
+            </xsl:if>
+            <div id="etiquettes" class="ss-slide-wrapper">
+              <xsl:if test="rdf:Description[@rdf:ID='citations']">
+                <div class="citation-mark-content" title="Post citing a peer-reviewed source">
+                <span>Citation</span>
+                </div>
+              </xsl:if>
+              <xsl:if test="rdf:Description[@rdf:ID='editorRecommended']">
+                <div class="editors-mark-content" title="Recommended by our editors">
+                <span>Editors' Pick</span>
+                </div>
+              </xsl:if>
+            </div>
+          </div>
+        </xsl:if>
       </div>
     </div>
   </xsl:template>
