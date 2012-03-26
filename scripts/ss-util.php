@@ -1520,11 +1520,21 @@ function displayEditPendingBlogs ($db) {
 		$blogtopics = getBlogTopics($blogId, $db);
 		//$topic1 = $_REQUEST["topic1"];
 		//$topic2 = $_REQUEST["topic2"];
+		
+		$contacts = getBlogContacts($blogId, $db);
+		
 		print "<input type=\"hidden\" name=\"blogId[]\" value=\"$blogId\" />\n";
 		if ($errormsg !== null) {
 			print "<p><font color='red'>Error: $errormsg</font></p>\n";
 		}
-		print "<p><strong>$blogName</strong></p>";
+		print "<p><span class=\"ss-bold\">$blogName</span></p>";
+		if ($contacts) {
+			print "<p>Author's Email";
+			foreach ($contacts as $contact) {
+				print " <a href=\"mailto:$contact\">$contact</a>";
+			}
+			print "</p>";
+		}
 		print "<p>*Required field</p>\n";
 		print "<p>*Blog name: <input type=\"text\" name=\"blogname[]\" size=\"40\" value=\"$blogName\"/></p>\n";
 		print "<p>*<a href=\"$blogUri\" style=\"none\" target=\"_blank\">Blog URL:</a> <input type=\"text\" name=\"blogurl[]\" size=\"40\" value=\"$blogUri\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>";

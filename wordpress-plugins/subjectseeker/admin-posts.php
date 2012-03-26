@@ -111,8 +111,8 @@ function AdminPosts() {
 					print " selected";
 				}
 				print ">Title</option>\n";
-				print "<option value='postTitle'";
-				if ($arrange == "postTitle") {
+				print "<option value='postUri'";
+				if ($arrange == "postUri") {
 					print " selected";
 				}
 				print ">URI</option>\n";

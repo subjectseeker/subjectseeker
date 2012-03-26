@@ -244,14 +244,12 @@ function scanPosts() {
 					$postSummary = strip_tags($postSummaries[$i], '<br>');
 					$blogName = $blogNames[$i];
 					$hasCitation = $hasCitations[$i];
+					$editorRecommended = getEditorsPicksStatus($postId, $db);
 					$citations = postIdToCitation($postId, $db);
 					if ($postTitle == NULL) {
 						$postTitle = $postUri;
 					}
-					print "<div class=\"ss-entry-wrapper\"><input type=\"checkbox\" class=\"checkbox\" name=\"check-$postId\" value=\"1\" /> <span class=\"ss-postTitle\"><a href=\"$postUri\" target=\"_blank\">$postTitle</a></span>";
-					if ($hasCitation == 1) {
-						print " <span class=\"citation-mark\" title=\"Citation\"></span>";
-					}
+					print "<div class=\"ss-entry-wrapper alignleft\"><input type=\"checkbox\" class=\"checkbox\" name=\"check-$postId\" value=\"1\" /> <span class=\"ss-postTitle\"><a href=\"$postUri\" target=\"_blank\">$postTitle</a></span>";
 					print "<div class=\"ss-div-button\">
 					<div class=\"arrow-down\"></div>
 					</div>
@@ -271,10 +269,27 @@ function scanPosts() {
 					}
 					print "</div>
 					</div>
-					<br />
-					<div class=\"ss-blogTitle\">$blogName</div>
-					</div>
-					<hr />";
+					<div class=\"ss-blogTitle\" style=\"width: 100%\">$blogName</div>";
+					if ($hasCitation == 1 || $editorRecommended) {
+						print "<div class=\"badges\" style=\"bottom: -10px;\">";
+						if ($hasCitation == 1) print "<span class=\"citation-mark\"></span>";
+          	if ($editorRecommended) print "<span class=\"editors-mark\"></span>";
+            print "<div id=\"etiquettes\" class=\"ss-slide-wrapper\">";
+              if ($hasCitation == 1) {
+                print "<div class=\"citation-mark-content\" title=\"Post citing a peer-reviewed source\">
+                <span>Citation</span>
+                </div>";
+							}
+              if ($editorRecommended) {
+                print "<div class=\"editors-mark-content\" title=\"Recommended by our editors\">
+                <span>Editor's Pick</span>
+                </div>";
+							}
+            print "</div>
+          </div>";
+					}
+					print "</div>
+					<hr class=\"alignleft\" style=\"width: 102.6%\" />";
 				}
 				print "<div class=\"ss-div\"><input class=\"ss-button\"type=\"submit\" value=\"Scan\" /></div>
 				</form>

@@ -75,7 +75,6 @@
         </xsl:if>
         -->
         <!-- temporarily, we only generate the blog category -->
-        <span style="height:0px; width:100%;float: right;"></span>
         <div class="post-extras alignleft">
           <div class="recommendation-wrapper">
             <xsl:if test="atom:recstatus">
@@ -207,7 +206,7 @@
               </xsl:if>
               <xsl:if test="rdf:Description[@rdf:ID='editorRecommended']">
                 <div class="editors-mark-content" title="Recommended by our editors">
-                <span>Editors' Pick</span>
+                <span>Editor's Pick</span>
                 </div>
               </xsl:if>
             </div>

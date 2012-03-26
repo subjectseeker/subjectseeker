@@ -164,7 +164,7 @@ $(document).ready(function() {
 						}
 					},6000);
 				}
-				updateComments(commentButton);
+				updateComments(insert);
 				commentTextArea.slideUp();
 			}
 		});	

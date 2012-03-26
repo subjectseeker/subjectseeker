@@ -15,13 +15,13 @@ Author URI: http://www.arborius.net/~jphekman/
 function widget_topLevelTopicsList($args) {
 	global $mainFeed;
 	global $serializerUrl;
-	$blogsUrl = "http://dev.scienceseeker.org/blogs/";
+	global $blogList;
 	extract($args);
 	$params = parseHttpParams();
 	$db = ssDbConnect();
 	echo $before_widget;
   echo $before_title;
-	echo "Categories";
+	echo "Filters";
 	echo $after_title;
 	
 	print "<div class=\"categories-wrapper\" data-posts=\"$mainFeed\" data-blogs=\"$blogsUrl\" data-rss=\"$serializerUrl\">

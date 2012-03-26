@@ -233,7 +233,7 @@ function getRecentPosts( $params, $numPosts, $offset, $dbHandle ) {
 		}
 	}
 	
-  $postSQL = "SELECT BLOG_POST_ID FROM BLOG_POST WHERE BLOG_POST_STATUS_ID = 0 ";
+  $postSQL = "SELECT BLOG_POST_ID FROM BLOG_POST WHERE BLOG_POST_STATUS_ID = 0 AND BLOG_POST_DATE_TIME <= GETDATE() ";
 
 	if ($citation) {
 		$postSQL .= " AND BLOG_POST_HAS_CITATION = 1 ";

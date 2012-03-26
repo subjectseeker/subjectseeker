@@ -29,7 +29,6 @@ foreach ($blogs as $blog) {
 
   $feed->__destruct(); // Do what PHP should be doing on its own.
   unset($feed);
-	unset($blog);
 }
 
 // clean up - we're done
