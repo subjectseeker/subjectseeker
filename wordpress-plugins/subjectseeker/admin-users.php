@@ -142,11 +142,11 @@ function doAdminUsers() {
 			</div>
 			<br />";
 			if ($step != null) {
-				$userID = stripslashes($_REQUEST["userId"]);
-				$userName = stripslashes($_REQUEST["userName"]);
-				$userStatus = stripslashes($_REQUEST["userStatus"]);
-				$userEmail = stripslashes($_REQUEST["userEmail"]);
-				$userPrivilege = stripslashes($_REQUEST["userPrivilege"]);
+				$userID = $_REQUEST["userId"];
+				$userName = $_REQUEST["userName"];
+				$userStatus = $_REQUEST["userStatus"];
+				$userEmail = $_REQUEST["userEmail"];
+				$userPrivilege = $_REQUEST["userPrivilege"];
 				$oldUserName = getUserName($userID, $db);
 				$result = checkUserData($userID, $userName, $userStatus, $userEmail, $userPrivilege, $userId, $userPriv, $displayname, $db);
 				if ($step == 'confirmed' || ($result == NULL && $step == 'edit')) {			
@@ -159,9 +159,9 @@ function doAdminUsers() {
 					print "<form class=\"ss-div\" method=\"POST\">
 					<input type=\"hidden\" name=\"step\" value=\"confirmed\" />
 					<input type=\"hidden\" name=\"userId\" value=\"$userID\" />
-					<input type=\"hidden\" name=\"userName\" value=\"$userName\" />
+					<input type=\"hidden\" name=\"userName\" value=\"".htmlspecialchars($userName, ENT_QUOTES)."\" />
 					<input type=\"hidden\" name=\"userStatus\" value=\"$userStatus\" />
-					<input type=\"hidden\" name=\"userEmail\" value=\"$userEmail\" />
+					<input type=\"hidden\" name=\"userEmail\" value=\"".htmlspecialchars($userEmail, ENT_QUOTES)."\" />
 					<input type=\"hidden\" name=\"userPrivilege\" value=\"$userPrivilege\" />
 					<p>There has been an error, are you sure you want to apply these changes?</p>
 					<input class=\"ss-button\" name=\"confirm\" type=\"submit\" value=\"Yes\" /> <a class=\"ss-button\" href=\"$adminUsers\" />No</a>
@@ -177,10 +177,10 @@ function doAdminUsers() {
 				print "<hr />";
 				foreach ($userList as $user) {
 					$userID = $user["id"];
-					$userName = $user["name"];
+					$userName = htmlspecialchars($user["name"]);
 					$userStatusId = $user["status"];
 					$userPrivilegeId = $user["privilege"];
-					$userEmail = $user["email"];
+					$userEmail = htmlspecialchars($user["email"]);
 					$userStatus = ucwords(userStatusIdToName ($userStatusId, $db));
 					$userPrivilege = ucwords(userPrivilegeIdToName ($userPrivilegeId, $db));
 					print "<div class=\"ss-entry-wrapper\">

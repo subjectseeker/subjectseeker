@@ -99,7 +99,10 @@ function editImage() {
 			list($width, $height) = getimagesize($tmpLocation);
 			$halfW = $width - ($width/2);
 			
-			if ($width < 580 || $height < 200) {
+			if (! $imageName) {
+				print "<span class=\"ss-error\">Error: No image was uploaded. Please check that your image is at least 580 x 200 and under 1 MB.</span>";
+			}
+			elseif ($width < 580 || $height < 200) {
 				print "<span class=\"ss-error\">Error: Your image must be at least 580 x 200</span>";
 			}
 			else {

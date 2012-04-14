@@ -93,13 +93,13 @@ function doApproveBlogs() {
 		$blogs["topic2"] = $_REQUEST["topic2"];
 		
 		foreach ($blogs["id"] as $id => $value) {
-			$blogId = stripslashes($blogs["id"][$id]);
-			$blogname = stripslashes($blogs["name"][$id]);
-			$blogurl = stripslashes($blogs["uri"][$id]);
-			$blogsyndicationuri = stripslashes($blogs["syndicationuri"][$id]);
-			$blogdescription = stripslashes($blogs["description"][$id]);
-			$topic1 = stripslashes($blogs["topic1"][$id]);
-			$topic2 = stripslashes($blogs["topic2"][$id]);
+			$blogId = $blogs["id"][$id];
+			$blogname = $blogs["name"][$id];
+			$blogurl = $blogs["uri"][$id];
+			$blogsyndicationuri = $blogs["syndicationuri"][$id];
+			$blogdescription = $blogs["description"][$id];
+			$topic1 = $blogs["topic1"][$id];
+			$topic2 = $blogs["topic2"][$id];
 			$status = $_REQUEST["$blogId-blog"];
 			
 	  $result = checkBlogData ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);

@@ -73,7 +73,7 @@ function searchCitations() {
 		<p>This tool will allow you to generate a citation that you can add to your posts for reference and aggregation here and with other services that use the industry-standard COinS system for citation of peer-reviewed research.</p>
 		<p>Please enter words from the title of the article you'd like to cite. The first 7 or 8 words work best. You can also use the DOI, author name, or other keywords. Our system will search the CrossRef database for the article.</p>
 		</div>
-		<form id=\"center-text\" method=\"GET\">
+		<form class=\"center-text\" method=\"GET\">
 		<input type=\"hidden\" name=\"step\" value=\"results\" />
 		<input class=\"big-input\" type=\"text\" name=\"title\" />
 		<div class=\"ss-div\"><input class=\"big-button\" type=\"submit\" value=\"Search\"></div>
@@ -84,7 +84,7 @@ function searchCitations() {
 		print "<input class=\"ss-button\" type=\"button\" value=\"Go Back\" onClick=\"history.go(-1);return true;\"><br />
 		<h3>Select citation.</h3>
 		<p>Please select a citation from the results below or modify your search to refine the results.</p>
-		<form id=\"center-text\" method=\"GET\">
+		<form class=\"center-text\" method=\"GET\">
 		<input type=\"hidden\" name=\"step\" value=\"results\" />
 		<input class=\"big-input\" type=\"text\" name=\"title\" value=\"$title\" />
 		<div class=\"ss-div\"><input class=\"big-button\" type=\"submit\" value=\"Modify Search\"></div>
@@ -103,7 +103,7 @@ function searchCitations() {
 				print "<div class=\"ss-entry-wrapper\">
 				<form style=\"display: inline;\" method=\"POST\">
 				<input type=\"hidden\" name=\"step\" value=\"edit\" />
-				<textarea readonly=\"readonly\" style=\"display: none;\" name=\"selected\">$result</textarea>
+				<textarea readonly=\"readonly\" style=\"display: none;\" name=\"selected\">".htmlspecialchars($result)."</textarea>
 				<div class=\"ss-div\" style=\"display: inline-block; width: 85%;\">$result</div>
 				<div style=\"display: inline-block;\" class=\"alignright\">
 				<input class=\"ss-button\" type=\"submit\" value=\"Select\" />
@@ -118,60 +118,61 @@ function searchCitations() {
 		<h3>Edit Citation</h3>
 		<form method=\"POST\">
 		<input type=\"hidden\" name=\"step\" value=\"end\" />";
-		$citation = stripslashes($_REQUEST["selected"]);
-		$data = parseCitation($citation, $db);
-		$values = array_map('utf8_decode', $data);
-		print "<input type=\"hidden\" name=\"rtfId\" value=\"".$values["rft_id"]."\" />
-		<input type=\"hidden\" name=\"rfrId\" value=\"".$values["rfr_id"]."\" />
+		$citation = $_REQUEST["selected"];
+		$articleData = parseCitation($citation, $db);
+		storeArticle ($articleData, 1, $db);
+		print "<input type=\"hidden\" name=\"idType\" value=\"doi\" />
 		<p>Please confirm the data is correct before generating the citation.</p>
 		<p id=\"padding-content\">$citation</p>
 		<input type=\"button\" id=\"add-author\" class=\"alignright\" value=\"+ Add Author\" />
 		<br />
 		<div class=\"ss-div-2\">
 		<h4>Title</h4>
-		<textarea name=\"title\" rows=\"2\" cols=\"65\">".$values["rft.atitle"]."</textarea>
+		<textarea name=\"title\" rows=\"2\" cols=\"65\">".$articleData["rft.atitle"]."</textarea>
 		</div>";
-		foreach ($data["authors"] as $author) {
-			print "<div class=\"removable-parent\">
-			<div class=\"ss-div-2\">
-			<h4>Author <span id=\"remove-parent\" class=\"alignright\">X</span></h4>
-			<span class=\"subtle-text\">First Name:</span> <textarea name=\"firstName[]\" rows=\"1\" cols=\"56\">".utf8_decode($author["rft.aufirst"])."</textarea><br />
-			<br />
-			<span class=\"subtle-text\">Last Name:</span> <textarea name=\"lastName[]\" rows=\"1\" cols=\"56\">".utf8_decode($author["rft.aulast"])."</textarea>
-			</div>
-			</div>";
+		if ($articleData["authors"]) {
+			foreach ($articleData["authors"] as $author) {
+				print "<div class=\"removable-parent\">
+				<div class=\"ss-div-2\">
+				<h4>Author <span id=\"remove-parent\" class=\"alignright\">X</span></h4>
+				<span class=\"subtle-text\">First Name:</span> <textarea name=\"fName[]\" rows=\"1\" cols=\"56\">".$author["rft.aufirst"]."</textarea><br />
+				<br />
+				<span class=\"subtle-text\">Last Name:</span> <textarea name=\"lName[]\" rows=\"1\" cols=\"56\">".$author["rft.aulast"]."</textarea>
+				</div>
+				</div>";
+			}
 		}
 		print "<div id=\"journal\" class=\"ss-div-2\">
 		<h4>Journal</h4>
-		<textarea name=\"journal\" rows=\"2\" cols=\"65\">".$values["rft.jtitle"]."</textarea>
+		<textarea name=\"journal\" rows=\"2\" cols=\"65\">".$articleData["rft.jtitle"]."</textarea>
 		</div>
 		<div class=\"ss-div-2\">
 		<h4>Article Url</h4>
-		<textarea name=\"url\" rows=\"2\" cols=\"65\">".$values["rft.artnum"]."</textarea>
+		<textarea name=\"article\" rows=\"2\" cols=\"65\">".$articleData["rft.artnum"]."</textarea>
 		</div>
 		<div class=\"ss-div-2\">
 		<h4>Volume</h4>
-		<textarea name=\"volume\" rows=\"1\" cols=\"65\">".$values["rft.volume"]."</textarea>
+		<textarea name=\"volume\" rows=\"1\" cols=\"65\">".$articleData["rft.volume"]."</textarea>
 		</div>
 		<div class=\"ss-div-2\">
 		<h4>Issue</h4>
-		<textarea name=\"issue\" rows=\"1\" cols=\"65\">".$values["rft.issue"]."</textarea>
+		<textarea name=\"issue\" rows=\"1\" cols=\"65\">".$articleData["rft.issue"]."</textarea>
 		</div>
 		<div class=\"ss-div-2\">
 		<h4>ISSN</h4>
-		<textarea name=\"issn\" rows=\"1\" cols=\"65\">".$values["rft.issn"]."</textarea>
+		<textarea name=\"issn\" rows=\"1\" cols=\"65\">".$articleData["rft.issn"]."</textarea>
 		</div>
 		<div class=\"ss-div-2\">
 		<h4>First Page</h4>
-		<textarea name=\"spage\" rows=\"1\" cols=\"65\">".$values["rft.spage"]."</textarea>
+		<textarea name=\"spage\" rows=\"1\" cols=\"65\">".$articleData["rft.spage"]."</textarea>
 		</div>
 		<div class=\"ss-div-2\">
 		<h4>Year of Publication</h4>
-		<textarea name=\"date\" rows=\"1\" cols=\"65\">".$values["rft.date"]."</textarea>
+		<textarea name=\"date\" rows=\"1\" cols=\"65\">".$articleData["rft.date"]."</textarea>
 		</div>
 		<div class=\"ss-div-2\">
 		<h4>ID</h4>
-		<textarea name=\"id\" rows=\"1\" cols=\"65\">".$values["id"]."</textarea>
+		<textarea name=\"id\" rows=\"1\" cols=\"65\">".$articleData["id"]."</textarea>
 		</div>
 		<div class=\"ss-div-2\">
 		<h4>Allow the citation to be aggregated by</h4>
@@ -198,76 +199,39 @@ function searchCitations() {
 		global $homeUrl;
 		print "<input class=\"ss-button\" type=\"button\" value=\"Go Back\" onClick=\"history.go(-1);return true;\"> <a class=\"ss-button\" href=\"$homeUrl\">Homepage</a><br />
 		<h3>Result</h3>";
-		foreach ($_REQUEST as $attribute => $value) {
-			if (is_array($value) == TRUE) {
-				$value = array_map('stripslashes', $value);
-			}
-			else {
-				$value = stripslashes($value);
-			}
-			$$attribute = $value;
-		}
-		$citation = "<span class=\"Z3988\" title=\"ctx_ver=Z39.88-2004&amp;rft_val_fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Ajournal&amp;rft.jtitle=".rawurlencode($journal)."&amp;rft_id=".rawurlencode($rtfId)."&amp;rfr_id=".rawurlencode($rfrId)."&amp;rft.atitle=".rawurlencode($title)."&amp;rft.issn=$issn&amp;rft.date=$date&amp;rft.volume=$volume&amp;rft.issue=$issue&amp;rft.spage=$spage&amp;rft.artnum=".rawurlencode($url);
 		
-		if ($firstName || $lastName) {
-			$i = count($firstName);
-			foreach ($firstName as $key => $first) {
-				$buildFName = "";
-				$last = $lastName[$key];
-				$citation .= "&amp;rft.au=".urlencode("$last $first")."&amp;rft.aulast=".urlencode($last)."&amp;rft.aufirst=".urlencode($first);
-				
-				preg_match_all("/\w+/", $first, $matchResult);
-				foreach ($matchResult[0] as $fName) {
-				 $buildFName .= ucfirst($fName[0]).".";
-				}
-				$authors .= "$last, $buildFName";
-				if ($key == ($i-2)) {
-					$authors .= " & ";
-				}
-				elseif ($key != $i-1) {
-					$authors .= ", ";
-				}
+		$articleData["id_type"] = $_REQUEST["idType"];
+		$articleData["rft.atitle"] = $_REQUEST["title"];
+		$articleData["rft.jtitle"] = $_REQUEST["journal"];
+		$articleData["rft.artnum"] = $_REQUEST["article"];
+		$articleData["rft.volume"] = $_REQUEST["volume"];
+		$articleData["rft.issue"] = $_REQUEST["issue"];
+		$articleData["rft.issn"] = $_REQUEST["issn"];
+		$articleData["rft.spage"] = $_REQUEST["spage"];
+		$articleData["rft.date"] = $_REQUEST["date"];
+		$articleData["id"] = $_REQUEST["id"];
+		$articleData["ssInclude"] = $_REQUEST["ssInclude"];
+		$articleData["rbInclude"] = $_REQUEST["rbInclude"];
+		
+		if (! $articleData["ssInclude"]) $articleData["ssInclude"] = 0;
+		if (! $articleData["rbInclude"]) $articleData["rbInclude"] = 0;
+		
+		if ($_REQUEST["rbTags"]) {
+			$articleData["rbTags"] = $_REQUEST["rbTags"];
+		}
+		if ($_REQUEST["fName"]) {
+			foreach ($_REQUEST["fName"] as $key => $value) {
+				$articleData["authors"][] = array("rft.aufirst"=>$value, "rft.aulast"=>$_REQUEST["lName"][$key]);
 			}
 		}
-		if ($date) {
-			$date = "($date).";
-		}
-		if ($title) {
-			$title = "$title,";
-		}
-		if ($journal) {
-			$journal = "$journal,";
-		}
-		if ($issue) {
-			$issue = "($issue),";
-		}
-		if ($spage) {
-			$spage = "$spage.";
-		}
-		if ($ssInclude) {
-			$citation .= "&rfs_dat=ss.included=1";
-		}
-		else {
-			$citation .= "&rfs_dat=ss.included=0";
-		}
-		$citation .= "&rfe_dat=";
-		if ($rbInclude) {
-			$citation .= "bpr3.included=1";
-		}
-		else {
-			$citation .= "bpr3.included=0";
-		}
-		if ($rbTags && $rbInclude) {
-			$citation .= ";bpr3.tags=".urlencode(implode(",",$rbTags));
-		}
-		$citation .= "\">";
-		$citation .= "$authors $date $title <span style=\"font-style:italic;\">$journal $volume</span> $issue $spage DOI: <a rev=\"review\" href=\"http://dx.doi.org/$id\">$id</a></span>";
+		
+		$generatedCitation = generateCitation($articleData);
 		
 		print "<p>This is how the citation will look after you copy the HTML code to your article.</p>
-		<p id=\"padding-content\">$citation</p>";
+		<p id=\"padding-content\">$generatedCitation</p>";
 		print "<h4>HTML Code:</h4>
 		<p>Please copy this code to your article to add the citation.</p>
-		<textarea onClick=\"this.focus();this.select()\" rows=\"10\" cols=\"60\" readonly=\"readonly\">$citation</textarea>";
+		<textarea onClick=\"this.focus();this.select()\" rows=\"10\" cols=\"60\" readonly=\"readonly\">$generatedCitation</textarea>";
 	}
 }
 

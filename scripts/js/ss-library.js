@@ -2,7 +2,7 @@
 
 $(document).ready(function() {
 	
-	var loadingGif = '<div id="center-text"><img src="/images/icons/loading.gif" alt="Loading" title="Loading" /></div>'
+	var loadingGif = '<div class="center-text"><img src="/images/icons/loading.gif" alt="Loading" title="Loading" /></div>'
 	
 	function updateComments (element) {
 		var parent = $(element).parents('.data-carrier');
@@ -72,7 +72,7 @@ $(document).ready(function() {
 	
 	$("#pikame").PikaChoose({speed:10000, transition:[2,3,5]});
 	
-	$('.ssSlideShow').fadeIn();
+	$('.ssSlideShow, #filter-buttons').fadeIn();
 	
 	$('#jcrop-target').Jcrop({
 		minSize: [ 580, 200 ],
@@ -102,7 +102,7 @@ $(document).ready(function() {
 	
 	$('.ss-entry-wrapper').hover(
 		function(){$(this).find('#etiquettes.ss-slide-wrapper').delay(400).slideDown(300); },
-		function(){$(this).find('#etiquettes.ss-slide-wrapper').stop(true, true).slideUp(300); }
+		function(){$(this).find('#etiquettes.ss-slide-wrapper').stop(true, true).delay(400).slideUp(300); }
 	);
 	
   $('.ss-div-button').click(function() {
@@ -237,30 +237,35 @@ $(document).ready(function() {
 		area.nextAll('.alignright').children('.charsLeft').html(120 - area.val().length);
 	});
 	
-	$('.categories').click(function() {
-		var wrapper = $(this).parents('.categories-wrapper');
+	$('.categories-wrapper').click(function() {
+		var wrapper = $(this);
 		var posts = $(wrapper).attr('data-posts');
 		var blogs = $(wrapper).attr('data-blogs');
 		var serializer = $(wrapper).attr('data-rss');
 		
-		var topicsString = '';
-		var modifiersString = '';
+		var postsString = '';
+		var blogsString = '';
 		var i = 0;
 		$('#topic:checked').each(function () {;
 			var value = $(this).attr('value');
-			var extra = ('&filter' + i + '=topic&value' + i + '=');
-			topicsString += extra + value;
+			postsString += '&filter' + i + '=blog&modifier' + i + '=topic&value' + i + '=' + value;
+			blogsString += '&filter' + i + '=topic&value' + i + '=' + value;
 			i++;
 		});
-		$('#modifier:checked').each(function () {;
-			var value = $(this).attr('value');
-			var extra = ('&filter' + i + '=modifier&value' + i + '=');
-			modifiersString += extra + value;
+		$('#filter:checked').each(function () {;
+			var filter = $(this).attr('value');
+			if (filter == 'recommender-status') {
+				postsString += '&filter' + i + '=' + filter + '&value' + i + '=editor';
+			}
+			if (filter == 'has-citation') {
+				postsString += '&filter' + i + '=' + filter;
+				blogsString += '&filter' + i + '=' + filter;
+			}
 			i++;
 		});
-		wrapper.find('#filter-rss').attr('href', serializer + '?type=post' + encodeURI(topicsString + modifiersString));
-		wrapper.find('#filter-posts').attr('href', posts + '?type=post' + encodeURI(topicsString + modifiersString));
-		wrapper.find('#filter-blogs').attr('href', blogs + '?type=blog' + encodeURI(topicsString));
+		wrapper.find('#filter-rss').attr('href', serializer + '?type=post' + encodeURI(postsString));
+		wrapper.find('#filter-posts').attr('href', posts + '?type=post' + encodeURI(postsString));
+		wrapper.find('#filter-blogs').attr('href', blogs + '?type=blog' + encodeURI(blogsString));
 	});
 	
 	$('#add-author').click(function() {
@@ -270,7 +275,7 @@ $(document).ready(function() {
 			$('#notification-area').slideDown();
 			return;
 		}
-		$('#journal').before('<div class="removable-parent"><div class="ss-div-2"><h4>Author <span id="remove-parent" class="alignright">X</span></h4><span class="subtle-text">First Name:</span> <textarea name="firstName[]" rows="1" cols="56"></textarea><br /><br /><span class="subtle-text">Last Name:</span> <textarea name="lastName[]" rows="1" cols="56"></textarea></div></div>');
+		$('#journal').before('<div class="removable-parent"><div class="ss-div-2"><h4>Author <span id="remove-parent" class="alignright">X</span></h4><span class="subtle-text">First Name:</span> <textarea name="fName[]" rows="1" cols="56"></textarea><br /><br /><span class="subtle-text">Last Name:</span> <textarea name="lName[]" rows="1" cols="56"></textarea></div></div>');
 	});
 	
 });

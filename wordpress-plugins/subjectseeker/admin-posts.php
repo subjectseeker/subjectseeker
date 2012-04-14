@@ -65,14 +65,14 @@ function AdminPosts() {
   $db = ssDbConnect();
 		if (is_user_logged_in()){
 			global $current_user;
-			get_currentuserinfo();
-    $displayName = $current_user->user_login;
-    $email = $current_user->user_email;
-    $userId = addUser($displayName, $email, $db);
-    $userPriv = getUserPrivilegeStatus($userId, $db);
-		
-    print "<p>Hello, $displayName.</p>\n";	
-		if ($userPriv > 1) { // admin
+				get_currentuserinfo();
+			$displayName = $current_user->user_login;
+			$email = $current_user->user_email;
+			$userId = addUser($displayName, $email, $db);
+			$userPriv = getUserPrivilegeStatus($userId, $db);
+			
+			print "<p>Hello, $displayName.</p>\n";	
+			if ($userPriv > 1) { // admin
 				$arrange = $_REQUEST["arrange"];
 				$order = $_REQUEST["order"];
 				$pagesize = $_REQUEST["n"];
@@ -147,11 +147,11 @@ function AdminPosts() {
 				<br />";
 				
 			if ($step != NULL) {
-				$postId = stripslashes($_REQUEST["postId"]);
-				$postUrl = stripslashes($_REQUEST["url"]);
-				$postTitle = stripslashes($_REQUEST["title"]);
-				$postSummary = stripslashes($_REQUEST["summary"]);
-				$postStatus = stripslashes($_REQUEST["status"]);
+				$postId = $_REQUEST["postId"];
+				$postUrl = $_REQUEST["url"];
+				$postTitle = $_REQUEST["title"];
+				$postSummary = $_REQUEST["summary"];
+				$postStatus = $_REQUEST["status"];
 				$check = $_REQUEST["checkCitations"];
 				$result = checkPostData($postId, $postTitle, $postSummary, $postUrl, $userId, $displayname, $db);
 				if ($step == 'confirmed' || ($result == NULL && $step == 'edit')) {
@@ -161,9 +161,10 @@ function AdminPosts() {
 						if (is_array($results) == TRUE) {
 							print "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> We found the following citation(s) on $blogName: <a href=\"$postUri\">$postTitle</a></div>";
 							foreach ($results as $citation) {
-								storeCitation ($citation, $postId, $db);
+								$articleData = parseCitation($citation);
+								$generatedCitation = storeCitation ($articleData, $postId, $db);
 								// Display citation
-								print "<p>$citation</p>";
+								print "<p>$generatedCitation</p>";
 							}
 						}
 						elseif ($results == NULL) {
@@ -185,9 +186,9 @@ function AdminPosts() {
 					<form class=\"ss-div\" method=\"POST\">
 					<input type=\"hidden\" name=\"step\" value=\"confirmed\" />
 					<input type=\"hidden\" name=\"postId\" value=\"$postId\" />
-					<input type=\"hidden\" name=\"title\" value=\"$postTitle\" />
-					<input type=\"hidden\" name=\"url\" value=\"$postUrl\" />
-					<input type=\"hidden\" name=\"summary\" value=\"$postSummary\" />
+					<input type=\"hidden\" name=\"title\" value=\"".htmlspecialchars($postTitle, ENT_QUOTES)."\" />
+					<input type=\"hidden\" name=\"url\" value=\"".htmlspecialchars($postUrl, ENT_QUOTES)."\" />
+					<input type=\"hidden\" name=\"summary\" value=\"".htmlspecialchars($postSummary, ENT_QUOTES)."\" />
 					<input type=\"hidden\" name=\"recommended\" value=\"$recommended\" />
 					<input type=\"hidden\" name=\"status\" value=\"$postStatus\" />
 					<input type=\"hidden\" name=\"image\" value=\"$image\" />
@@ -205,17 +206,17 @@ function AdminPosts() {
 				print "<hr />";
 				foreach ($postList as $post) {
 					$postId = $post["postId"];
-					$postTitle = $post["title"];
-					$postSummary = $post["content"];
+					$postTitle = htmlspecialchars($post["title"]);
+					$postSummary = htmlspecialchars($post["content"]);
 					$postAuthorId = $post["authorId"];
 					$postDate = $post["postDate"];
 					$addedDate = $post["addedDate"];
 					$postLanguage = $post["language"];
-					$postUrl = $post["uri"];
+					$postUrl = htmlspecialchars($post["uri"]);
 					$postStatusId = $post["status"];
 					$blogId = $post["blogId"];
 					$postStatus = ucwords(blogPostStatusIdToName ($postStatusId, $db));
-					$blogName = getBlogName($blogId, $db);
+					$blogName = htmlspecialchars(getBlogName($blogId, $db));
 					print "<div class=\"ss-entry-wrapper\">
 					<div class=\"post-header\">
 					$postId | <a href=\"$postUrl\" target=\"_blank\">$postTitle</a> | $blogName | $postStatus

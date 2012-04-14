@@ -17,33 +17,49 @@ function widget_topLevelTopicsList($args) {
 	global $serializerUrl;
 	global $blogList;
 	extract($args);
-	$params = parseHttpParams();
+	$params = httpParamsToSearchQuery();
 	$db = ssDbConnect();
 	echo $before_widget;
   echo $before_title;
 	echo "Filters";
 	echo $after_title;
 	
-	print "<div class=\"categories-wrapper\" data-posts=\"$mainFeed\" data-blogs=\"$blogsUrl\" data-rss=\"$serializerUrl\">
+	foreach ($params as $param) {
+		if ($param->name == "blog" && $param->modifier == "topic") {
+			$topics[] = $param->value;
+		}
+		if ($param->name == "topic") {
+			$topics[] = $param->value;
+		}
+		if ($param->name == "has-citation" && $param->value != "false") {
+			$checkCitation = TRUE;
+		}
+		if ($param->name == "recommender-status" && $param->value == "editor") {
+			$checkEditorsPicks = TRUE;
+		}
+	}
+	
+	print "<div class=\"categories-wrapper\" data-posts=\"$mainFeed\" data-blogs=\"$blogList\" data-rss=\"$serializerUrl\">
+	<div id=\"filter-buttons\" class=\"ss-div-2 center-text\" style=\"display: none;\"><a id=\"filter-posts\" class=\"button-small-red\" href=\"$mainFeed\">Posts</a><a id=\"filter-blogs\" class=\"button-small-red\" href=\"$blogList\">Blogs</a><a id=\"filter-rss\" class=\"button-small-yellow\" href=\"$serializerUrl\" target=\"_blank\">RSS</a></div>
 	<ul>
-	<li><input id=\"modifier\" class=\"categories\" type=\"checkbox\" name=\"category\" value=\"citation\"";
-	if ($params["modifier"] && array_search("citation", $params["modifier"]) !== FALSE) print " checked=\"checked\"";
-	print " /> <a href=\"$mainFeed/?type=post&filter0=modifier&value0=citation\">Citations</a></li>
-  <li><input id=\"modifier\" class=\"categories\" type=\"checkbox\" name=\"category\" value=\"editorsPicks\"";
-	if ($params["modifier"] && array_search("editorsPicks", $params["modifier"]) !== FALSE) print " checked=\"checked\"";
-	print " /> <a href=\"$mainFeed/?type=post&filter0=modifier&value0=editorsPicks\">Editors' Picks</a></li>
+	<li><input id=\"filter\" class=\"categories\" type=\"checkbox\" name=\"category\" value=\"has-citation\"";
+	if ($checkCitation) print " checked=\"checked\"";
+	print " /> <a href=\"$mainFeed/?type=post&filter0=has-citation&value0=true\">Citations</a></li>
+  <li><input id=\"filter\" class=\"categories\" type=\"checkbox\" name=\"category\" value=\"recommender-status\"";
+	if ($checkEditorsPicks) print " checked=\"checked\"";
+	print " /> <a href=\"$mainFeed/?type=post&filter0=recommender-status&value0=editor\">Editors' Picks</a></li>
 	<br />";
 	
 	$topicList = getTopicList (1, $db);
 	while ($row = mysql_fetch_array($topicList)) {
 		$topicName = $row["TOPIC_NAME"];
   	print "<li><input id=\"topic\" class=\"categories\" type=\"checkbox\" name=\"category\" value=\"$topicName\"";
-		if ($params["topic"] && array_search("$topicName", $params["topic"]) !== FALSE) print " checked=\"checked\"";
-		print " /> <a href=\"$mainFeed/?type=post&filter0=topic&value0=".urlencode($topicName)."\">$topicName</a></li>";
+		if ($topics && array_search("$topicName", $topics) !== FALSE) print " checked=\"checked\"";
+		print " /> <a href=\"$mainFeed/?type=post&filter0=blog&modifier0=topic&value0=".urlencode($topicName)."\">$topicName</a></li>";
 	}
 	
 	print "</ul>
-	<div id=\"center-text\"><a id=\"filter-posts\" class=\"button-small-red\" href=\"$mainFeed\">Posts</a><a id=\"filter-blogs\" class=\"button-small-red\" href=\"$blogsUrl\">Blogs</a><a id=\"filter-rss\" class=\"button-small-yellow\" href=\"$serializerUrl\" target=\"_blank\">RSS</a></div>
+	<div id=\"filter-buttons\" class=\"ss-div-2 center-text\" style=\"display: none;\"><a id=\"filter-posts\" class=\"button-small-red\" href=\"$mainFeed\">Posts</a><a id=\"filter-blogs\" class=\"button-small-red\" href=\"$blogList\">Blogs</a><a id=\"filter-rss\" class=\"button-small-yellow\" href=\"$serializerUrl\" target=\"_blank\">RSS</a></div>
 	</div>";
 	echo $after_widget;
 }

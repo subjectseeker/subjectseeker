@@ -153,14 +153,14 @@ function adminBlogs() {
 				<br />";
 				
 			if ($step != NULL) {
-				$blogId = stripslashes($_REQUEST["blogId"]);
-				$blogname = stripslashes($_REQUEST["blogname"]);
-				$blogurl = stripslashes($_REQUEST["blogurl"]);
-				$blogsyndicationuri = stripslashes($_REQUEST["blogsyndicationuri"]);
-				$blogdescription = stripslashes($_REQUEST["blogdescription"]);
-				$topic1 = stripslashes($_REQUEST["topic1"]);
-				$topic2 = stripslashes($_REQUEST["topic2"]);
-				$blogStatus = stripslashes($_REQUEST["blogstatus"]);
+				$blogId = $_REQUEST["blogId"];
+				$blogname = $_REQUEST["blogname"];
+				$blogurl = $_REQUEST["blogurl"];
+				$blogsyndicationuri = $_REQUEST["blogsyndicationuri"];
+				$blogdescription = $_REQUEST["blogdescription"];
+				$topic1 = $_REQUEST["topic1"];
+				$topic2 = $_REQUEST["topic2"];
+				$blogStatus = $_REQUEST["blogstatus"];
 				$crawl = $_REQUEST["crawl"];
 				$oldBlogName = getBlogName($blogId, $db);
 				$result = checkBlogData($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
@@ -177,13 +177,13 @@ function adminBlogs() {
 										
 						if ($blogStatus == 2 || $blogStatus == 4) {
 							$contacts = getBlogContacts($blogId, $db);
-							print "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> Blog $oldBlogName (id $blogId) REJECTED (email contact(s):";
+							print "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> Blog $oldBlogName (ID $blogId) REJECTED (email contact(s):";
 							foreach ($contacts as $contact) {
 								print " <a href=\"mailto:$contact\">$contact</a>";
 							}
 							print ")</div>\n";
 						}
-						print "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> $blogname (id $blogId) was updated.</div>";  
+						print "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> $blogname (ID $blogId) was updated.</div>";  
 				}
 				if ($result != NULL && $step == 'edit') {
 					global $adminBlogs;
@@ -191,10 +191,10 @@ function adminBlogs() {
 					print "<form class=\"ss-div\" method=\"POST\">
 					<input type=\"hidden\" name=\"step\" value=\"confirmed\" />
 					<input type=\"hidden\" name=\"blogId\" value=\"$blogId\" />
-					<input type=\"hidden\" name=\"blogname\" value=\"$blogname\" />
-					<input type=\"hidden\" name=\"blogurl\" value=\"$blogurl\" />
-					<input type=\"hidden\" name=\"blogsyndicationuri\" value=\"$blogsyndicationuri\" />
-					<input type=\"hidden\" name=\"blogdescription\" value=\"$blogdescription\" />
+					<input type=\"hidden\" name=\"blogname\" value=\"".htmlspecialchars($blogname, ENT_QUOTES)."\" />
+					<input type=\"hidden\" name=\"blogurl\" value=\"".htmlspecialchars($blogurl, ENT_QUOTES)."\" />
+					<input type=\"hidden\" name=\"blogsyndicationuri\" value=\"".htmlspecialchars($blogsyndicationuri, ENT_QUOTES)."\" />
+					<input type=\"hidden\" name=\"blogdescription\" value=\"".htmlspecialchars($blogdescription, ENT_QUOTES)."\" />
 					<input type=\"hidden\" name=\"topic1\" value=\"$topic1\" />
 					<input type=\"hidden\" name=\"topic2\" value=\"$topic2\" />
 					<input type=\"hidden\" name=\"blogstatus\" value=\"$blogStatus\" />
@@ -213,10 +213,10 @@ function adminBlogs() {
 				print "<hr />";
 				foreach ($blogList as $blog) {
 					$blogId = $blog["id"];
-					$blogName = $blog["name"];
-					$blogUri = $blog["uri"];
-					$blogDescription = $blog["blogdescription"];
-					$blogSyndicationUri = $blog["syndicationuri"];
+					$blogName = htmlspecialchars($blog["name"]);
+					$blogUri = htmlspecialchars($blog["uri"]);
+					$blogDescription = htmlspecialchars($blog["blogdescription"]);
+					$blogSyndicationUri = htmlspecialchars($blog["syndicationuri"]);
 					$blogAddedTime = $blog["addedtime"];
 					$blogCrawledTime = $blog["crawledtime"];
 					$blogStatusId = $blog["status"];

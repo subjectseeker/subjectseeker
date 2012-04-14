@@ -60,14 +60,54 @@ while ($row = mysql_fetch_array($results)) {
 	array_push($posts, $info);
 }
 
+foreach ($links as $link) {
+	$ch = curl_init(); // initialize curl handle
+	curl_setopt($ch, CURLOPT_URL, $link); // set url
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return into a variable
+	curl_setopt($ch, CURLOPT_HEADER, 0); // do not include the header
+	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // allow redirects
+	curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
+	$html = curl_exec($ch); // Execute curl
+	curl_close($ch); // Close the connection
+	
+	$doc = new DOMDocument();
+	@$doc->loadHTML($html);
+	$xml = simplexml_import_dom($doc);
+	
+	$urlData = $xml->xpath('//link/@href');
+	foreach ($urlData as $link) {
+		$urls[] = (string)$link->href;
+	}
+}
+
+$db = ssDbConnect();
+
+$firstUrl = array_shift($urls);
+
+$sql = "SELECT BLOG_POST_ID, BLOG_POST_URI FROM BLOG_POST WHERE BLOG_POST_URI='$firstUrl'";
+foreach ($urls as $value) {
+	$sql .= " OR BLOG_POST_URI = '$value'";
+}
+$sql .= " ORDER BY BLOG_POST_INGEST_DATE_TIME DESC LIMIT 400";
+$results = mysql_query($sql, $db);
+
+while ($row = mysql_fetch_array($results)) {
+	$info["url"] = $row["BLOG_POST_URI"];
+	$info["id"] = $row["BLOG_POST_ID"];
+	array_push($posts, $info);
+}
+
 // Scan common posts for citations
 foreach ($posts as $post) {
   if (! citedPost($post["id"], $db)) {
-	$citations = checkCitations ($post["url"], $post["id"], $db);
-	foreach ($citations as $citation) {
-   	print "Storing citation for post id=" . $post["id"] . " url=" . $post["url"] . " citation=$citation\n";
-		storeCitation ($citation, $post["id"], $db);
-	}
+		$citations = checkCitations ($post["url"], $post["id"], $db);
+		foreach ($citations as $citation) {
+			$citationData = parseCitation($citation);
+			$articleId = storeArticle ($citationData, $db);
+			$generatedCitation = generateCitation($citationData);
+			print "Storing citation for post id=" . $post["id"] . " url=" . $post["url"] . " citation=$generatedCitation\n";
+			storeCitation ($generatedCitation, $post["id"], $articleId, $db);
+		}
   } else {
     print "Skipping already cited post " . $post["id"] . "\n";
   }

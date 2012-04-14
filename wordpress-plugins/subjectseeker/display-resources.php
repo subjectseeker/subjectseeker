@@ -65,57 +65,63 @@ function get_ssDisplayResources($settings = array()) {
  * Non-widget functions
  */
 
-function doDisplayResources()
-{
+function doDisplayResources() {
+	
+	$db = ssDbConnect();
+	
+	$queryList = httpParamsToSearchQuery($parsedQuery);
+	$settings = httpParamsToExtraQuery($parsedQuery);
+	$errormsgs = array();
+	$settings["type"] = "blog";
+	$blogsData = generateSearchQuery ($queryList, $settings, $errormsgs, $db);
+	
+	if (! empty($errormsgs)) {
+		print "<div id=\"padding-content\">";
+		foreach ($errormsgs as $error) {
+			print "<p>Error: $error</p>";
+		}
+		print "</div>";
+		return;
+	}
 
-  // Params: list of blogs to display
+	$blogs = array();
+	while ($row = mysql_fetch_array($blogsData)) {
+		$blog["id"] = $row["BLOG_ID"];
+		$blog["name"] = $row["BLOG_NAME"];
+		$blog["uri"] = $row["BLOG_URI"];
+		$blog["syndication"] = $row[ "BLOG_SYNDICATION_URI"];
+		$blog["description"] = $row[ "BLOG_DESCRIPTION"];
+		array_push($blogs, $blog);
+	}
+	
+	if (empty($blogs)) {
+		print "<div id=\"padding-content\">No results found for your search parameters.</div>";
+	}
+	
+	else {
+		print "<hr />";
+		foreach ($blogs as $item) {
+			
+			if (! $item["description"]) {
+				$item["description"] = "No summary available for this blog.";
+			}
+			
+			print "<div class=\"ss-entry-wrapper\">
+			<a class=\"ss-postTitle\" href=\"".$item["uri"]."\">".$item["name"]."</a> [ <a href=\"".$item["syndication"]."\">Syndication</a> ] [ <a href=\"/claimblog/?blogId=".$item["id"]."\">Claim this blog</a> ]
+			<div class=\"ss-div-button\"><div class=\"arrow-down\" title=\"Show Extra Info\"></div></div>
+			<div class=\"ss-slide-wrapper\" style=\"display: none; \">
+				<div id=\"padding-content\">
+					".$item["description"]."
+				</div>
+			</div>
+			</div>
+			<hr />";
+		}
+	}
+	
+	global $blogList;
+	pageButtons ($blogList);
 
-  // filter1=topic
-  // value1=cdata
-
-  $type = $_REQUEST["type"];
-  if ($type == null || $type === "") {
-    $type = "blog";
-  }
-  $params = parseHttpParams();
-  $resourceXml = searchResources ($type, $params);
-
-  $topics = $params["topic"];
-  $topicStr = null;
-  if ($topics != null) {
-    $topicStr = array_shift($topics);
-    foreach ($topics as $topic) {
-      $topicStr .= "|" . $topic;
-    }
-  }
-
-  printResources($resourceXml, $topicStr);
-}
-
-// Pass the requested search parameters on to the search module.
-// Parse the XML response into objects and return it.
-function searchResources($type, $params) {
-
-  // Construct search query
-
-  $curl = getSearchCurl($type, $params);
-  $result = curl_exec($curl);
-  curl_close($curl);
-
-  return $result;
-}
-
-// Input: XML document containing a list of resources.
-// Action: Print the contents of this document in HTML.
-function printResources($xmlResources, $topics) {
-  global $resources2html;
-
-  $params = null;
-
-  if ($topics != null) {
-    $params["topics"] = $topics;
-  }
-  print transformXmlString($xmlResources, $resources2html, $params);
 }
 
 ?>

@@ -169,13 +169,13 @@ function displayBlogForm ($errormsg, $db) {
 }
 
 function doAddBlog ($db) {
-  $blogname = stripslashes($_REQUEST["blogname"]);
-  $blogurl = stripslashes($_REQUEST["blogurl"]);
-  $blogsyndicationuri = stripslashes($_REQUEST["blogsyndicationuri"]);
-  $blogdescription = stripslashes($_REQUEST["blogdescription"]);
-  $topic1 = stripslashes($_REQUEST["topic1"]);
-  $topic2 = stripslashes($_REQUEST["topic2"]);
-  $userIsAuthor = stripslashes($_REQUEST["userIsAuthor"]);
+  $blogname = $_REQUEST["blogname"];
+  $blogurl = $_REQUEST["blogurl"];
+  $blogsyndicationuri = $_REQUEST["blogsyndicationuri"];
+  $blogdescription = $_REQUEST["blogdescription"];
+  $topic1 = $_REQUEST["topic1"];
+  $topic2 = $_REQUEST["topic2"];
+  $userIsAuthor = $_REQUEST["userIsAuthor"];
 
   global $current_user;
   get_currentuserinfo();

@@ -87,8 +87,8 @@ function scanPosts() {
 		if ($order == null) {
 			$order = "descending";
 		}
-		if ($pagesize == null || is_numeric($pagesize) == FALSE) {
-			$pagesize = "30";
+		if ($pagesize == null || is_numeric($pagesize) == FALSE || $pagesize > 100) {
+			$pagesize = "15";
 		}
 		if ($offset == null || is_numeric($offset) == FALSE) {
 			$offset = "0";
@@ -210,11 +210,12 @@ function scanPosts() {
 						removeCitations($postId, NULL, $db);
 						$results = checkCitations ($postUri, $postId, $db);
 						if (is_array($results) == TRUE) {
-							print "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> We found the following citation(s) on $blogName: <a href=\"$postUri\">$postTitle</a></div>";
+							print "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> We found the following citation(s) on $blogName: <a href=\"$postUri\" target=\"_target\">$postTitle</a></div>";
 							foreach ($results as $citation) {
-								storeCitation ($citation, $postId, $db);
+								$articleData = parseCitation($citation);
+								$generatedCitation = storeCitation($articleData, $postId, $db);
 								// Display citation
-								print "<p>$citation</p>";
+								print "<p>$generatedCitation</p>";
 							}
 						}
 						elseif ($results == NULL) {
@@ -249,7 +250,7 @@ function scanPosts() {
 					if ($postTitle == NULL) {
 						$postTitle = $postUri;
 					}
-					print "<div class=\"ss-entry-wrapper alignleft\"><input type=\"checkbox\" class=\"checkbox\" name=\"check-$postId\" value=\"1\" /> <span class=\"ss-postTitle\"><a href=\"$postUri\" target=\"_blank\">$postTitle</a></span>";
+					print "<div class=\"ss-entry-wrapper\"><input type=\"checkbox\" class=\"checkbox\" name=\"check-$postId\" value=\"1\" /> <span class=\"ss-postTitle\"><a href=\"$postUri\" target=\"_blank\">$postTitle</a></span>";
 					print "<div class=\"ss-div-button\">
 					<div class=\"arrow-down\"></div>
 					</div>
@@ -261,7 +262,7 @@ function scanPosts() {
 						print "<div class=\"citation-wrapper\">";
 						foreach ($citations as $citation) {
 							$citationId = $citation["id"];
-							$citationText = utf8_decode($citation["text"]);
+							$citationText = $citation["text"];
 							print "<input type=\"hidden\" name=\"citationId[]\" value=\"$citationId\" />
 							<p>$citationText</p>";
 						}
@@ -271,7 +272,7 @@ function scanPosts() {
 					</div>
 					<div class=\"ss-blogTitle\" style=\"width: 100%\">$blogName</div>";
 					if ($hasCitation == 1 || $editorRecommended) {
-						print "<div class=\"badges\" style=\"bottom: -10px;\">";
+						print "<div class=\"badges\">";
 						if ($hasCitation == 1) print "<span class=\"citation-mark\"></span>";
           	if ($editorRecommended) print "<span class=\"editors-mark\"></span>";
             print "<div id=\"etiquettes\" class=\"ss-slide-wrapper\">";
@@ -289,7 +290,7 @@ function scanPosts() {
           </div>";
 					}
 					print "</div>
-					<hr class=\"alignleft\" style=\"width: 102.6%\" />";
+					<hr />";
 				}
 				print "<div class=\"ss-div\"><input class=\"ss-button\"type=\"submit\" value=\"Scan\" /></div>
 				</form>
