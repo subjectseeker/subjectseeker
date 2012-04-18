@@ -1914,7 +1914,7 @@ function addSimplePieItem ($item, $language, $blogId, $db) {
 
   $summary = smartyTruncate($item->get_description(), 500);
   if (strlen ($summary) != strlen ($item->get_description())) {
-    $summary .= " [...]";
+    $summary .= " […]";
   }
 
   $blogPostStatusId = 0; // active
