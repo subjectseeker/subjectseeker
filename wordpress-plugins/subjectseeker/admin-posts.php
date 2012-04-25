@@ -152,23 +152,27 @@ function AdminPosts() {
 				$postTitle = $_REQUEST["title"];
 				$postSummary = $_REQUEST["summary"];
 				$postStatus = $_REQUEST["status"];
+				$postDate = $_REQUEST["postDate"];
+				$addedDate = $_REQUEST["addedDate"];
 				$check = $_REQUEST["checkCitations"];
-				$result = checkPostData($postId, $postTitle, $postSummary, $postUrl, $userId, $displayname, $db);
+				$result = checkPostData($postId, $postTitle, $postSummary, $postUrl, $userId, $displayname, $postDate, $addedDate, $db);
 				if ($step == 'confirmed' || ($result == NULL && $step == 'edit')) {
 					if ($check == 1) {
 						removeCitations($postId, NULL, $db);
 						$results = checkCitations ($postUrl, $postId, $db);
 						if (is_array($results) == TRUE) {
-							print "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> We found the following citation(s) on $blogName: <a href=\"$postUri\">$postTitle</a></div>";
+							print "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> We found the following citation(s) on $blogName: <a href=\"$postUrl\">$postTitle</a></div>";
 							foreach ($results as $citation) {
 								$articleData = parseCitation($citation);
-								$generatedCitation = storeCitation ($articleData, $postId, $db);
-								// Display citation
-								print "<p>$generatedCitation</p>";
+								if ($articleData) {
+									$generatedCitation = storeCitation ($articleData, $postId, $db);
+									// Display citation
+									print "<p>$generatedCitation</p>";
+								}
 							}
 						}
 						elseif ($results == NULL) {
-							print "<div class=\"ss-div-2\"><span class=\"red-circle\"></span> No citations found on $blogName: <a href=\"$postUri\">$postTitle</a></div>";
+							print "<div class=\"ss-div-2\"><span class=\"red-circle\"></span> No citations found on $blogName: <a href=\"$postUrl\">$postTitle</a></div>";
 						}
 						else {
 							print "<div class=\"ss-div-2\"><span class=\"red-circle\"></span> ERROR: $results</div>";
@@ -176,7 +180,7 @@ function AdminPosts() {
 						print "<hr />";
 					}
 					
-					editPost ($postId, $postTitle, $postUrl, $postSummary, $postStatus, $userId, $displayName, $db);
+					editPost ($postId, $postTitle, $postUrl, $postSummary, $postStatus, $userId, $displayName, $postDate, $addedDate, $db);
 					print "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> $postTitle (ID $postId) was updated.</div>";
 					
 				}
@@ -233,8 +237,8 @@ function AdminPosts() {
 					}
 					print "<input type=\"hidden\" name=\"postId\" value=\"$postId\" />
 					<p>Blog Name: $blogName</p>
-					<p>Post Time: $postDate</p>
-					<p>Added Time: $addedDate</p>
+					<p>Post Time: <input type=\"text\" name=\"postDate\" size=\"40\" value=\"$postDate\"/></p>
+					<p>Added Time: <input type=\"text\" name=\"addedDate\" size=\"40\" value=\"$addedDate\"/></p>
 					<p>Title: <input type=\"text\" name=\"title\" size=\"40\" value=\"$postTitle\"/></p>
 					<p><a href=\"$postUrl\" target=\"_blank\">URL:</a> <input type=\"text\" name=\"url\" size=\"40\" value=\"$postUrl\" /></p>
 					<p>Summary:<br />

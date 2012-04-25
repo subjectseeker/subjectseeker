@@ -1,7 +1,7 @@
 /*==============================================================*/
 /* This file is not intended to be run as part of SubjectSeeker */
 /* installation.  It is only to be run on databases that        */
-/* before Issue 55 was addressed, as a patch to their schema.   */
+/* before Issue 94 was addressed, as a patch to their schema.   */
 /*==============================================================*/
 
 /*==============================================================*/
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS `ARTICLE` (
   `ARTICLE_JOURNAL_VOLUME` varchar(100) collate utf8_unicode_ci default NULL COMMENT 'Volume of the journal where an article was published.',
   `ARTICLE_ISSN` varchar(30) collate utf8_unicode_ci default NULL COMMENT 'ISSN code associated with an article.',
   `ARTICLE_NUMBER` varchar(2083) collate utf8_unicode_ci default NULL COMMENT 'Identifier associated with an article in the journal.',
-  `ARTICLE_PUBLICATION_DATE` year(4) default NULL COMMENT 'Year of publication of an article.',
+  `ARTICLE_PUBLICATION_DATE` varchar(255) default NULL COMMENT 'Year of publication of an article.',
   `ARTICLE_START_PAGE` int(15) default NULL COMMENT 'Start page of an article in the journal.',
   `ARTICLE_END_PAGE` int(15) default NULL COMMENT 'End page of an article in the journal.',
   `ARTICLE_FROM_ORIGINAL_SOURCE` tinyint(1) NOT NULL default '0' COMMENT 'Indicator whether this article data is based on the original source.',

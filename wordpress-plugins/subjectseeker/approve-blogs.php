@@ -102,32 +102,32 @@ function doApproveBlogs() {
 			$topic2 = $blogs["topic2"][$id];
 			$status = $_REQUEST["$blogId-blog"];
 			
-	  $result = checkBlogData ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
-	  $oldBlogName = getBlogName($blogId, $db);
+	  	$result = checkBlogData ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
+	  	$oldBlogName = getBlogName($blogId, $db);
 	  
-	  if ($result == NULL) {
-		   if ($status == 1) {
-			   approveBlog($blogId, $db);
-			   print "<p>Blog $blogname (id $blogId) APPROVED</p>\n";
-			   } 
-			elseif ($status == 2) {
-				rejectBlog($blogId, $db);
-				$contacts = getBlogContacts($blogId, $db);
-				print "<p>Blog $oldBlogName (id $blogId) REJECTED (email contact(s):";
-				foreach ($contacts as $contact) {
-					print " <a href=\"mailto:$contact\">$contact</a>";
+			if ($result == NULL) {
+				if ($status == 1) {
+					approveBlog($blogId, $db);
+					print "<p>Blog $blogname (id $blogId) APPROVED</p>\n";
+				} 
+				elseif ($status == 2) {
+					rejectBlog($blogId, $db);
+					$contacts = getBlogContacts($blogId, $db);
+					print "<p>Blog $oldBlogName (id $blogId) REJECTED (email contact(s):";
+					foreach ($contacts as $contact) {
+						print " <a href=\"mailto:$contact\">$contact</a>";
+						}
+						print ")</p>\n";
+						}
+						print "<p>$blogname (id $blogId) was updated.</p>";  
+				} else {
+					print "<p>$oldBlogName (id $blogId): <ul class=\"ss-error\">$result</ul></p>";
 					}
-					print ")</p>\n";
-					}
-					print "<p>$blogname (id $blogId) was updated.</p>";  
-			} else {
-				print "<p>$oldBlogName (id $blogId): <ul class=\"ss-error\">$result</ul></p>";
 				}
-			}
-			$blogList = getPendingBlogs($db);
-			if ($blogList != null) {
-			return displayEditPendingBlogs ($db);
-			}
+				$blogList = getPendingBlogs($db);
+				if ($blogList != null) {
+				return displayEditPendingBlogs ($db);
+				}
       }
     } else { # not moderator or admin
       print "You are not authorized to view the list of blogs for approval.<br />";

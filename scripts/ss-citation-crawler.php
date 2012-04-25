@@ -102,11 +102,9 @@ foreach ($posts as $post) {
   if (! citedPost($post["id"], $db)) {
 		$citations = checkCitations ($post["url"], $post["id"], $db);
 		foreach ($citations as $citation) {
-			$citationData = parseCitation($citation);
-			$articleId = storeArticle ($citationData, $db);
-			$generatedCitation = generateCitation($citationData);
+			$articleData = parseCitation($citation);
+			$generatedCitation = storeCitation ($articleData, $post["id"], $db);
 			print "Storing citation for post id=" . $post["id"] . " url=" . $post["url"] . " citation=$generatedCitation\n";
-			storeCitation ($generatedCitation, $post["id"], $articleId, $db);
 		}
   } else {
     print "Skipping already cited post " . $post["id"] . "\n";

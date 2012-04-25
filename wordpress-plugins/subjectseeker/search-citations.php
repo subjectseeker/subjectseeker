@@ -144,7 +144,7 @@ function searchCitations() {
 		}
 		print "<div id=\"journal\" class=\"ss-div-2\">
 		<h4>Journal</h4>
-		<textarea name=\"journal\" rows=\"2\" cols=\"65\">".$articleData["rft.jtitle"]."</textarea>
+		<textarea name=\"journal\" rows=\"2\" cols=\"65\">".htmlspecialchars($articleData["rft.jtitle"])."</textarea>
 		</div>
 		<div class=\"ss-div-2\">
 		<h4>Article Url</h4>
@@ -165,6 +165,10 @@ function searchCitations() {
 		<div class=\"ss-div-2\">
 		<h4>First Page</h4>
 		<textarea name=\"spage\" rows=\"1\" cols=\"65\">".$articleData["rft.spage"]."</textarea>
+		</div>
+		<div class=\"ss-div-2\">
+		<h4>Last Page</h4>
+		<textarea name=\"spage\" rows=\"1\" cols=\"65\">".$articleData["rft.epage"]."</textarea>
 		</div>
 		<div class=\"ss-div-2\">
 		<h4>Year of Publication</h4>
@@ -201,6 +205,8 @@ function searchCitations() {
 		<h3>Result</h3>";
 		
 		$articleData["id_type"] = $_REQUEST["idType"];
+		$articleData["id"] = $_REQUEST["id"];
+		$articleData["rft_id"] = $_REQUEST["id"];
 		$articleData["rft.atitle"] = $_REQUEST["title"];
 		$articleData["rft.jtitle"] = $_REQUEST["journal"];
 		$articleData["rft.artnum"] = $_REQUEST["article"];
@@ -209,7 +215,6 @@ function searchCitations() {
 		$articleData["rft.issn"] = $_REQUEST["issn"];
 		$articleData["rft.spage"] = $_REQUEST["spage"];
 		$articleData["rft.date"] = $_REQUEST["date"];
-		$articleData["id"] = $_REQUEST["id"];
 		$articleData["ssInclude"] = $_REQUEST["ssInclude"];
 		$articleData["rbInclude"] = $_REQUEST["rbInclude"];
 		

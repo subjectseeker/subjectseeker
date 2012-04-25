@@ -51,15 +51,13 @@ function crawlBlogs($blog, $db) {
 		$message .= "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> $blogName has been scanned for new posts.</div>";
 	}
 
-	foreach ($feed->get_items() as $item) {
+	foreach ($feed->get_items(0, 50) as $item) {
 		addSimplePieItem($item, $feed->get_language(), $blogId, $db);
-		$item->__destruct(); // Do what PHP should be doing on its own.
-		unset ($item);
+		$item = NULL;
 	}
 	markCrawled($blogId, $db);
 
-	$feed->__destruct(); // Do what PHP should be doing on its own.
-	unset($feed);
+	$feed = NULL;
 
 	return $message;
 }
@@ -128,6 +126,7 @@ function getDownloadCurl($uri) {
 function generateSearchQuery ($queryList, $settings, &$errormsgs, $db) {
 
   global $numResults;
+	// Set all the default values of the search
   $fromList = array();
   $whereList = array();
 	$groupCheck = FALSE;
@@ -154,10 +153,10 @@ function generateSearchQuery ($queryList, $settings, &$errormsgs, $db) {
     $select = "SELECT blog.BLOG_ID, blog.BLOG_NAME,
                 blog.BLOG_URI, blog.BLOG_SYNDICATION_URI, blog.BLOG_STATUS_ID,
                 blog.BLOG_DESCRIPTION, blog.ADDED_DATE_TIME";
-    $order .= "-blog.ADDED_DATE_TIME";
-		$group .= "GROUP BY blog.BLOG_ID";
-    // TODO order by blog with most recent post
+    $order .= "blog.BLOG_NAME ASC";
+		// TODO order by blog with most recent post
     // how to do this? update blog table every time we add a post?
+		$group .= "GROUP BY blog.BLOG_ID";
     $fromList = generateBlogFrom($queryList, $errormsgs);
     $whereList = generateBlogWhere($queryList, $errormsgs);
 
@@ -165,11 +164,12 @@ function generateSearchQuery ($queryList, $settings, &$errormsgs, $db) {
     $order .= "post.BLOG_POST_DATE_TIME DESC";
     $fromList = generatePostFrom($queryList, $errormsgs);
    	$whereList = generatePostWhere($queryList, $groupCheck, $minimumRec, $errormsgs);
+		if ($settings["showAll"] != "true") array_push($whereList, "(post.BLOG_POST_DATE_TIME < NOW())");
 		
-		// Counstruct Group part of query
+		// If min-recommendations filter is active, count the recommendations
 		if ($minimumRec) $count = "HAVING COUNT(rec.BLOG_POST_ID) >= $minimumRec";
 		
-		// Counstruct Group part of query
+		// If there could be duplicated results, group them by ID
 		if ($groupCheck) $group .= "GROUP BY post.BLOG_POST_ID";
 		
 		$select .= "SELECT post.BLOG_POST_ID, post.BLOG_POST_URI, post.BLOG_POST_DATE_TIME, post.BLOG_POST_SUMMARY, post.BLOG_POST_TITLE, post.BLOG_POST_HAS_CITATION, blog.BLOG_ID, blog.BLOG_NAME, blog.BLOG_URI, blog.BLOG_SYNDICATION_URI, author.BLOG_AUTHOR_ACCOUNT_NAME";
@@ -250,6 +250,8 @@ function generateTopicWhere ($queryList, &$errormsgs) {
         $toplevel = "false";
       }
 			array_push($whereList, "topic.TOPIC_TOP_LEVEL_INDICATOR=$toplevel");
+			if ($query->modifier) { array_push ($errormsgs, "Unrecognized modifier: " . $query->modifier);}
+			
     } else {
       array_push ($errormsgs, "Unknown filter: " . $query->name);
       return "";
@@ -273,7 +275,7 @@ function generateBlogFrom ($queryList, &$errormsgs) {
       $fromList["TOPIC t"] = true;
 
     } else if ($query->name === "citation") {
-        array_push ($errormsgs, "Can't search for blogs by citation");
+        // Nothing to do here
 				
     } else if ($query->name === "has-citation") {
       $fromList["BLOG_POST post"] = true;
@@ -287,37 +289,53 @@ function generateBlogFrom ($queryList, &$errormsgs) {
 function generateBlogWhere ($queryList, &$errormsgs) {
 
   $whereList = array();
-
+	
   foreach ($queryList as $query) {
+		
+		// Escape strings that could be included in the SQL query
+		$searchValue = mysql_real_escape_string($query->value);
+		$searchType = mysql_real_escape_string($query->modifier);
+		
     if ($query->name === "topic") {
 			if ($firstTopic === FALSE) $topicsQuery .= " OR ";
-      $topicsQuery .= "t.TOPIC_NAME='" . mysql_escape_string($query->value) . "' AND blog.BLOG_ID=pbt.BLOG_ID AND pbt.TOPIC_ID=t.TOPIC_ID";
+      $topicsQuery .= "t.TOPIC_NAME='$searchValue' AND blog.BLOG_ID=pbt.BLOG_ID AND pbt.TOPIC_ID=t.TOPIC_ID";
 			$firstTopic = FALSE;
+			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 
     } else if ($query->name === "citation") {
       array_push ($errormsgs, "Can't search for blogs by citation");
 
     } else if ($query->name === "has-citation") {
       $hasCitation = "true";
-      if ($query->value === "false") {
+      if ($searchValue === "false") {
         $hasCitation = "false";
       }
       array_push ($whereList, "post.BLOG_POST_HAS_CITATION=$hasCitation AND post.BLOG_ID=blog.BLOG_ID");
+			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: " . $query->modifier);}
 
-    } else if ($query->name == "title") {
-			$searchValue = mysql_escape_string($query->value);
-			if ($query->modifier === "all") { array_push ($whereList, "blog.BLOG_NAME = '$searchValue'"); }
-			else { array_push ($whereList, "blog.BLOG_NAME LIKE '%$searchValue%'"); }
+    } else if ($query->name == "identifier") {
+			if (is_numeric($searchValue)) {
+				array_push ($whereList, "blog.BLOG_ID=$searchValue");
+			}
+			else {
+				array_push ($errormsgs, "Identifier value must be numeric.");
+			}
+			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
+		
+		} else if ($query->name == "title") {
+			if ($searchType === "all") { array_push ($whereList, "blog.BLOG_NAME = '$searchValue'"); }
+			elseif ($searchType === "some" || $searchType == NULL) { array_push ($whereList, "blog.BLOG_NAME LIKE '%$searchValue%'"); }
+			else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
 		} else if ($query->name == "summary") {
-			$searchValue = mysql_escape_string($query->value);
-			if ($query->modifier === "all") { array_push ($whereList, "blog.BLOG_DESCRIPTION = '$searchValue'"); }
-			else { array_push ($whereList, "blog.BLOG_DESCRIPTION LIKE '%$searchValue%'"); }
+			if ($searchType === "all") { array_push ($whereList, "blog.BLOG_DESCRIPTION = '$searchValue'"); }
+			elseif ($searchType === "some" || $searchType == NULL) { array_push ($whereList, "blog.BLOG_DESCRIPTION LIKE '%$searchValue%'"); }
+			else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
 		} else if ($query->name == "url") {
-			$searchValue = mysql_escape_string($query->value);
-			if ($query->modifier === "all") { array_push ($whereList, "blog.BLOG_URI = '$searchValue'"); }
-			else { array_push ($whereList, "blog.BLOG_URI LIKE '%$searchValue%'"); }
+			if ($searchType === "all") { array_push ($whereList, "blog.BLOG_URI = '$searchValue'"); }
+			elseif ($searchType === "some" || $searchType == NULL) { array_push ($whereList, "blog.BLOG_URI LIKE '%$searchValue%'"); }
+			else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
 		} else {
         array_push ($errormsgs, "Unrecognized filter: " . $query->name);
@@ -357,6 +375,13 @@ function generatePostFrom ($queryList, &$errormsgs) {
 				$fromList["ARTICLE_AUTHOR artau"] = true;
 				$fromList["AUTHOR_ARTICLE auart"] = true;
 			}
+		} else if ($query->name === "has-citation") {
+			if ($query->modifier) {
+				$fromList["CITATION citation"] = true;
+				$fromList["POST_CITATION pc"] = true;
+				$fromList["ARTICLE_IDENTIFIER artid"] = true;
+			}
+			
     } else if ($query->name === "topic") {
       $fromList["POST_TOPIC pt"] = true;
       $fromList["TOPIC t"] = true;
@@ -398,26 +423,37 @@ function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs)
 	
 	foreach ($queryList as $query) {
 		
+		// Escape strings that could be included in the SQL query
+		$searchValue = mysql_real_escape_string($query->value);
+		$searchType = mysql_real_escape_string($query->modifier);
+		
 		if ($query->name == "blog") {
-			$searchValue = mysql_escape_string($query->value);
-			if ($query->modifier === "title-some") {  array_push ($whereList, "blog.BLOG_NAME LIKE '%$searchValue%'"); }
-			if ($query->modifier === "title-all") {  array_push ($whereList, "blog.BLOG_NAME = '$searchValue'"); }
-			if ($query->modifier === "identifier") {  array_push ($whereList, "blog.BLOG_ID = $searchValue"); }
-			if ($query->modifier === "topic") {
+			if ($searchType === "title-some") {  array_push ($whereList, "blog.BLOG_NAME LIKE '%$searchValue%'"); }
+			elseif ($searchType === "title-all") {  array_push ($whereList, "blog.BLOG_NAME = '$searchValue'"); }
+			elseif ($searchType === "identifier") {  array_push ($whereList, "blog.BLOG_ID = $searchValue"); }
+			elseif ($searchType === "topic") {
 				if ($blogTopics === TRUE) $blogTopicsQuery .= " OR ";
 				$blogTopicsQuery .= "t.TOPIC_NAME='" . mysql_real_escape_string($searchValue) . "' AND blog.BLOG_ID=pbt.BLOG_ID AND pbt.TOPIC_ID=t.TOPIC_ID";
 				$blogTopics = TRUE;
 			}
+			else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
+		} else if ($query->name === "identifier") {
+			if (is_numeric($searchValue)) {
+				array_push ($whereList, "post.BLOG_POST_ID=$searchValue");
+			}
+			else {
+				array_push ($errormsgs, "Identifier value must be numeric.");
+			}
+			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
+		
 		} else if ($query->name === "topic") {
 			if ($topics == TRUE) $topicsQuery .= " OR ";
-      $topicsQuery .= "t.TOPIC_NAME='" . mysql_real_escape_string($query->value) . "' AND t.TOPIC_ID=pt.TOPIC_ID AND post.BLOG_POST_ID=pt.BLOG_POST_ID";
+      $topicsQuery .= "t.TOPIC_NAME='$searchValue' AND t.TOPIC_ID=pt.TOPIC_ID AND post.BLOG_POST_ID=pt.BLOG_POST_ID";
 			$topics = TRUE;
+			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
     } else if ($query->name === "citation") {
-      $searchValue = mysql_real_escape_string($query->value);
-			$searchType = mysql_real_escape_string($query->modifier);
-			if (! $searchType) $searchType = "id-all";
 			
 			if ($searchType == "author") {
 				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID AND pc.CITATION_ID = citation.CITATION_ID AND auart.ARTICLE_ID = citation.ARTICLE_ID AND auart.ARTICLE_AUTHOR_ID = artau.ARTICLE_AUTHOR_ID AND artau.ARTICLE_AUTHOR_FULL_NAME LIKE '%$searchValue%'");
@@ -428,52 +464,63 @@ function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs)
 			elseif ($searchType == "journal-title") {
 				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID AND pc.CITATION_ID = citation.CITATION_ID AND art.ARTICLE_ID = citation.ARTICLE_ID AND art.ARTICLE_JOURNAL_TITLE LIKE '%$searchValue%'");
 			}
-			else {
+			elseif ($searchType == "id-all" || $searchType == "doi" || $searchType == "pmid" || $searchType == "arxiv" || $searchType == "other" || $searchType == NULL) {
 				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID AND pc.CITATION_ID = citation.CITATION_ID AND artid.ARTICLE_IDENTIFIER_TEXT = '$searchValue' AND citation.ARTICLE_ID = artid.ARTICLE_ID");
-				if ($searchType == "doi" || $searchType == "pmid" || $searchType == "arxiv") {
+				if ($searchType != NULL) {
 					array_push ($whereList, "artid.ARTICLE_IDENTIFIER_TYPE = '$searchType'");
 				}
 			}
+			else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			$groupCheck = TRUE;
 			
     } else if ($query->name === "has-citation") {
-      $hasCitation = "true";
-      if ($query->value === "false") {
-        $hasCitation = "false";
-      }
-			array_push ($whereList, "post.BLOG_POST_HAS_CITATION=1");
-    }
-		else if ($query->name === "recommender-status") {
+      $hasCitation = "1";
+      if ($query->value === "false") $hasCitation = "0";
+			
+			array_push ($whereList, "post.BLOG_POST_HAS_CITATION=$hasCitation");
+			
+			if ($searchType === "doi" || $searchType === "pmid" || $searchType === "arxiv" || $searchType === "other") {
+				$groupCheck = TRUE;
+				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID AND pc.CITATION_ID = citation.CITATION_ID AND citation.ARTICLE_ID = artid.ARTICLE_ID AND artid.ARTICLE_IDENTIFIER_TYPE = '$searchType'");
+			}
+			elseif ($searchType != "all" || $searchType != NULL) {
+				array_push ($errormsgs, "Unrecognized modifier: $searchType");
+			}
+			
+    } else if ($query->name === "recommender-status") {
 			$privilege = "0";
       if ($query->value === "editor") {
         $privilege = "1";
       }
 			array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID AND user.USER_ID = pers.USER_ID AND rec.PERSONA_ID = pers.PERSONA_ID AND user.USER_PRIVILEGE_ID >= $privilege");
 			$groupCheck = TRUE;
+			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
 		} else if ($query->name === "recommended-by") {
-			$displayName = mysql_escape_string($query->value);
-			array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID AND pers.DISPLAY_NAME = '$displayName' AND rec.PERSONA_ID = pers.PERSONA_ID");
+			array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID AND pers.DISPLAY_NAME = '$searchValue' AND rec.PERSONA_ID = pers.PERSONA_ID");
+			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
 		} else if ($query->name == "title") {
-			$searchValue = mysql_escape_string($query->value);
-			if ($query->modifier === "all") { array_push ($whereList, "post.BLOG_POST_TITLE = '$searchValue'"); }
-			else { array_push ($whereList, "post.BLOG_POST_TITLE LIKE '%$searchValue%'"); }
+			if ($searchType === "all") { array_push ($whereList, "post.BLOG_POST_TITLE = '$searchValue'"); }
+			elseif ($searchType === "some" || $searchType == NULL) { array_push ($whereList, "post.BLOG_POST_TITLE LIKE '%$searchValue%'"); }
+			else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
 		} else if ($query->name == "summary") {
-			$searchValue = mysql_escape_string($query->value);
-			if ($query->modifier === "all") { array_push ($whereList, "post.BLOG_POST_SUMMARY = '$searchValue'"); }
-			else { array_push ($whereList, "post.BLOG_POST_SUMMARY LIKE '%$searchValue%'"); }
+			if ($searchType === "all") { array_push ($whereList, "post.BLOG_POST_SUMMARY = '$searchValue'"); }
+			elseif ($searchType === "some" || $searchType == NULL) { array_push ($whereList, "post.BLOG_POST_SUMMARY LIKE '%$searchValue%'"); }
+			else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
 		} else if ($query->name == "url") {
-			$searchValue = mysql_escape_string($query->value);
-			if ($query->modifier === "all") { array_push ($whereList, "post.BLOG_POST_URI = 'searchValue'"); }
-			else { array_push ($whereList, "post.BLOG_POST_URI LIKE '%$searchValue%'"); }
+			if ($searchType === "all") { array_push ($whereList, "post.BLOG_POST_URI = 'searchValue'"); }
+			elseif ($searchType === "some" || $searchType == NULL) { array_push ($whereList, "post.BLOG_POST_URI LIKE '%$searchValue%'"); }
+			else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
 		} else if ($query->name === "min-recommendations") {
 			$minimumRec = (int)$query->value;
 			array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID");
 			$groupCheck = TRUE;
+			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
+			
 		} else if ($query->name === "is-recommended") {
 			if ($query->value === "false") {
 			 array_push ($whereList, "NOT EXISTS (SELECT rec.BLOG_POST_ID FROM RECOMMENDATION rec WHERE post.BLOG_POST_ID = rec.BLOG_POST_ID)");
@@ -482,6 +529,8 @@ function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs)
 				array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID");
 				$groupCheck = TRUE;
 			}
+			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
+			
 		} else {
     	array_push ($errormsgs, "Unrecognized filter: " . $query->name);
     }
@@ -582,8 +631,7 @@ function formatSearchPostResults($resultData, $errormsgs, $db) {
   <updated>$now</updated>
   <rights>No copyright asserted over individual posts; see original
     posts for copyright and/or licensing.</rights>
-  <generator>ScienceSeeker Atom serializer</generator>
-";
+  <generator>ScienceSeeker Atom serializer</generator>";
 
   if (count($errormsgs) > 0) {
     foreach ($errormsgs as $error) {
@@ -630,7 +678,7 @@ function formatSearchPostResults($resultData, $errormsgs, $db) {
 	
 			// Language is optional.
 			$langSQL = "SELECT L.LANGUAGE_IETF_CODE FROM LANGUAGE AS L, BLOG_POST AS P WHERE P.BLOG_POST_ID = $postID AND L.LANGUAGE_ID = P.LANGUAGE_ID";
-	
+			
 			$result = mysql_query( $langSQL, $db );
 			if ( mysql_error() ) {
 				die ( "getPostData: " . mysql_error() );
@@ -671,74 +719,66 @@ function formatSearchPostResults($resultData, $errormsgs, $db) {
 			}
 	
 			// Now start putting it all into Atom
-			$xml .= "  <entry xml:lang=\"" . $postData[ "lang" ] . "\">
-	";
-			$xml .= "    <title type=\"html\">" . $postData[ "title" ] .
-				"</title>
-	";
-			$xml .= "    <id>" . $postData[ "id" ] . "</id>
-	";
-			$xml .= "    <link href=\"" . $postData[ "uri" ] . "\"
-				rel=\"alternate\" />
-	";
-			$xml .= "    <updated>" . $postData[ "date" ] . "</updated>
-	";
-			$xml .= "    <author>
-				<name>" . $postData[ "author" ] . "</name>
-			</author>
-	";
-			$xml .= "    <summary type=\"html\">" . $postData[ "summary" ];
-	
-			// Add citation to summary if available
-			if ($postData["citations"]) {
-				$xml .= sanitize("<div class='ss-div-2'><div class='citation-wrapper'>");
-				foreach ($postData["citations"] as $citation) {
-					$xml .= sanitize("<p>".$citation["text"]."</p>");
-				}
-				$xml .= sanitize('</div></div>');
-			}
-	
-			$xml .= "</summary>\n";
+			$xml .= "  <entry xml:lang=\"" . $postData[ "lang" ] . "\">\n";
+			
+			$xml .= "    <title type=\"html\">" . $postData[ "title" ] . "</title>\n";
+				
+			$xml .= "    <id>" . $postData[ "id" ] . "</id>\n";
+			
+			$xml .= "    <link href=\"" . $postData[ "uri" ] . "\" rel=\"alternate\" />\n";
+				
+			$xml .= "    <updated>" . $postData[ "date" ] . "</updated>\n";
+			
+			$xml .= "    <author>\n";
+			
+			$xml .= "      <name>" . $postData[ "author" ] . "</name>\n";
+			
+			$xml .= "    </author>\n";
+					
+			$xml .= "    <summary type=\"html\">" . $postData[ "summary" ] . "</summary>\n";
 	
 			if ($postData["hasCitation"] ) {
-				$xml .= "    <rdf:Description rdf:ID=\"citations\">CITATION</rdf:Description>\n";
+				$xml .= "    <citations>\n";
+				// Add citation to summary if available
+				if ($postData["citations"]) {
+					foreach ($postData["citations"] as $citation) {
+						$xml .= "      <citation>".htmlspecialchars($citation["text"])."</citation>\n";
+					}
+				}
+				$xml .= "    </citations>\n";
 			}
 	
 			if ($postData["epStatus"]) {
 				$xml .= "    <rdf:Description rdf:ID=\"editorRecommended\">RECOMMENDED</rdf:Description>\n";
 			}
+			
+			$xml .= "    <recommendations>";
 	
-			/*$xml .= "    <recommendations>" . $postData["recCount"] . "</recommendations>\n";
+			//$xml .= "    <recommendations>" . $postData["recCount"] . "</recommendations>\n";
 	
-			$xml .= "    <commentcount>" . $postData["commentCount"] . "</commentcount>\n";*/
+			/*$xml .= "    <commentcount>" . $postData["commentCount"] . "</commentcount>\n";*/
+			
+			$xml .= "    </recommendations>";
 	
 			foreach ( $postData[ "categories" ] as $category ) {
-				$xml .= "    <category term=\"$category\" />
-	";
+				$xml .= "    <category term=\"$category\" />\n";
 			}
 	
-			$xml .= "    <source>
-	";
-			$xml .= "      <title type=\"text\">" . $postData[ "blog_name" ] .
-				"</title>
-	";
-			$xml .= "      <link href=\"" . $postData[ "feed_uri" ] .
-				"\" rel=\"self\" />
-	";
-			$xml .= "      <link href=\"" . $postData[ "blog_uri" ] .
-				"\" rel=\"alternate\"
-					type=\"text/html\" />
-	";
+			$xml .= "    <source>\n";
+			
+			$xml .= "      <title type=\"text\">" . $postData[ "blog_name" ] ."</title>\n";
+			
+			$xml .= "      <link href=\"" . $postData[ "feed_uri" ] . "\" rel=\"self\" />\n";
+			
+			$xml .= "      <link href=\"" . $postData[ "blog_uri" ] ."\" rel=\"alternate\" type=\"text/html\" />\n";
+			
 			if ( $postData[ "blog_categories" ] ) {
 				foreach ($postData["blog_categories"] as $category) {
-					$xml .= "      <category term=\"$category\" />
-	";
+					$xml .= "      <category term=\"$category\" />\n";
 				}
 			}
-			$xml .= "    </source>
-		</entry>
-	";
-	
+			$xml .= "    </source>\n";
+			$xml .= "  </entry>\n";
 		}
 	
 		$xml .= "</feed>\n";
@@ -982,6 +1022,7 @@ function httpParamsToExtraQuery($parsedQuery = NULL) {
 	$results["limit"] = $parsedQuery["n"];
 	$results["offset"] = $parsedQuery["offset"];
 	$results["type"] = $parsedQuery["type"];
+	$results["showAll"] = $parsedQuery["showAll"];
 	
 	return $results;
 }
@@ -1586,7 +1627,6 @@ function getAuthorList ($blogId, $db) {
     }
     unset($item);
   }
-
   unset ($feed);
 
   return $authorList;
@@ -1900,8 +1940,15 @@ function addSimplePieItem ($item, $language, $blogId, $db) {
     $blogAuthorName = $blogAuthor->get_name();
   }
   $blogAuthorId = addBlogAuthor($blogAuthorName, $blogId, $db);
-
-  $timestamp = dateStringToSql($item->get_local_date());
+	
+	$postDate = $item->get_local_date();
+	
+	if ($postDate) {
+  	$timestamp = dateStringToSql($item->get_local_date());
+	}
+	else {
+		$timestamp = date("Y-m-d H:i:s");
+	}
 
   $languageId = "NULL";
   if ($language) {
@@ -1914,7 +1961,7 @@ function addSimplePieItem ($item, $language, $blogId, $db) {
 
   $summary = smartyTruncate($item->get_description(), 500);
   if (strlen ($summary) != strlen ($item->get_description())) {
-    $summary .= " […]";
+    $summary .= " [...]";
   }
 
   $blogPostStatusId = 0; // active
@@ -1938,6 +1985,10 @@ function addSimplePieItem ($item, $language, $blogId, $db) {
       }
     }
   }
+	
+	$item = NULL;
+	$itemURI = NULL;
+	$summary = NULL;
 
   return $dbId;
 }
@@ -2170,10 +2221,14 @@ function addBlog($blogname, $bloguri, $blogsyndicationuri, $blogdescription, $to
   }
 
   $userPriv = getUserPrivilegeStatus($userId, $db);
-  $status = 1; // pending
   if ($userPriv > 0) { // moderator or admin
     $status = 0; // active
   }
+	else {
+		$status = 1; // pending
+		# Send email to site admin with notification that a blog is waiting for approval
+  	$mailSent = mail ($siteApprovalEmail, "[$sitename admin] Pending blog submission", "Pending blog submission at $approveUrl");
+	}
 
   $blogname = mysql_real_escape_string($blogname);
   $blogdescription = mysql_real_escape_string($blogdescription);
@@ -2192,9 +2247,6 @@ function addBlog($blogname, $bloguri, $blogsyndicationuri, $blogdescription, $to
   if ($topic2 != "-1") {
     associateTopic($topic2, $blogId, $db);
   }
-
-# Send email to site admin with notification that a blog is waiting for approval
-  $mailSent = mail ($siteApprovalEmail, "[$sitename admin] Pending blog submission", "Pending blog submission at $approveUrl");
 
   if (! $mailSent) {
 # TODO log this
@@ -2617,7 +2669,7 @@ function editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescr
 // Input: post ID, post title, post summary, post URL, user ID, user display name, DB handle
 // Action: check post metadata
 // Return: error message or null
-function checkPostData($postId, $postTitle, $postSummary, $postUrl, $userId, $displayname, $db) {
+function checkPostData($postId, $postTitle, $postSummary, $postUrl, $userId, $displayname, $postDate, $addedDate, $db) {
 
   // if not logged in as an author or as admin, fail
   if (! canEdit($userId, $blogId, $db)) {
@@ -2648,20 +2700,27 @@ function checkPostData($postId, $postTitle, $postSummary, $postUrl, $userId, $di
   if (! uriFetchable($postUrl)) {
     $result .= ("<li>Unable to fetch the contents of this post at $postUrl. Did you remember to put \"http://\" before the URL when you entered it? If you did, make sure your blog page is actually working, or <a href='/contact-us/'>contact us</a> to ask for help in resolving this problem.</li>");
   }
-
+	
+	if (! preg_match("/\d+-\d+-\d+ \d+:\d+:\d+/", $postDate)) {
+		$result .= "<li>Post publication date is not a valid timestamp.</li>";
+	}
+	
+	if (! preg_match("/\d+-\d+-\d+ \d+:\d+:\d+/", $addedDate)) {
+		$result .= "<li>Added date is not a valid timestamp.</li>";
+	}
   return $result;
 }
 
 // Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, DB handle
 // Action: edit blog metadata
-function editPost ($postId, $postTitle, $postUrl, $postSummary, $postStatus, $userId, $displayName, $db) {
+function editPost ($postId, $postTitle, $postUrl, $postSummary, $postStatus, $userId, $displayName, $postDate, $addedDate, $db) {
 	
 	// escape stuff
   $postTitle = mysql_real_escape_string($postTitle);
   $postSummary = mysql_real_escape_string($postSummary);
   // TODO probably should be escaping the URIs as well
 
-	$sql = "UPDATE BLOG_POST SET BLOG_POST_TITLE='$postTitle', BLOG_POST_URI='$postUrl', BLOG_POST_SUMMARY='$postSummary', BLOG_POST_STATUS_ID=$postStatus WHERE BLOG_POST_ID=$postId";
+	$sql = "UPDATE BLOG_POST SET BLOG_POST_TITLE='$postTitle', BLOG_POST_URI='$postUrl', BLOG_POST_SUMMARY='$postSummary', BLOG_POST_STATUS_ID=$postStatus, BLOG_POST_DATE_TIME='$postDate', BLOG_POST_INGEST_DATE_TIME='$addedDate' WHERE BLOG_POST_ID=$postId";
 	mysql_query($sql, $db);
 
 }
@@ -2970,7 +3029,7 @@ if (($cerror != null & strlen($cerror) > 0)) {
 
 # Input: string which contains all or part of article title (user-supplied)
 # Output: list of strings, each containing COinS-formatted citation which might match the supplied string
-function titleToCitations($title, $metadata2coins) {
+function titleToCitations($title) {
 	global $crossRefUrl;
 	
   $uri = $crossRefUrl . urlencode($title);
@@ -2989,22 +3048,45 @@ function titleToCitations($title, $metadata2coins) {
 		return "ERROR: $cerror\n";
 	}
 	
-	$resultLinks = array();
-	// extract the links to the metadata for matching articles
-	foreach (explode ("\n", $result) as $line) {
-		if (preg_match("/\[xml\]/", $line)) {
-			$uri;
-			if (preg_match("/<a href='(.*)'/", $line, $matches)) {
-				array_push($resultLinks, $matches[1]);
-			}
-		}
-	}
+	
+	$doc = new DOMDocument();
+  @$doc->loadHTML($result);
+	$xml = simplexml_import_dom($doc);
+	
+	// Search for Z3988 class and return all its contents
+	$resultLinks = $xml->xpath("//a[text()='[xml]']/@href");
 
 	$citations = array();
 	foreach ($resultLinks as $uri) {
-		$metadataXml = retrieveCrossRefMetadata ($uri);
-		$metadataCoins = transformXmlString($metadataXml, $metadata2coins);
-		array_push($citations, $metadataCoins);
+		$articleData = NULL;
+		$ch = curl_init();    // initialize curl handle
+		curl_setopt($ch, CURLOPT_URL,$uri); // set url to post to
+		curl_setopt($ch, CURLOPT_FAILONERROR, 1);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
+		curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
+		$result = curl_exec($ch);
+		
+		$doc = new DOMDocument();
+		@$doc->loadHTML($result);
+		$xml = simplexml_import_dom($doc);
+		
+		foreach ($xml->xpath("//person_name") as $author) {
+			$articleData["authors"][] = array("rft.aufirst"=>$author->given_name, "rft.aulast"=>$author->surname);
+		}
+		$articleData["rft.jtitle"] = (string)array_shift($xml->xpath("//journal_metadata/full_title"));
+		$articleData["rft.atitle"] = (string)array_shift($xml->xpath("//journal_article/titles/title"));
+		$articleData["rft.issn"] = (string)array_shift($xml->xpath("//journal_metadata/issn"));
+		$articleData["rft.date"] = (string)array_shift($xml->xpath("//journal_issue/publication_date/year"));
+		$articleData["rft.volume"] = (string)array_shift($xml->xpath("//journal_issue/journal_volume/volume"));
+		$articleData["rft.issue"] = (string)array_shift($xml->xpath("//journal_issue/issue"));
+		$articleData["rft.spage"] = (string)array_shift($xml->xpath("//pages/first_page"));
+		$articleData["rft.epage"] = (string)array_shift($xml->xpath("//pages/last_page"));
+		$articleData["rft.artnum"] = (string)array_shift($xml->xpath("//doi_data/resource[last()]"));
+		$articleData["id"] = (string)array_shift($xml->xpath("(//doi_data/doi)[last()]"));
+		$articleData["id_type"] = "doi";
+		
+		$citations[] = generateCitation ($articleData);
  }
  return $citations;
 }
@@ -3178,11 +3260,12 @@ function parseCitation ($citation) {
 	$dom = new DOMDocument();
 	@$dom->loadHTML($citation);
 	$xml = simplexml_import_dom($dom);
-	$xpath = $xml->xpath("//*[@class='Z3988']");
+	$xpath = $xml->xpath("//span[@class='Z3988']");
 	if (empty($xpath)) return NULL; 
 	$title = $xpath[0]->attributes()->title;
 	// Split all the different information
 	$result = preg_split("/&/", $title);
+	
 	$i = 0;
 	foreach ($result as $value) {
 		// Split title and value
@@ -3220,15 +3303,17 @@ function parseCitation ($citation) {
 // Output: Formed citation code for use in HTML
 function generateCitation ($articleData) {
 	if (! $articleData["rfr_id"]) $articleData["rfr_id"] = "info:sid/scienceseeker.org";
+	if (! $articleData["id_type"]) $articleData["id_type"] = "other";
+	
+	$supportedKeys = array("rft.atitle", "rft.title", "rft.jtitle", "rft.stitle", "rft.date", "rft.volume", "rft.issue", "rft.spage", "rft.epage", "rft.pages", "rft.artnum", "rft.issn", "rft.eissn", "rft.eissn", "rft.aucorp", "rft.isbn", "rft.coden", "rft.sici", "rft.genre", "rft.chron", "rft.ssn", "rft.quarter", "rft.part", "rft.auinit", "rft.auinit1", "rft.auinitm", "rft.auinitsuffix", "rfr_id");
 	
 	$citation = "<span class=\"Z3988\" title=\"ctx_ver=Z39.88-2004&amp;rft_val_fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Ajournal";
-	$supportedKeys = array("rft.atitle", "rft.title", "rft.jtitle", "rft.stitle", "rft.date", "rft.volume", "rft.issue", "rft.spage", "rft.epage", "rft.pages", "rft.artnum", "rft.issn", "rft.eissn", "rft.eissn", "rft.aucorp", "rft.isbn", "rft.coden", "rft.sici", "rft.genre", "rft.chron", "rft.ssn", "rft.quarter", "rft.part", "rft.auinit", "rft.auinit1", "rft.auinitm", "rft.auinitsuffix", "rfr_id");
 	
 	foreach ($articleData as $key => $item) {
 		if (in_array($key, $supportedKeys)) {
 			$citation .= "&amp;$key=".urlencode($item);
 		}
-		elseif ($key == "rft_id") {
+		elseif ($key == "id") {
 			$citation .= "&amp;rft_id=".urlencode("info:".$articleData["id_type"]."/".$articleData["id"]);
 		}
 		$keyName = str_replace(array("_","."), "", $key);
@@ -3244,9 +3329,9 @@ function generateCitation ($articleData) {
 				$builtFirstName = "";
 				$citation .= "&amp;rft.au=".urlencode("$lastName $firstName")."&amp;rft.aulast=".urlencode($lastName)."&amp;rft.aufirst=".urlencode($firstName);
 				
-				$matchResult = preg_split("/[\.\,\s-]+/", $firstName);
-				foreach ($matchResult as $item) {
-				 $builtFirstName .= mb_substr($item, 0, 1, 'UTF-8').".";
+				preg_match_all("/[^\.\,\s-]+/", $firstName, $matchResult);
+				foreach ($matchResult[0] as $item) {
+				 $builtFirstName .= strtoupper(mb_substr($item, 0, 1, 'UTF-8').".");
 				}
 				$builtAuthors .= "$lastName, $builtFirstName";
 				if ($n == ($i-2)) {
@@ -3303,27 +3388,27 @@ function generateCitation ($articleData) {
 		}
 		$pages .= "$rftepage.";
 	}
+	
 	if ($idtype == "doi") {
 		$type = "DOI:";
-		$url = "http://dx.doi.org/$id";
+		$url = "<a rev=\"review\" href=\"http://dx.doi.org/".urlencode($id)."\">$id</a>";
 	}
 	elseif ($idtype == "arxiv") {
 		$type = "arXiv:";
-		$url = "http://arxiv.org/abs/$id";
+		$url = "<a rev=\"review\" href=\"http://arxiv.org/abs/".urlencode($id)."\">$id</a>";
 	}
 	elseif ($idtype == "pmid") {
 		$type = "PMID:";
-		$url = "http://www.ncbi.nlm.nih.gov/pubmed/$id";
+		$url = "<a rev=\"review\" href=\"http://www.ncbi.nlm.nih.gov/pubmed/".urlencode($id)."\">$id</a>";
 	}
 	elseif ($id || $rftartnum) {
 		$type = "Other:";
-		if ($rftartnum) $url = "$rftartnum";
+		if (! $id) $id = "Link";
+		if ($rftartnum) $url = "<a rev=\"review\" href=\"$rftartnum\">$id</a>";
 		else $url = $id;
-		
-		if (!$id) $id = "Link";
 	}
 	
-	$citation .= "$builtAuthors $date $title <span style=\"font-style:italic;\">$journal $rftvolume</span> $issue $pages $type <a rev=\"review\" href=\"$url\">$id</a></span>";
+	$citation .= "$builtAuthors $date $title <span style=\"font-style:italic;\">$journal $rftvolume</span> $issue $pages $type $url</span>";
 	
 	return $citation;
 }
@@ -3396,52 +3481,35 @@ function verifyClaim($blogId, $userId, $blogUri, $blogSyndicationUri, $db) {
   if ($claimToken == null) {
     return "no-claim";
   }
-
-  // Verify that the token exists on the actual page
-  // (this could be insecure if a blog displays recent comments on its main page, or if the URL given points to a specific post which displays comments)
-  $ch = curl_init();    // initialize curl handle
-  curl_setopt($ch, CURLOPT_URL, $blogUri); // set url to post to
-  curl_setopt($ch, CURLOPT_FAILONERROR, 1);
-  curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
-  curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
-  curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 4s
-  $result = curl_exec($ch);
-  $cerror = curl_error($ch);
-
-  // Error fetching page -> unverified
-  if (($cerror != null & strlen($cerror) > 0) || strlen($result) == 0) {
-    return "unverified";
-  }
-
-  // Token not on page -> unverified
-  //if (strpos($result, $claimToken) == FALSE) {
-    //return "unverified";
-  //}
-
-  // Verify that the token exists in the syndication feed
-  $feed = getSimplePie($blogSyndicationUri);
-  $feed->set_cache_duration(0);
-  $feed->init();
-
-  foreach ($feed->get_items() as $item) {
+	
+	// Verify that the token exists in the syndication feed
+  foreach ($feed->get_items(0, 5) as $item) {
     $blogContent = $item->get_content();
     $pos = strpos($blogContent, $claimToken);
     if (strcmp("", $pos) != 0 && $pos >= 0) {
       return "verified";
     }
+		// If not in this entry of the syndication feed, go to the post and check the HTML code
+		else {
+			$ch = curl_init();    // initialize curl handle
+			curl_setopt($ch, CURLOPT_URL, $item->get_permalink()); // set url to post to
+			curl_setopt($ch, CURLOPT_FAILONERROR, 1);
+			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
+			curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 4s
+			$result = curl_exec($ch);
+			$cerror = curl_error($ch);
+
+			// Error fetching page -> unverified
+			if (($cerror != null & strlen($cerror) > 0) || strlen($result) == 0) {
+				return "unverified";
+			}
+			
+			if (strpos($result, $claimToken) == TRUE) {
+				return "verified";
+			}
+		}
   }
-
-  // DELETEME
-  // We no longer check meta tags; annoying to ask user to do both, and not secure to rely entirely on meta tags (must check the syndication feed!)
-
-  // // If it wasn't in feed content, also check meta tags
-  // $blogUri = getBlogUri($blogId, $db);
-  // $metas = get_meta_tags($blogUri);
-  // foreach ($metas as $meta) {
-  //   if ($meta === $claimToken) {
-  //     return "verified";
-  //   }
-  // }
 
   return "unverified";
 
@@ -3537,9 +3605,9 @@ function displayBlogClaimToken($claimToken, $blogId, $displayName, $blogUri, $bl
     $blogSyndicationUri = getBlogSyndicationUri($blogId, $db);
   }
 
-  print "<p>To claim this blog ($blogName), we request that you demonstrate that you are able to write to it. To do this, please post the below automatically generated token on your blog. You can do this in a blog post, which you may delete after the claim process is complete. You may simply add the token at any point in a post. Alternately, we provide some sample HTML code which will make the token invisible to your blog readers.</p>\n";
+  print "<p>To claim this blog ($blogName), we need to verify that you actually are actually an author of this blog. Please place the following HTML code in the <span class=\"ss-bold\">most recent</span> post on your blog. It will be invisible to readers, and you can remove it once your blog has been verified by our system.</p>\n";
   print "<p><b>Claim token:</b> $claimToken</p>\n";
-  print "<p><b>Sample HTML to include:</b> &lt;p&gt;&lt;span style=\"display:none\"&gt;$claimToken&lt;/span&gt;&lt;/p&gt;\n"; 
+  print "<p><b>HTML code to include:</b> &lt;p&gt;&lt;span style=\"display:none\"&gt;$claimToken&lt;/span&gt;&lt;/p&gt;\n"; 
   print "<p>Once the token is displayed on your blog, in a post or in a meta tag in the header, <a href='javaScript:document.doVerifyForm.submit()'>continue to the next step.</a>";
   print "<form method='POST' name='doVerifyForm'>\n<input type='hidden' name='step' value='verify' />\n";
   print "<input type='hidden' name='blogId' value='$blogId' />\n";
