@@ -43,8 +43,8 @@ CREATE TABLE IF NOT EXISTS `ARTICLE` (
   `ARTICLE_ISSN` varchar(30) collate utf8_unicode_ci default NULL COMMENT 'ISSN code associated with an article.',
   `ARTICLE_NUMBER` varchar(2083) collate utf8_unicode_ci default NULL COMMENT 'Identifier associated with an article in the journal.',
   `ARTICLE_PUBLICATION_DATE` varchar(255) default NULL COMMENT 'Year of publication of an article.',
-  `ARTICLE_START_PAGE` int(15) default NULL COMMENT 'Start page of an article in the journal.',
-  `ARTICLE_END_PAGE` int(15) default NULL COMMENT 'End page of an article in the journal.',
+  `ARTICLE_START_PAGE` varchar(30) default NULL COMMENT 'Start page of an article in the journal.',
+  `ARTICLE_END_PAGE` varchar(30) default NULL COMMENT 'End page of an article in the journal.',
   `ARTICLE_FROM_ORIGINAL_SOURCE` tinyint(1) NOT NULL default '0' COMMENT 'Indicator whether this article data is based on the original source.',
   PRIMARY KEY  (`ARTICLE_ID`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Peer-reviewed articles.';

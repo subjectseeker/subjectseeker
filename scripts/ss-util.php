@@ -306,12 +306,18 @@ function generateBlogWhere ($queryList, &$errormsgs) {
       array_push ($errormsgs, "Can't search for blogs by citation");
 
     } else if ($query->name === "has-citation") {
-      $hasCitation = "true";
+      $hasCitation = "1";
       if ($searchValue === "false") {
-        $hasCitation = "false";
+        $hasCitation = "0";
       }
-      array_push ($whereList, "post.BLOG_POST_HAS_CITATION=$hasCitation AND post.BLOG_ID=blog.BLOG_ID");
-			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: " . $query->modifier);}
+			array_push ($whereList, "post.BLOG_POST_HAS_CITATION=$hasCitation AND post.BLOG_ID=blog.BLOG_ID");
+			
+			if ($searchType === "doi" || $searchType === "pmid" || $searchType === "arxiv" || $searchType === "other") {
+				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID AND pc.CITATION_ID = citation.CITATION_ID AND citation.ARTICLE_ID = artid.ARTICLE_ID AND artid.ARTICLE_IDENTIFIER_TYPE = '$searchType'");
+			}
+			elseif ($searchType != "all" && $searchType != NULL && $searchType != "") {
+				array_push ($errormsgs, "Unrecognized modifier: $searchType");
+			}
 
     } else if ($query->name == "identifier") {
 			if (is_numeric($searchValue)) {
@@ -483,7 +489,7 @@ function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs)
 				$groupCheck = TRUE;
 				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID AND pc.CITATION_ID = citation.CITATION_ID AND citation.ARTICLE_ID = artid.ARTICLE_ID AND artid.ARTICLE_IDENTIFIER_TYPE = '$searchType'");
 			}
-			elseif ($searchType != "all" || $searchType != NULL) {
+			elseif ($searchType != "all" && $searchType != NULL && $searchType != "") {
 				array_push ($errormsgs, "Unrecognized modifier: $searchType");
 			}
 			
