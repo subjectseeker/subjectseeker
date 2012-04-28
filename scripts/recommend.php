@@ -27,11 +27,11 @@ if ($personaId != NULL) {
 		mysql_query($sql, $db);
 	}
 	// Get post recommendation status
-	$recStatus = getRecommendationStatus ($postId, $personaId, $db);
+	$recStatus = getRecommendationsCount($postId, NULL, $personaId, NULL, $db);
 }
 
 // Get number of recommendations for this post
-$count = getRecommendationsCount($postId, NULL, $db);
+$recCount = getRecommendationsCount($postId, NULL, NULL, NULL, $db);
 
 // Update recommendation button.
 if ($recStatus == TRUE) {

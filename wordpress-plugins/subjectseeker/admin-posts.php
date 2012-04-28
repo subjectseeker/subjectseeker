@@ -210,17 +210,17 @@ function AdminPosts() {
 				print "<hr />";
 				foreach ($postList as $post) {
 					$postId = $post["postId"];
-					$postTitle = htmlspecialchars($post["title"]);
-					$postSummary = htmlspecialchars($post["content"]);
+					$postTitle = htmlspecialchars_decode($post["title"]);
+					$postSummary = $post["content"];
 					$postAuthorId = $post["authorId"];
 					$postDate = $post["postDate"];
 					$addedDate = $post["addedDate"];
 					$postLanguage = $post["language"];
-					$postUrl = htmlspecialchars($post["uri"]);
+					$postUrl = $post["uri"];
 					$postStatusId = $post["status"];
 					$blogId = $post["blogId"];
 					$postStatus = ucwords(blogPostStatusIdToName ($postStatusId, $db));
-					$blogName = htmlspecialchars(getBlogName($blogId, $db));
+					$blogName = getBlogName($blogId, $db);
 					print "<div class=\"ss-entry-wrapper\">
 					<div class=\"post-header\">
 					$postId | <a href=\"$postUrl\" target=\"_blank\">$postTitle</a> | $blogName | $postStatus
@@ -239,8 +239,8 @@ function AdminPosts() {
 					<p>Blog Name: $blogName</p>
 					<p>Post Time: <input type=\"text\" name=\"postDate\" size=\"40\" value=\"$postDate\"/></p>
 					<p>Added Time: <input type=\"text\" name=\"addedDate\" size=\"40\" value=\"$addedDate\"/></p>
-					<p>Title: <input type=\"text\" name=\"title\" size=\"40\" value=\"$postTitle\"/></p>
-					<p><a href=\"$postUrl\" target=\"_blank\">URL:</a> <input type=\"text\" name=\"url\" size=\"40\" value=\"$postUrl\" /></p>
+					<p>Title: <input type=\"text\" name=\"title\" size=\"40\" value=\"".htmlspecialchars($postTitle, ENT_QUOTES)."\"/></p>
+					<p><a href=\"$postUrl\" target=\"_blank\">URL:</a> <input type=\"text\" name=\"url\" size=\"40\" value=\"".htmlspecialchars($postUrl, ENT_QUOTES, "UTF-8")."\" /></p>
 					<p>Summary:<br />
 					<textarea name=\"summary\" rows=\"5\" cols=\"55\">$postSummary</textarea></p>";
 					print "<p>Status: <select name='status'>";

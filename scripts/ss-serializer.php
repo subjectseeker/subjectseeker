@@ -17,6 +17,7 @@ $db = ssDbConnect();
 $queryList = httpParamsToSearchQuery();
 $settings = httpParamsToExtraQuery();
 $settings["type"] = "post";
+$settings["citation-in-summary"] = "true";
 // TODO: parse an XML input file as well
 // $params = parseSearchParams(file_get_contents('php://input'));
 

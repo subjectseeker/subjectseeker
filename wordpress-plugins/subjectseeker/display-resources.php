@@ -73,6 +73,7 @@ function doDisplayResources() {
 	$settings = httpParamsToExtraQuery($parsedQuery);
 	$errormsgs = array();
 	$settings["type"] = "blog";
+	$settings["limit"] = "500";
 	$blogsData = generateSearchQuery ($queryList, $settings, $errormsgs, $db);
 	
 	if (! empty($errormsgs)) {

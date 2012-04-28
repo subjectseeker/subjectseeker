@@ -102,14 +102,14 @@ function displayFeed($query, $minimal) {
 			$postDate = date("m-d-y", strtotime($row["BLOG_POST_DATE_TIME"]));
 			if (! isset($posts["$postDate"])) $posts["$postDate"] = array();
 			$post["id"] = $row["BLOG_POST_ID"];
-			$post["author"] = insanitize($row["BLOG_AUTHOR_ACCOUNT_NAME"]);
-			$post["blog_name"] = insanitize($row[ "BLOG_NAME"]);
-			$post["blog_uri"] = insanitize($row[ "BLOG_URI"]);
+			$post["author"] = $row["BLOG_AUTHOR_ACCOUNT_NAME"];
+			$post["blog_name"] = $row[ "BLOG_NAME"];
+			$post["blog_uri"] = $row[ "BLOG_URI"];
 			$post["date"] = strtotime($row["BLOG_POST_DATE_TIME"]);
-			$post["feed_uri"] = insanitize($row[ "BLOG_SYNDICATION_URI"]);
-			$post["summary"] = insanitize(strip_tags($row[ "BLOG_POST_SUMMARY"], '<br>'));
-			$post["title"] = insanitize($row[ "BLOG_POST_TITLE"]);
-			$post["uri"] = insanitize($row[ "BLOG_POST_URI"]);
+			$post["feed_uri"] = $row[ "BLOG_SYNDICATION_URI"];
+			$post["summary"] = $row[ "BLOG_POST_SUMMARY"];
+			$post["title"] = $row[ "BLOG_POST_TITLE"];
+			$post["uri"] = $row[ "BLOG_POST_URI"];
 			$post["hasCitation"] = $row["BLOG_POST_HAS_CITATION"];
 			array_push($posts["$postDate"], $post);
 		}
@@ -131,7 +131,7 @@ function displayFeed($query, $minimal) {
 					$postDate = date("g:i A", $entry["date"]);
 					$blogFeed = $entry[ "feed_uri" ];
 					$postProfile = $myHost . "/post/" . $postId;
-					$postSummary = html_entity_decode(strip_tags($entry["summary"], '<br>'));
+					$postSummary = strip_tags($entry["summary"], '<br>');
 					$postTitle = $entry[ "title" ];
 					$postUri = $entry[ "uri" ];
 					$postHasCitation = $entry[ "hasCitation" ];
@@ -151,15 +151,15 @@ function displayFeed($query, $minimal) {
 					if ($postHasCitation) $postCitations = postIdToCitation($postId, $db);
 					
 					// Check if user has recommended this post
-					if ($personaId) $userRecStatus = getRecommendationStatus($postId, $personaId, $db);
+					if ($personaId) $userRecStatus = getRecommendationsCount($postId, NULL, $personaId, NULL, $db);
 					
-					$editorsPicksStatus = getEditorsPicksStatus($postId, $db);
+					$editorsPicksStatus = getRecommendationsCount($postId, NULL, NULL, 2, $db);
 					
 					// Get number of recommendations for this post
-					$recCount = getRecommendationsCount($postId, NULL, $db);
+					$recCount = getRecommendationsCount($postId, NULL, NULL, NULL, $db);
 					
 					// Get number of comments for this post
-					$commentCount = getRecommendationsCount($postId, "comments", $db);
+					$commentCount = getRecommendationsCount($postId, "comments", NULL, NULL, $db);
 					
 					print "<div class=\"ss-entry-wrapper\">
 					<div class=\"data-carrier\" id=\"$postProfile\" data-personaId=\"$personaId\">

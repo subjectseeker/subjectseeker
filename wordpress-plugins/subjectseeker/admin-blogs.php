@@ -213,10 +213,10 @@ function adminBlogs() {
 				print "<hr />";
 				foreach ($blogList as $blog) {
 					$blogId = $blog["id"];
-					$blogName = htmlspecialchars($blog["name"]);
-					$blogUri = htmlspecialchars($blog["uri"]);
-					$blogDescription = htmlspecialchars($blog["blogdescription"]);
-					$blogSyndicationUri = htmlspecialchars($blog["syndicationuri"]);
+					$blogName = $blog["name"];
+					$blogUri = $blog["uri"];
+					$blogDescription = $blog["blogdescription"];
+					$blogSyndicationUri = $blog["syndicationuri"];
 					$blogAddedTime = $blog["addedtime"];
 					$blogCrawledTime = $blog["crawledtime"];
 					$blogStatusId = $blog["status"];
@@ -240,9 +240,9 @@ function adminBlogs() {
 					print "<p>Added: $blogAddedTime</p>"; 
 					print "<p>Crawled: $blogCrawledTime</p>";
 					print "<p>*Required field</p>\n";
-					print "<p>*Blog name: <input type=\"text\" name=\"blogname\" size=\"40\" value=\"$blogName\"/></p>\n";
-					print "<p>*<a href=\"$blogUri\" target=\"_blank\">Blog URL:</a> <input type=\"text\" name=\"blogurl\" size=\"40\" value=\"$blogUri\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>";
-					print "<p>*<a href=\"$blogSyndicationUri\" target=\"_blank\">Blog syndication URL:</a> <input type=\"text\" name=\"blogsyndicationuri\" size=\"40\" value=\"$blogSyndicationUri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</p>";
+					print "<p>*Blog name: <input type=\"text\" name=\"blogname\" size=\"40\" value=\"".htmlspecialchars($blogName, ENT_QUOTES)."\"/></p>\n";
+					print "<p>*<a href=\"$blogUri\" target=\"_blank\">Blog URL:</a> <input type=\"text\" name=\"blogurl\" size=\"40\" value=\"".htmlspecialchars($blogUri, ENT_QUOTES)."\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>";
+					print "<p>*<a href=\"$blogSyndicationUri\" target=\"_blank\">Blog syndication URL:</a> <input type=\"text\" name=\"blogsyndicationuri\" size=\"40\" value=\"".htmlspecialchars($blogSyndicationUri, ENT_QUOTES)."\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</p>";
 					print "<p>Blog description:<br /><textarea name=\"blogdescription\" rows=\"5\" cols=\"55\">$blogDescription</textarea></p>\n";
 					print "<p>*Blog topics: <select name='topic1'>\n";
 					print "<option value='-1'>None</option>\n";

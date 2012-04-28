@@ -183,14 +183,14 @@ function generateSearchQuery ($queryList, $settings, &$errormsgs, $db) {
 	$limitNumber = $numResults;
   // Construct LIMIT part of query
   if ( is_numeric($resultsNumber) and ($resultsNumber > 0  and $resultsNumber <= 500) ) {
-     $limitNumber = (string)(int)$resultsNumber;
+  	$limitNumber = (string)(int)$resultsNumber;
   }
   $limit = "LIMIT $limitNumber";
 
   // Construct OFFSET part of query, default to 0.
   $offsetNumber = 0;
   if ( is_numeric($resultsOffset) and ($resultsOffset > 0 ) ) {
-    $offsetNumber = (string)(int)$resultsOffset;
+  	$offsetNumber = (string)(int)$resultsOffset;
   }
   $offset = "OFFSET $offsetNumber";
 
@@ -566,7 +566,7 @@ function dbPublicSearch($queryList, $settings, $db) {
 	}
 
   if ($type === "post") {
-    return (formatSearchPostResults($searchResults, $errormsgs, $db));
+		return (formatSearchPostResults($searchResults, $settings["citation-in-summary"], $errormsgs, $db));
   }
 
   $xml = "<?xml version=\"1.0\" ?>\n";
@@ -609,7 +609,7 @@ function dbPublicSearch($queryList, $settings, $db) {
 
 // Input: post search results from DB, error message array
 // Return: Atom feed
-function formatSearchPostResults($resultData, $errormsgs, $db) {
+function formatSearchPostResults($resultData, $citationsInSummary, $errormsgs, $db) {
 	
   // When are we?
   $now = date( "c" );
@@ -618,18 +618,12 @@ function formatSearchPostResults($resultData, $errormsgs, $db) {
 	$url = parse_url(getURL ());
 	$myHost = $url["scheme"] . "://" . $url["host"];
 	$myURI = $myHost . $_SERVER[ "SCRIPT_NAME" ];
-	
-	global $numResults;
-	if ( isset( $_REQUEST[ "n" ] ) and is_numeric( $_REQUEST[ "n" ] ) and
-       ( $_REQUEST[ "n" ] > 0  and $_REQUEST[ "n" ] <= 500) ) {
-    $numResults = (string)(int)$_REQUEST[ "n" ];
-  }
 
   $xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>
 <feed xmlns=\"http://www.w3.org/2005/Atom\" xml:lang=\"en\"
-      xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">
+      xmlns:ss=\"http://scienceseeker.org/ns/1\">
   <title type=\"text\">ScienceSeeker</title>
-  <subtitle type=\"text\">$numPosts Recent Posts</subtitle>
+  <subtitle type=\"text\">Recent Posts</subtitle>
   <link href=\"$myURI\" rel=\"self\"
     type=\"application/atom+xml\" />
   <link href=\"$myHost\" rel=\"alternate\" type=\"text/html\" />
@@ -637,7 +631,7 @@ function formatSearchPostResults($resultData, $errormsgs, $db) {
   <updated>$now</updated>
   <rights>No copyright asserted over individual posts; see original
     posts for copyright and/or licensing.</rights>
-  <generator>ScienceSeeker Atom serializer</generator>";
+  <generator>ScienceSeeker Atom serializer</generator>\n";
 
   if (count($errormsgs) > 0) {
     foreach ($errormsgs as $error) {
@@ -675,12 +669,11 @@ function formatSearchPostResults($resultData, $errormsgs, $db) {
 				// TODO in original SQL query?
 				$postData["citations"] = postIdToCitation($postID, $db);
 			}
-	
-			$postData["epStatus"] = getEditorsPicksStatus($postID, $db);
-			// Get number of recommendations for this post
-			$postData["recCount"] = getRecommendationsCount($postID, NULL, $db);
-			// Get number of comments for this post
-			$postData["commentCount"] = getRecommendationsCount($postID, "comments", $db);
+			
+			// Get number of recommendations and comments
+			$postData["editorRecCount"] = getRecommendationsCount($postID, NULL, NULL, 1, $db);
+			$postData["userRecCount"] = getRecommendationsCount($postID, NULL, NULL, 0, $db);
+			$postData["commentCount"] = getRecommendationsCount($postID, "comments", NULL, NULL, $db);
 	
 			// Language is optional.
 			$langSQL = "SELECT L.LANGUAGE_IETF_CODE FROM LANGUAGE AS L, BLOG_POST AS P WHERE P.BLOG_POST_ID = $postID AND L.LANGUAGE_ID = P.LANGUAGE_ID";
@@ -741,35 +734,49 @@ function formatSearchPostResults($resultData, $errormsgs, $db) {
 			
 			$xml .= "    </author>\n";
 					
-			$xml .= "    <summary type=\"html\">" . $postData[ "summary" ] . "</summary>\n";
+			$xml .= "    <summary type=\"html\">" . $postData[ "summary" ];
+			
+			if ($citationsInSummary && $postData["citations"]) {
+				$xml .= htmlspecialchars("<br />");
+				foreach ($postData["citations"] as $citation) {
+					$xml .= htmlspecialchars("<br />".$citation["text"]);
+				}
+			}
+			
+			$xml .= "</summary>\n";
 	
 			if ($postData["hasCitation"] ) {
-				$xml .= "    <citations>\n";
-				// Add citation to summary if available
+				$xml .= "    <ss:citations>\n";
+				// Add citations if any
 				if ($postData["citations"]) {
 					foreach ($postData["citations"] as $citation) {
-						$xml .= "      <citation>".htmlspecialchars($citation["text"])."</citation>\n";
+						$articleIdentifiers = articleIdToArticleIdentifier ($citation["articleId"], $db);
+						$xml .= "      <ss:citation>\n        <ss:citationId type=\"scienceseeker\">".$citation["id"]."</ss:citationId>\n";
+						
+							foreach ($articleIdentifiers as $articleIdentifier) {
+								$xml .= "        <ss:citationId type=\"".$articleIdentifier["idType"]."\">".$articleIdentifier["text"]."</ss:citationId>\n";
+							}
+										
+						$xml .= "        <ss:citationText>".htmlspecialchars($citation["text"])."</ss:citationText>\n      </ss:citation>\n";
 					}
 				}
-				$xml .= "    </citations>\n";
-			}
-	
-			if ($postData["epStatus"]) {
-				$xml .= "    <rdf:Description rdf:ID=\"editorRecommended\">RECOMMENDED</rdf:Description>\n";
+				$xml .= "    </ss:citations>\n";
 			}
 			
-			$xml .= "    <recommendations>";
+			$xml .= "    <ss:community>\n";
 	
-			//$xml .= "    <recommendations>" . $postData["recCount"] . "</recommendations>\n";
-	
-			/*$xml .= "    <commentcount>" . $postData["commentCount"] . "</commentcount>\n";*/
+			$xml .= "      <ss:recommendations userlevel=\"user\" count=\"" . $postData["userRecCount"] . "\"/>\n";
 			
-			$xml .= "    </recommendations>";
+			$xml .= "      <ss:recommendations userlevel=\"editor\" count=\"" . $postData["editorRecCount"] . "\"/>\n";
+	
+			$xml .= "      <ss:comments count=\"".$postData["commentCount"]."\" />\n";
+			
+			$xml .= "    </ss:community>\n";
 	
 			foreach ( $postData[ "categories" ] as $category ) {
 				$xml .= "    <category term=\"$category\" />\n";
 			}
-	
+			
 			$xml .= "    <source>\n";
 			
 			$xml .= "      <title type=\"text\">" . $postData[ "blog_name" ] ."</title>\n";
@@ -1029,6 +1036,7 @@ function httpParamsToExtraQuery($parsedQuery = NULL) {
 	$results["offset"] = $parsedQuery["offset"];
 	$results["type"] = $parsedQuery["type"];
 	$results["showAll"] = $parsedQuery["showAll"];
+	$resutts["output"] = $parsedQuery["output"];
 	
 	return $results;
 }
@@ -1254,18 +1262,6 @@ function getBlogCount($db) {
 	return $count; 
 }
 
-// Input: Post ID, type of count, DB handle
-// Output: Number of recommendations or comments for this post
-function getRecommendationsCount($postId, $type, $db) {
-	$sql = "SELECT COUNT(PERSONA_ID) FROM RECOMMENDATION WHERE BLOG_POST_ID = $postId";
-	if ($type == "comments") {
-		$sql .= " AND REC_COMMENT != ''";
-	}
-	$result = mysql_query($sql, $db);
-	$count = mysql_result($result, 0);
-	return $count; 
-}
-
 // Input: DB handle
 // Output: array of arrays; sub-arrays contain ["uri"] and ["id"]
 function getSparseBlogs($db, $limit=1000) {
@@ -1354,19 +1350,30 @@ function markCrawled ($blogId, $db) {
   mysql_query($sql, $db);
 }
 
-// Input: postID, personaID, DB handle
-// Action: get post recommendation status for this user
-function getRecommendationStatus ($postId, $personaId, $db) {
-	$sql = "SELECT BLOG_POST_ID FROM RECOMMENDATION WHERE BLOG_POST_ID = $postId AND PERSONA_ID = $personaId";
-	$results = mysql_query($sql, $db);
-	
-	if (mysql_fetch_array($results) != NULL) {
-		return TRUE;
+// Input: Post ID, Type of count, Persona ID, Privilege ID, DB handle
+// Output: Number of recommendations or comments for this post
+function getRecommendationsCount($postId, $type, $personaId, $userPrivilegeId, $db) {
+	$from = "FROM RECOMMENDATION rec";
+	$where = "WHERE rec.BLOG_POST_ID = $postId";
+	if ($personaId) {
+		// Don't add table if it's going to be added later
+		if (! $userPrivilegeId) $from .= ", PERSONA pers";
+		$where .= " AND pers.PERSONA_ID = $personaId";
 	}
-	
-	return FALSE;
+	if (is_numeric($userPrivilegeId)) {
+		$from .= ", PERSONA pers, USER user";
+		if ($userPrivilegeId == 1) $privilegeQuery = "> 0";
+		else $privilegeQuery = "= $userPrivilegeId";
+		$where .= "  AND pers.PERSONA_ID = rec.PERSONA_ID AND pers.USER_ID = user.USER_ID AND user.USER_PRIVILEGE_ID $privilegeQuery";
+	}
+	if ($type == "comments") {
+		$where .= " AND REC_COMMENT != ''";
+	}
+	$sql = "SELECT COUNT(rec.PERSONA_ID) $from $where";
+	$result = mysql_query($sql, $db);
+	$count = mysql_result($result, 0);
+	return $count; 
 }
-
 // Input: DB handle
 // Return: IDs (and optionally comment and related image) of posts recommended by editors
 function getEditorsPicks($type, $db) {
@@ -1392,21 +1399,6 @@ rec.PERSONA_ID = pers.PERSONA_ID AND user.USER_PRIVILEGE_ID > 0";
   }
 	
   return $recommendations;
-}
-
-// Input: Post ID, DB handle
-// Action: Check if this post has been recommended by an editor.
-function getEditorsPicksStatus($postId, $db) {
-	$sql = "SELECT rec.PERSONA_ID FROM RECOMMENDATION rec, PERSONA pers, USER user WHERE rec.BLOG_POST_ID = $postId AND pers.PERSONA_ID =  rec.PERSONA_ID AND pers.USER_ID = user.USER_ID AND user.USER_PRIVILEGE_ID > 0";
-	$results = mysql_query($sql, $db);
-	
-	$row = mysql_fetch_array($results);
-
-  if($row["PERSONA_ID"]) {
-		return TRUE;
-	}
-	
-  return NULL;
 }
 
 // Input: blog ID, DB handle
@@ -1793,14 +1785,13 @@ function topicIdsToBlogIds ($topicIds, $db) {
 
 }
 
-// Input: Citation, DB handle
+// Input: Citation Text, DB handle
 // Output: Citation ID
 function citationTextToCitationId ($citation, $db) {
   $sql = "SELECT CITATION_ID FROM CITATION WHERE CITATION_TEXT = '$citation'";
-  $results = mysql_query($sql, $db);
-	
-  // Convert to array
-	$row = mysql_fetch_array($results);
+  $result = mysql_query($sql, $db);
+
+	$row = mysql_fetch_array($result);
   $citationId = $row["CITATION_ID"];
 
   return $citationId;
@@ -1816,10 +1807,28 @@ function postIdToCitation ($postId, $db) {
 	while($row = mysql_fetch_array($results)) {
 		$citation["id"] = $row["CITATION_ID"];
 		$citation["text"] = $row["CITATION_TEXT"];
+		$citation["articleId"] = $row["ARTICLE_ID"];
   	array_push($citations, $citation);
 	}
 
   return $citations;
+}
+
+// Input: Post ID, DB handle
+// Output: Citation Data
+function articleIdToArticleIdentifier ($articleId, $db) {
+	// TO DO: Modify query to take into account other article Ids with the same Identifier text, and then select other identifiers with that same article ID
+  $sql = "SELECT ARTICLE_IDENTIFIER_TYPE, ARTICLE_IDENTIFIER_TEXT FROM ARTICLE_IDENTIFIER WHERE ARTICLE_ID = $articleId";
+  $results = mysql_query($sql, $db);
+	
+  $articleIdentifiers = array();
+	while($row = mysql_fetch_array($results)) {
+		$articleIdentifier["idType"] = $row["ARTICLE_IDENTIFIER_TYPE"];
+		$articleIdentifier["text"] = $row["ARTICLE_IDENTIFIER_TEXT"];
+  	array_push($articleIdentifiers, $articleIdentifier);
+	}
+
+  return $articleIdentifiers;
 }
 
 // Input: array of blog IDs, DB handle
@@ -2384,8 +2393,8 @@ function displayEditBlogForm($db, $data) {
    }
 
   print "<p>*Required field</p>\n<p>\n";
-  print "*Blog name: <input type=\"text\" name=\"blogname\" size=\"40\" value=\"$blogname\"/>\n</p>\n<p>\n*Blog URL: <input type=\"text\" name=\"blogurl\" size=\"40\" value=\"$blogurl\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>";
-  print "<p>*Blog syndication URL: <input type=\"text\" name=\"blogsyndicationuri\" size=\"40\" value=\"$blogsyndicationuri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</p>";
+  print "*Blog name: <input type=\"text\" name=\"blogname\" size=\"40\" value=\"".htmlspecialchars($blogname, ENT_QUOTES)."\"/>\n</p>\n<p>\n*Blog URL: <input type=\"text\" name=\"blogurl\" size=\"40\" value=\"".htmlspecialchars($blogurl, ENT_QUOTES)."\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>";
+  print "<p>*Blog syndication URL: <input type=\"text\" name=\"blogsyndicationuri\" size=\"40\" value=\"".htmlspecialchars($blogsyndicationuri, ENT_QUOTES)."\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</p>";
   print "<p>Blog description:<br /><textarea name=\"blogdescription\" rows=\"5\" cols=\"55\">$blogdescription</textarea></p>\n";
 
   print "<p>*Blog topic: <select name='topic1'>\n";
@@ -2428,10 +2437,10 @@ function displayEditPendingBlogs ($db) {
 	$blogList = getPendingBlogs($db);
 	foreach ($blogList as $blog) {
 		$blogId = $blog["id"];
-		$blogName = htmlspecialchars($blog["name"]);
-		$blogUri = htmlspecialchars($blog["uri"]);
-		$blogDescription = htmlspecialchars($blog["blogdescription"]);
-		$blogSyndicationUri = htmlspecialchars($blog["syndicationuri"]);
+		$blogName = $blog["name"];
+		$blogUri = $blog["uri"];
+		$blogDescription = $blog["blogdescription"];
+		$blogSyndicationUri = $blog["syndicationuri"];
 		$blogtopics = getBlogTopics($blogId, $db);
 		//$topic1 = $_REQUEST["topic1"];
 		//$topic2 = $_REQUEST["topic2"];
@@ -2451,9 +2460,9 @@ function displayEditPendingBlogs ($db) {
 			print "</p>";
 		}
 		print "<p>*Required field</p>\n";
-		print "<p>*Blog name: <input type=\"text\" name=\"blogname[]\" size=\"40\" value=\"$blogName\"/></p>\n";
-		print "<p>*<a href=\"$blogUri\" style=\"none\" target=\"_blank\">Blog URL:</a> <input type=\"text\" name=\"blogurl[]\" size=\"40\" value=\"$blogUri\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>";
-		print "<p>*<a href=\"$blogSyndicationUri\" style=\"none\" target=\"_blank\">Blog syndication URL:</a> <input type=\"text\" name=\"blogsyndicationuri[]\" size=\"40\" value=\"$blogSyndicationUri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</p>";
+		print "<p>*Blog name: <input type=\"text\" name=\"blogname[]\" size=\"40\" value=\"".htmlspecialchars($blogName, ENT_QUOTES)."\"/></p>\n";
+		print "<p>*<a href=\"$blogUri\" style=\"none\" target=\"_blank\">Blog URL:</a> <input type=\"text\" name=\"blogurl[]\" size=\"40\" value=\"".htmlspecialchars($blogUri, ENT_QUOTES)."\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>";
+		print "<p>*<a href=\"$blogSyndicationUri\" style=\"none\" target=\"_blank\">Blog syndication URL:</a> <input type=\"text\" name=\"blogsyndicationuri[]\" size=\"40\" value=\"".htmlspecialchars($blogSyndicationUri, ENT_QUOTES)."\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</p>";
 		print "<p>Blog description:<br /><textarea name=\"blogdescription[]\" rows=\"5\" cols=\"55\">$blogDescription</textarea></p>\n";
 		print "<p>*Blog topics: <select name='topic1[]'>\n";
 		print "<option value='-1'>None</option>\n";
@@ -2778,8 +2787,8 @@ function checkUserData($userID, $userName, $userStatus, $userEmail, $userPrivile
 function editUser ($userID, $userName, $userStatus, $userEmail, $userPrivilege, $oldUserName, $wpdb, $db) {
 	
 	// escape stuff
-  $userName = mysql_real_escape_string(sanitize($userName));
-	$userEmail = mysql_real_escape_string(sanitize($userEmail));
+  $userName = mysql_real_escape_string($userName);
+	$userEmail = mysql_real_escape_string($userEmail);
 	
 	// update Wordpress name
 	$wpdb->update( $wpdb->users, array('user_login' => $userName, 'user_nicename' => $userName, 'display_name' => $userName), array('user_login' => $oldUserName) );
@@ -3201,6 +3210,9 @@ function removeCitations($postId, $citationId, $db) {
 // Input: Array of parsed article data, Boolean identifying the source, DB handle.
 // Output: ID of the inserted article.
 function storeArticle ($articleData, $source, $db) {
+	
+	if (! $articleData["rfr_id"]) $articleData["rfr_id"] = "info:sid/scienceseeker.org";
+	if (! $articleData["id_type"]) $articleData["id_type"] = "other";
 	
 	foreach ($articleData as $key => $item) {
 		$key = str_replace(array(".", "_"), "", $key);

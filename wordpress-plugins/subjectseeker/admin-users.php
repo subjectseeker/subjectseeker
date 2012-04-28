@@ -159,9 +159,9 @@ function doAdminUsers() {
 					print "<form class=\"ss-div\" method=\"POST\">
 					<input type=\"hidden\" name=\"step\" value=\"confirmed\" />
 					<input type=\"hidden\" name=\"userId\" value=\"$userID\" />
-					<input type=\"hidden\" name=\"userName\" value=\"".htmlspecialchars($userName, ENT_QUOTES)."\" />
+					<input type=\"hidden\" name=\"userName\" value=\"$userName\" />
 					<input type=\"hidden\" name=\"userStatus\" value=\"$userStatus\" />
-					<input type=\"hidden\" name=\"userEmail\" value=\"".htmlspecialchars($userEmail, ENT_QUOTES)."\" />
+					<input type=\"hidden\" name=\"userEmail\" value=\"$userEmail\" />
 					<input type=\"hidden\" name=\"userPrivilege\" value=\"$userPrivilege\" />
 					<p>There has been an error, are you sure you want to apply these changes?</p>
 					<input class=\"ss-button\" name=\"confirm\" type=\"submit\" value=\"Yes\" /> <a class=\"ss-button\" href=\"$adminUsers\" />No</a>
@@ -177,10 +177,10 @@ function doAdminUsers() {
 				print "<hr />";
 				foreach ($userList as $user) {
 					$userID = $user["id"];
-					$userName = htmlspecialchars($user["name"]);
+					$userName = $user["name"];
 					$userStatusId = $user["status"];
 					$userPrivilegeId = $user["privilege"];
-					$userEmail = htmlspecialchars($user["email"]);
+					$userEmail = $user["email"];
 					$userStatus = ucwords(userStatusIdToName ($userStatusId, $db));
 					$userPrivilege = ucwords(userPrivilegeIdToName ($userPrivilegeId, $db));
 					print "<div class=\"ss-entry-wrapper\">
@@ -197,8 +197,8 @@ function doAdminUsers() {
 					}
 					print "<input type=\"hidden\" name=\"userId\" value=\"$userID\" />\n";
 					print "<p>*Required field</p>\n\n";
-					print "<p>*User name: <input type=\"text\" name=\"userName\" size=\"40\" value=\"$userName\"/></p>\n";
-					print "<p>*User e-mail: <input type=\"text\" name=\"userEmail\" size=\"40\" value=\"$userEmail\"/></p>\n";
+					print "<p>*User name: <input type=\"text\" name=\"userName\" size=\"40\" value=\"".htmlspecialchars($userName, ENT_QUOTES)."\"/></p>\n";
+					print "<p>*User e-mail: <input type=\"text\" name=\"userEmail\" size=\"40\" value=\"".htmlspecialchars($userEmail, ENT_QUOTES)."\"/></p>\n";
 					print "<p>*User Status: <select name='userStatus'>\n";
 					$statusList = getUserStatusList ($db);
 					while ($row = mysql_fetch_array($statusList)) {
