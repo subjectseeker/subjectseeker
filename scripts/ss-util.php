@@ -140,9 +140,9 @@ function generateSearchQuery ($queryList, $settings, &$errormsgs, $db) {
 		array_push ($errormsgs, "No search type specified.");
 		return;
 	}
-  if ($type === "topic") {
+  elseif ($type === "topic") {
     $select = "SELECT topic.TOPIC_ID, topic.TOPIC_NAME, topic.TOPIC_TOP_LEVEL_INDICATOR";
-    $fromList = generateTopicFrom($queryList, $errormsgs);
+    $fromList = generateTopicFrom($queryList);
     $whereList = generateTopicWhere ($queryList, $errormsgs);
     $order .= "TOPIC_NAME ASC" ;
 
@@ -157,12 +157,12 @@ function generateSearchQuery ($queryList, $settings, &$errormsgs, $db) {
 		// TODO order by blog with most recent post
     // how to do this? update blog table every time we add a post?
 		$group .= "GROUP BY blog.BLOG_ID";
-    $fromList = generateBlogFrom($queryList, $errormsgs);
+    $fromList = generateBlogFrom($queryList);
     $whereList = generateBlogWhere($queryList, $errormsgs);
 
   } else if ($type === "post") {
     $order .= "post.BLOG_POST_DATE_TIME DESC";
-    $fromList = generatePostFrom($queryList, $errormsgs);
+    $fromList = generatePostFrom($queryList);
    	$whereList = generatePostWhere($queryList, $groupCheck, $minimumRec, $errormsgs);
 		if ($settings["showAll"] != "true") array_push($whereList, "(post.BLOG_POST_DATE_TIME < NOW())");
 		
@@ -231,7 +231,7 @@ function generateSearchQuery ($queryList, $settings, &$errormsgs, $db) {
 
 // Input: list of search queries for a topic search
 // Return: string useful in FROM clause in SQL search, based on input queries
-function generateTopicFrom ($queryList, &$errormsgs) {
+function generateTopicFrom ($queryList) {
   $fromList["TOPIC topic"] = true;
   return $fromList;
 }
@@ -263,7 +263,7 @@ function generateTopicWhere ($queryList, &$errormsgs) {
 
 // Input: list of search queries for a blog search
 // Return: string useful in FROM clause in SQL search, based on input queries
-function generateBlogFrom ($queryList, &$errormsgs) {
+function generateBlogFrom ($queryList) {
 	
 	$fromList["BLOG blog"] = true;
 
@@ -357,7 +357,7 @@ function generateBlogWhere ($queryList, &$errormsgs) {
 
 // Input: list of search queries for a post search
 // Return: string useful in FROM clause in SQL search, based on input queries
-function generatePostFrom ($queryList, &$errormsgs) {
+function generatePostFrom ($queryList) {
 
 	$fromList["BLOG_POST post"] = true;
   $fromList["BLOG blog"] = true;
@@ -610,6 +610,7 @@ function dbPublicSearch($queryList, $settings, $db) {
 // Input: post search results from DB, error message array
 // Return: Atom feed
 function formatSearchPostResults($resultData, $citationsInSummary, $errormsgs, $db) {
+	global $sitename;
 	
   // When are we?
   $now = date( "c" );
@@ -622,7 +623,7 @@ function formatSearchPostResults($resultData, $citationsInSummary, $errormsgs, $
   $xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>
 <feed xmlns=\"http://www.w3.org/2005/Atom\" xml:lang=\"en\"
       xmlns:ss=\"http://scienceseeker.org/ns/1\">
-  <title type=\"text\">ScienceSeeker</title>
+  <title type=\"text\">$sitename</title>
   <subtitle type=\"text\">Recent Posts</subtitle>
   <link href=\"$myURI\" rel=\"self\"
     type=\"application/atom+xml\" />
@@ -642,13 +643,13 @@ function formatSearchPostResults($resultData, $citationsInSummary, $errormsgs, $
   }
 	if ($resultData) {
 		while ($row = mysql_fetch_array ($resultData)) {
-	
+			
 			// Timezone stuff
 			$tzCache = date_default_timezone_get();
 			date_default_timezone_set( "UTC" );
 			$utcDate = strtotime( $row[ "BLOG_POST_DATE_TIME" ] );
 			date_default_timezone_set( $tzCache );
-	
+			
 			// Put all the SQL data into $postData for easy access
 			$postData = array();
 			$postData[ "author" ] = sanitize( $row[ "BLOG_AUTHOR_ACCOUNT_NAME" ] );
@@ -663,7 +664,7 @@ function formatSearchPostResults($resultData, $citationsInSummary, $errormsgs, $
 			$postData["hasCitation"] = sanitize( $row[ "BLOG_POST_HAS_CITATION" ] );
 			
 			$postID = $row["BLOG_POST_ID"];
-	
+			
 			// Get citations
 			if ($postData["hasCitation"] == 1) {
 				// TODO in original SQL query?
@@ -689,7 +690,7 @@ function formatSearchPostResults($resultData, $citationsInSummary, $errormsgs, $
 			else {
 				$postData["lang"] = "en";
 			}
-	
+			
 			// Post topics are polyvalued, so another query.
 			$catSQL = "SELECT T.TOPIC_NAME FROM TOPIC AS T, POST_TOPIC AS PT WHERE PT.BLOG_POST_ID = $postID AND T.TOPIC_ID = PT.TOPIC_ID;";
 			$results = mysql_query( $catSQL, $db );
@@ -1976,7 +1977,7 @@ function addSimplePieItem ($item, $language, $blogId, $db) {
 
   $summary = smartyTruncate($item->get_description(), 500);
   if (strlen ($summary) != strlen ($item->get_description())) {
-    $summary .= " [...]";
+    $summary .= " […]";
   }
 
   $blogPostStatusId = 0; // active
@@ -2243,6 +2244,10 @@ function addBlog($blogname, $bloguri, $blogsyndicationuri, $blogdescription, $to
 		$status = 1; // pending
 		# Send email to site admin with notification that a blog is waiting for approval
   	$mailSent = mail ($siteApprovalEmail, "[$sitename admin] Pending blog submission", "Pending blog submission at $approveUrl");
+		
+		if (! $mailSent) {
+			# TODO log this
+		}
 	}
 
   $blogname = mysql_real_escape_string($blogname);
@@ -2261,10 +2266,6 @@ function addBlog($blogname, $bloguri, $blogsyndicationuri, $blogdescription, $to
 
   if ($topic2 != "-1") {
     associateTopic($topic2, $blogId, $db);
-  }
-
-  if (! $mailSent) {
-# TODO log this
   }
 
   $retval["id"] = $blogId;
@@ -3063,7 +3064,6 @@ function titleToCitations($title) {
 		return "ERROR: $cerror\n";
 	}
 	
-	
 	$doc = new DOMDocument();
   @$doc->loadHTML($result);
 	$xml = simplexml_import_dom($doc);
@@ -3086,6 +3086,7 @@ function titleToCitations($title) {
 		@$doc->loadHTML($result);
 		$xml = simplexml_import_dom($doc);
 		
+		// Build article data for the citation generator.
 		foreach ($xml->xpath("//person_name") as $author) {
 			$articleData["authors"][] = array("rft.aufirst"=>$author->given_name, "rft.aulast"=>$author->surname);
 		}
@@ -3320,7 +3321,9 @@ function parseCitation ($citation) {
 // Input: Array with citation data
 // Output: Formed citation code for use in HTML
 function generateCitation ($articleData) {
-	if (! $articleData["rfr_id"]) $articleData["rfr_id"] = "info:sid/scienceseeker.org";
+	global $rfrId;
+	
+	if (! $articleData["rfr_id"]) $articleData["rfr_id"] = "info:sid/$rfrId";
 	if (! $articleData["id_type"]) $articleData["id_type"] = "other";
 	
 	$supportedKeys = array("rft.atitle", "rft.title", "rft.jtitle", "rft.stitle", "rft.date", "rft.volume", "rft.issue", "rft.spage", "rft.epage", "rft.pages", "rft.artnum", "rft.issn", "rft.eissn", "rft.eissn", "rft.aucorp", "rft.isbn", "rft.coden", "rft.sici", "rft.genre", "rft.chron", "rft.ssn", "rft.quarter", "rft.part", "rft.auinit", "rft.auinit1", "rft.auinitm", "rft.auinitsuffix", "rfr_id");

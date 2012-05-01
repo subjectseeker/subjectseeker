@@ -1,44 +1,48 @@
 <?php
 
 $sitename = "SubjectSeeker";
-$siteadminemail = "admin@yoursite.com";
+$siteadminemail = "admin@example.com";
+$siteApprovalEmail = "admin@example.com";
 $dbName = "databaseName";
 $dbUser = "databaseUser";
 $dbPass = "password";
 $host = "localhost";
 
 // URLs
-$homeUrl = "http://yoursite.com/";
-$imagesUrl = $homeUrl . "images/";
-$searchUrl = $homeUrl . "subjectseeker/ss-search.php";
-$serializerUrl = $homeUrl . "subjectseeker/ss-serializer.php";
-$registerUrl = $homeUrl . "wp-login.php?action=register";
-$userProfile = $homeUrl . "wp-admin/profile.php";
-$mainFeed = $homeUrl . "displayfeed";
-$userBlogs = $homeUrl . "your-blogs";
-$userPosts = $homeUrl . "your-posts";
-$adminPanel = $homeUrl . "administration-panel";
-$adminBlogs = $homeUrl . "administer-blogs";
-$adminPosts = $homeUrl . "administer-posts";
-$adminUsers = $homeUrl . "administer-users";
-$approveUrl = $homeUrl . "approve-blog";
-$jslibrary = $homeUrl . "subjectseeker/js/ss-library.js";
+$homeUrl = "http://example.com";
+$imagesUrl = $homeUrl . "/images";
+$searchUrl = $homeUrl . "/subjectseeker/ss-search.php";
+$serializerUrl = $homeUrl . "/feed/posts";
+$registerUrl = $homeUrl . "/wp-login.php?action=register";
+$userProfile = $homeUrl . "/wp-admin/profile.php";
+$mainFeed = $homeUrl . "/displayfeed";
+$blogList = $homeUrl . "/blogs";
+$userBlogs = $homeUrl . "/your-blogs";
+$userPosts = $homeUrl . "/your-posts";
+$adminPanel = $homeUrl . "/administration-panel";
+$adminBlogs = $homeUrl . "/administer-blogs";
+$adminPosts = $homeUrl . "/administer-posts";
+$adminUsers = $homeUrl . "/administer-users";
+$approveUrl = $homeUrl . "/approve-blog";
+$jslibrary = $homeUrl . "/subjectseeker/js/ss-library.js";
 
 // Files and directories
 $basedir = "/home/username/public_html";
-$imagedir = "$basedir/images/";
-$cachedir = "$basedir/cache/";
+$imagedir = "$basedir/images";
+$cachedir = "$basedir/cache";
 $resources2html = "$basedir/subjectseeker/xsl/resources2html.xsl";
 $topics2html = "$basedir/subjectseeker/xsl/topics2html.xsl";
 $feed2html = "$basedir/subjectseeker/xsl/feed2html.xsl";
 $metadata2coins = "$basedir/subjectseeker/xsl/metadata2coins.xsl";
 
 // CitationSeeker URLs
+$rfrId = "example.com";
 $crossRefUrl = "http://api.labs.crossref.org/search?q=";
-
-// Hash
-$hashData = array ("blogId" => "BLOG_ID","blogName" => "BLOG_NAME","blogStatus" => "BLOG_STATUS_ID","blogUri" => "BLOG_URI","blogSyndicationUri" => "BLOG_SYNDICATION_URI","addedTime" => "ADDED_DATE_TIME","crawledTime" => "CRAWLED_DATE_TIME","postId" => "BLOG_POST_ID","postStatus" => "BLOG_POST_STATUS_ID","postTitle" => "BLOG_POST_TITLE","postUri" => "BLOG_POST_URI","publicationTime" => "BLOG_POST_DATE_TIME","ingestTime" => "BLOG_POST_INGEST_DATE_TIME","userId" => "USER_ID","userName" => "USER_NAME","userStatus" => "USER_STATUS_ID","userPrivilege" => "USER_PRIVILEGE_ID","userEmail" => "EMAIL_ADDRESS","descending" => "DESC","ascending" => "ASC");
 
 // Parameters
 $numResults = 30;
+$maximumResults = 500;
+
+// Hash
+$hashData = array ("blogId" => "BLOG_ID","blogName" => "BLOG_NAME","blogStatus" => "BLOG_STATUS_ID","blogUri" => "BLOG_URI","blogSyndicationUri" => "BLOG_SYNDICATION_URI","addedTime" => "ADDED_DATE_TIME","crawledTime" => "CRAWLED_DATE_TIME","postId" => "BLOG_POST_ID","postStatus" => "BLOG_POST_STATUS_ID","postTitle" => "BLOG_POST_TITLE","postUri" => "BLOG_POST_URI","publicationTime" => "BLOG_POST_DATE_TIME","ingestTime" => "BLOG_POST_INGEST_DATE_TIME","userId" => "USER_ID","userName" => "USER_NAME","userStatus" => "USER_STATUS_ID","userPrivilege" => "USER_PRIVILEGE_ID","userEmail" => "EMAIL_ADDRESS","descending" => "DESC","ascending" => "ASC");
 ?>
