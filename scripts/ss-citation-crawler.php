@@ -20,7 +20,7 @@ $links = array(
 'http://www.researchblogging.org/feeds/alltopics/spanish.xml'
 );
 
-// Extract the title from each feed.
+// Extract the title from each feed in the $links list of feeds.
 foreach ($links as $link) {
 	$feed = new SimplePie();
 	$feed->set_feed_url($link);
@@ -30,6 +30,7 @@ foreach ($links as $link) {
 	$feed->handle_content_type();
 	
 	if ($success) {
+                // extract the titles of each post in the RB feed
 		foreach ($feed->get_items() as $obj) {
 			$data = $obj->get_item_tags('http://www.w3.org/2005/Atom', 'title');
 			foreach ($data as $item) {
@@ -45,7 +46,7 @@ $db = ssDbConnect();
 
 $firstTitle = array_shift($titles);
 
-// Compare the feeds' titles with our database
+// Compare the posts' titles with our database
 $sql = "SELECT BLOG_POST_ID, BLOG_POST_URI FROM BLOG_POST WHERE BLOG_POST_TITLE='".mysql_real_escape_string($firstTitle)."'";
 foreach ($titles as $title) {
 	$sql .= " OR BLOG_POST_TITLE = '".mysql_real_escape_string($title)."'";
@@ -74,6 +75,7 @@ foreach ($links as $link) {
 	@$doc->loadHTML($html);
 	$xml = simplexml_import_dom($doc);
 	
+        // Extract the URL of each post
 	$urlData = $xml->xpath('//link/@href');
 	foreach ($urlData as $link) {
 		$urls[] = (string)$link->href;
@@ -84,6 +86,8 @@ $db = ssDbConnect();
 
 $firstUrl = array_shift($urls);
 
+// For all of the URLs we just extracted from the feed,
+// find posts in our DB which have the same URL
 $sql = "SELECT BLOG_POST_ID, BLOG_POST_URI FROM BLOG_POST WHERE BLOG_POST_URI='$firstUrl'";
 foreach ($urls as $value) {
 	$sql .= " OR BLOG_POST_URI = '$value'";
@@ -97,7 +101,11 @@ while ($row = mysql_fetch_array($results)) {
 	array_push($posts, $info);
 }
 
-// Scan common posts for citations
+// Our $posts list now contains posts which have some common data
+// with posts in the feed we're crawling.
+// Scan each of these posts for citations.
+// We may have retrieved some posts incorrectly (by title)
+// but it is OK to scan posts that don't have citations, no harm is done.
 foreach ($posts as $post) {
   if (! citedPost($post["id"], $db)) {
 		$citations = checkCitations ($post["url"], $post["id"], $db);
