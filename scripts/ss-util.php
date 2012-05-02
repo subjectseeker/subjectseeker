@@ -310,44 +310,44 @@ function generateBlogWhere ($queryList, &$errormsgs) {
       if ($searchValue === "false") {
         $hasCitation = "0";
       }
-			array_push ($whereList, "post.BLOG_POST_HAS_CITATION=$hasCitation AND post.BLOG_ID=blog.BLOG_ID");
+      array_push ($whereList, "post.BLOG_POST_HAS_CITATION=$hasCitation AND post.BLOG_ID=blog.BLOG_ID");
 			
-			if ($searchType === "doi" || $searchType === "pmid" || $searchType === "arxiv" || $searchType === "other") {
-				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID AND pc.CITATION_ID = citation.CITATION_ID AND citation.ARTICLE_ID = artid.ARTICLE_ID AND artid.ARTICLE_IDENTIFIER_TYPE = '$searchType'");
-			}
-			elseif ($searchType != "all" && $searchType != NULL && $searchType != "") {
-				array_push ($errormsgs, "Unrecognized modifier: $searchType");
-			}
-
+      if ($searchType === "doi" || $searchType === "pmid" || $searchType === "arxiv" || $searchType === "other") {
+        array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID AND pc.CITATION_ID = citation.CITATION_ID AND citation.ARTICLE_ID = artid.ARTICLE_ID AND artid.ARTICLE_IDENTIFIER_TYPE = '$searchType'");
+      }
+      elseif ($searchType != "all" && $searchType != NULL && $searchType != "") {
+        array_push ($errormsgs, "Unrecognized modifier: $searchType");
+      }
+      
     } else if ($query->name == "identifier") {
-			if (is_numeric($searchValue)) {
-				array_push ($whereList, "blog.BLOG_ID=$searchValue");
-			}
-			else {
-				array_push ($errormsgs, "Identifier value must be numeric.");
-			}
-			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
-		
-		} else if ($query->name == "title") {
-			if ($searchType === "all") { array_push ($whereList, "blog.BLOG_NAME = '$searchValue'"); }
-			elseif ($searchType === "some" || $searchType == NULL) { array_push ($whereList, "blog.BLOG_NAME LIKE '%$searchValue%'"); }
-			else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
-			
-		} else if ($query->name == "summary") {
-			if ($searchType === "all") { array_push ($whereList, "blog.BLOG_DESCRIPTION = '$searchValue'"); }
-			elseif ($searchType === "some" || $searchType == NULL) { array_push ($whereList, "blog.BLOG_DESCRIPTION LIKE '%$searchValue%'"); }
-			else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
-			
-		} else if ($query->name == "url") {
-			if ($searchType === "all") { array_push ($whereList, "blog.BLOG_URI = '$searchValue'"); }
-			elseif ($searchType === "some" || $searchType == NULL) { array_push ($whereList, "blog.BLOG_URI LIKE '%$searchValue%'"); }
-			else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
-			
-		} else {
-        array_push ($errormsgs, "Unrecognized filter: " . $query->name);
+      if (is_numeric($searchValue)) {
+        array_push ($whereList, "blog.BLOG_ID=$searchValue");
+      }
+      else {
+        array_push ($errormsgs, "Identifier value must be numeric.");
+      }
+      if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
+      
+    } else if ($query->name == "title") {
+      if ($searchType === "all") { array_push ($whereList, "blog.BLOG_NAME = '$searchValue'"); }
+      elseif ($searchType === "some" || $searchType == NULL) { array_push ($whereList, "blog.BLOG_NAME LIKE '%$searchValue%'"); }
+      else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
+      
+    } else if ($query->name == "summary") {
+      if ($searchType === "all") { array_push ($whereList, "blog.BLOG_DESCRIPTION = '$searchValue'"); }
+      elseif ($searchType === "some" || $searchType == NULL) { array_push ($whereList, "blog.BLOG_DESCRIPTION LIKE '%$searchValue%'"); }
+      else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
+      
+    } else if ($query->name == "url") {
+      if ($searchType === "all") { array_push ($whereList, "blog.BLOG_URI = '$searchValue'"); }
+      elseif ($searchType === "some" || $searchType == NULL) { array_push ($whereList, "blog.BLOG_URI LIKE '%$searchValue%'"); }
+      else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
+      
+    } else {
+      array_push ($errormsgs, "Unrecognized filter: " . $query->name);
     }
   }
-	if ($topicsQuery) {
+  if ($topicsQuery) {
 		$topicsQuery = "t.TOPIC_TOP_LEVEL_INDICATOR = 1 AND ($topicsQuery)";
 		array_push ($whereList, $topicsQuery);
 	}
@@ -3273,15 +3273,17 @@ function storeArticle ($articleData, $source, $db) {
 	return $articleId;
 }
 
-// Input: citation
-// Output: Parsed citations. 
+// Input: citation text in COinS format
+// Output: associative array of citation metadata
 function parseCitation ($citation) {
 	$dom = new DOMDocument();
 	@$dom->loadHTML($citation);
 	$xml = simplexml_import_dom($dom);
 	$xpath = $xml->xpath("//span[@class='Z3988']");
-	if (empty($xpath)) return NULL; 
+	if (empty($xpath)) return NULL;  // this is not COinS format
+
 	$title = $xpath[0]->attributes()->title;
+
 	// Split all the different information
 	$result = preg_split("/&/", $title);
 	
@@ -3319,13 +3321,14 @@ function parseCitation ($citation) {
 }
 
 // Input: Array with citation data
-// Output: Formed citation code for use in HTML
+// Output: COinS-format citation text for use in HTML
 function generateCitation ($articleData) {
 	global $rfrId;
 	
 	if (! $articleData["rfr_id"]) $articleData["rfr_id"] = "info:sid/$rfrId";
 	if (! $articleData["id_type"]) $articleData["id_type"] = "other";
 	
+        // List of keys which should be represented in the associative array that was passed in as $articleData
 	$supportedKeys = array("rft.atitle", "rft.title", "rft.jtitle", "rft.stitle", "rft.date", "rft.volume", "rft.issue", "rft.spage", "rft.epage", "rft.pages", "rft.artnum", "rft.issn", "rft.eissn", "rft.eissn", "rft.aucorp", "rft.isbn", "rft.coden", "rft.sici", "rft.genre", "rft.chron", "rft.ssn", "rft.quarter", "rft.part", "rft.auinit", "rft.auinit1", "rft.auinitm", "rft.auinitsuffix", "rfr_id");
 	
 	$citation = "<span class=\"Z3988\" title=\"ctx_ver=Z39.88-2004&amp;rft_val_fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Ajournal";
