@@ -62,6 +62,37 @@ function crawlBlogs($blog, $db) {
 	return $message;
 }
 
+// Input: Blog ID, DB handle.
+// Action: Insert mark to scan blogs for citations.
+function insertCitationMarker ($blogId, $db) {
+	$sql = "REPLACE INTO SCAN_POSTS (BLOG_ID, MARKER_DATE_TIME, MARKER_TYPE_ID) VALUES ($blogId, NOW(), 1)";
+	mysql_query($sql, $db);
+}
+
+// Input: DB Handle
+// Output: array of posts urls to be scanned for citations.
+function getMarkedBlogPosts ($db) {
+	$sql = "SELECT post.BLOG_POST_ID, post.BLOG_ID, post.BLOG_POST_URI FROM BLOG_POST post, SCAN_POSTS sp WHERE sp.BLOG_ID = post.BLOG_ID ORDER BY post.BLOG_POST_DATE_TIME DESC LIMIT 10";
+	$results = mysql_query($sql, $db);
+	
+	$posts = array();
+	while ($row = mysql_fetch_array($results)) {
+		$post["id"] = $row["BLOG_POST_ID"];
+		$post["blogId"] = $row["BLOG_ID"];
+		$post["url"] = $row["BLOG_POST_URI"];
+		array_push($posts, $post);
+	}
+	
+	return $posts;
+}
+
+// Input: DB Handle
+// Action: Remove markers that are older than 5 days
+function removeExpiredMarks ($db) {
+	$sql = "DELETE FROM SCAN_POSTS WHERE MARKER_DATE_TIME < DATE_SUB(NOW(),INTERVAL 5 day)";
+	$results = mysql_query($sql, $db);
+}
+
 /*
  * Curl functions
  */
@@ -126,6 +157,7 @@ function getDownloadCurl($uri) {
 function generateSearchQuery ($queryList, $settings, &$errormsgs, $db) {
 
   global $numResults;
+	global $maximumResults;
 	// Set all the default values of the search
   $fromList = array();
   $whereList = array();
@@ -182,7 +214,7 @@ function generateSearchQuery ($queryList, $settings, &$errormsgs, $db) {
 	
 	$limitNumber = $numResults;
   // Construct LIMIT part of query
-  if ( is_numeric($resultsNumber) and ($resultsNumber > 0  and $resultsNumber <= 500) ) {
+  if ( is_numeric($resultsNumber) and ($resultsNumber > 0  and $resultsNumber <= $maximumResults) ) {
   	$limitNumber = (string)(int)$resultsNumber;
   }
   $limit = "LIMIT $limitNumber";
@@ -379,7 +411,7 @@ function generatePostFrom ($queryList) {
 			}
 			if ($searchType == "author") {
 				$fromList["ARTICLE_AUTHOR artau"] = true;
-				$fromList["AUTHOR_ARTICLE auart"] = true;
+				$fromList["ARTICLE_AUTHOR_LINK auart"] = true;
 			}
 		} else if ($query->name === "has-citation") {
 			if ($query->modifier) {
@@ -641,9 +673,9 @@ function formatSearchPostResults($resultData, $citationsInSummary, $errormsgs, $
     $xml .=  "</feed>\n";
     return $xml;
   }
+	$i = 0;
 	if ($resultData) {
 		while ($row = mysql_fetch_array ($resultData)) {
-			
 			// Timezone stuff
 			$tzCache = date_default_timezone_get();
 			date_default_timezone_set( "UTC" );
@@ -754,9 +786,9 @@ function formatSearchPostResults($resultData, $citationsInSummary, $errormsgs, $
 						$articleIdentifiers = articleIdToArticleIdentifier ($citation["articleId"], $db);
 						$xml .= "      <ss:citation>\n        <ss:citationId type=\"scienceseeker\">".$citation["id"]."</ss:citationId>\n";
 						
-							foreach ($articleIdentifiers as $articleIdentifier) {
-								$xml .= "        <ss:citationId type=\"".$articleIdentifier["idType"]."\">".$articleIdentifier["text"]."</ss:citationId>\n";
-							}
+						foreach ($articleIdentifiers as $articleIdentifier) {
+							$xml .= "        <ss:citationId type=\"".$articleIdentifier["idType"]."\">".$articleIdentifier["text"]."</ss:citationId>\n";
+						}
 										
 						$xml .= "        <ss:citationText>".htmlspecialchars($citation["text"])."</ss:citationText>\n      </ss:citation>\n";
 					}
@@ -3139,13 +3171,11 @@ function checkCitations ($postUri, $postId, $db) {
 		preg_match("/(?<=ss.included=)./", $values, $ssInclude);
 		if (($rbInclude[0] == 1 && $ssInclude[0] == NULL) || ($ssInclude[0] == 1)) {
 			storeTopics ($postId, $values, $db);
-			$result = $data -> asXML();
-			
-			$citation[] = $result;
+			$citation[] = $data -> asXML();;
 		}
 	}
 	
-	return $citation;
+	return $citations;
 }
 
 // Input: Post ID, Topics Data, DB handle
@@ -3260,7 +3290,7 @@ function storeArticle ($articleData, $source, $db) {
 				
 				$articleAuthorId = mysql_insert_id();
 			}
-			$sql = "INSERT IGNORE INTO AUTHOR_ARTICLE (ARTICLE_ID, ARTICLE_AUTHOR_ID) VALUES ($articleId, $articleAuthorId)";
+			$sql = "INSERT IGNORE INTO ARTICLE_AUTHOR_LINK (ARTICLE_ID, ARTICLE_AUTHOR_ID) VALUES ($articleId, $articleAuthorId)";
 			mysql_query($sql, $db);
 			
 			$articleAuthorId = NULL;

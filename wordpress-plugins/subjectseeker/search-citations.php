@@ -68,6 +68,11 @@ function searchCitations() {
 	$step = $_REQUEST["step"];
 
 	if ($step == NULL) {
+		if (! is_user_logged_in()){
+			global $loginUrl;
+			print "<p class=\"ss-warning\">You should <a href=\"$loginUrl\" title=\"Log In Page\">Log In</a> for your blogs to be automatically scanned for citations.</p>";
+		}
+		
 		print "<h3>Search Citation</h3>
 		<div class=\"subtle-text\">
 		<p>This tool will allow you to generate a citation that you can add to your posts for reference and aggregation here and with other services that use the industry-standard COinS system for citation of peer-reviewed research.</p>
@@ -200,6 +205,20 @@ function searchCitations() {
 	}
 	
 	if ($step == "end") {
+		if (is_user_logged_in()){
+			global $current_user;
+			get_currentuserinfo();
+			$displayName = $current_user->user_login;
+			$email = $current_user->user_email;
+			$userId = addUser($displayName, $email, $db);
+			
+			$blogIds = getBlogIdsByUserId($userId, $blogId, $db);
+			
+			foreach ($blogIds as $blogId) {
+				insertCitationMarker ($blogId, $db);
+			}
+		}
+		
 		global $homeUrl;
 		print "<input class=\"ss-button\" type=\"button\" value=\"Go Back\" onClick=\"history.go(-1);return true;\"> <a class=\"ss-button\" href=\"$homeUrl\">Homepage</a><br />
 		<h3>Result</h3>";
@@ -232,11 +251,18 @@ function searchCitations() {
 		
 		$generatedCitation = generateCitation($articleData);
 		
+		global $userPosts;
+		global $sitename;
 		print "<p>This is how the citation will look after you copy the HTML code to your article.</p>
 		<p id=\"padding-content\">$generatedCitation</p>";
-		print "<h4>HTML Code:</h4>
-		<p>Please copy this code to your article to add the citation.</p>
-		<textarea onClick=\"this.focus();this.select()\" rows=\"10\" cols=\"60\" readonly=\"readonly\">$generatedCitation</textarea>";
+		print "<h4>HTML Code:</h4>";
+		if ($userId) {
+			print "<p>Please insert this HTML code into your post to add the citation. Our site will find the post within a few hours after you publish it. If you want to have our site find your post sooner, you can <a href=\"$userPosts/?step=scan&scanNow=1&addPosts=1&n=10\" title=\"Scan 10 most recent posts.\">scan your recent posts for citations</a>.</p>";
+		}
+		else {
+			print "<p>Please insert this HTML code into your post to add the citation.</p>";
+		}
+		print "<textarea onClick=\"this.focus();this.select()\" rows=\"10\" cols=\"60\" readonly=\"readonly\">$generatedCitation</textarea>";
 	}
 }
 

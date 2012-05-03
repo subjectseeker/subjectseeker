@@ -2,7 +2,7 @@
 
 <?php
 
-$fp = fopen("/home/sciseek/subjectseeker/live/scripts/lock.txt", "r+");
+$fp = fopen("lock.txt", "r+");
 
 if (flock($fp, LOCK_EX|LOCK_NB)) { 
 
@@ -40,7 +40,7 @@ if (flock($fp, LOCK_EX|LOCK_NB)) {
 	flock($fp, LOCK_UN);
 
 } else {
-		echo "Script already running.\n";
+	echo "Script already running.\n";
 }
 
 fclose($fp);

@@ -47,7 +47,7 @@ $db = ssDbConnect();
 $firstTitle = array_shift($titles);
 
 // Compare the posts' titles with our database
-$sql = "SELECT BLOG_POST_ID, BLOG_POST_URI FROM BLOG_POST WHERE BLOG_POST_TITLE='".mysql_real_escape_string($firstTitle)."'";
+$sql = "SELECT BLOG_POST_ID, BLOG_ID, BLOG_POST_URI FROM BLOG_POST WHERE BLOG_POST_TITLE='".mysql_real_escape_string($firstTitle)."'";
 foreach ($titles as $title) {
 	$sql .= " OR BLOG_POST_TITLE = '".mysql_real_escape_string($title)."'";
 }
@@ -58,6 +58,7 @@ $posts = array();
 while ($row = mysql_fetch_array($results)) {
 	$info["url"] = $row["BLOG_POST_URI"];
 	$info["id"] = $row["BLOG_POST_ID"];
+	$info["blogId"] = $row["BLOG_ID"];
 	array_push($posts, $info);
 }
 
@@ -75,7 +76,7 @@ foreach ($links as $link) {
 	@$doc->loadHTML($html);
 	$xml = simplexml_import_dom($doc);
 	
-        // Extract the URL of each post
+	// Extract the URL of each post
 	$urlData = $xml->xpath('//link/@href');
 	foreach ($urlData as $link) {
 		$urls[] = (string)$link->href;
@@ -88,7 +89,7 @@ $firstUrl = array_shift($urls);
 
 // For all of the URLs we just extracted from the feed,
 // find posts in our DB which have the same URL
-$sql = "SELECT BLOG_POST_ID, BLOG_POST_URI FROM BLOG_POST WHERE BLOG_POST_URI='$firstUrl'";
+$sql = "SELECT BLOG_POST_ID, BLOG_ID, BLOG_POST_URI FROM BLOG_POST WHERE BLOG_POST_URI='$firstUrl'";
 foreach ($urls as $value) {
 	$sql .= " OR BLOG_POST_URI = '$value'";
 }
@@ -98,7 +99,14 @@ $results = mysql_query($sql, $db);
 while ($row = mysql_fetch_array($results)) {
 	$info["url"] = $row["BLOG_POST_URI"];
 	$info["id"] = $row["BLOG_POST_ID"];
+	$info["blogId"] = $row["BLOG_ID"];
 	array_push($posts, $info);
+}
+
+// Get blogs from users that have generated a citation recently
+$markedPosts = getMarkedBlogPosts ($db);
+foreach ($markedPosts as $markedPost) {
+	array_push($posts, $markedPost);
 }
 
 // Our $posts list now contains posts which have some common data
@@ -109,18 +117,22 @@ while ($row = mysql_fetch_array($results)) {
 foreach ($posts as $post) {
   if (! citedPost($post["id"], $db)) {
 		$citations = checkCitations ($post["url"], $post["id"], $db);
-		foreach ($citations as $citation) {
-			$articleData = parseCitation($citation);
-			$generatedCitation = storeCitation ($articleData, $post["id"], $db);
-			print "Storing citation for post id=" . $post["id"] . " url=" . $post["url"] . " citation=$generatedCitation\n";
+		if (is_array($citations)) {
+			insertCitationMarker ($post["blogId"], $db);
+			foreach ($citations as $citation) {
+				$articleData = parseCitation($citation);
+				$generatedCitation = storeCitation ($articleData, $post["id"], $db);
+				print "Storing citation for post id=" . $post["id"] . " url=" . $post["url"] . " citation=$generatedCitation\n";
+			}
 		}
   } else {
     print "Skipping already cited post " . $post["id"] . "\n";
   }
 }
 
-
 print "Done!";
+
+removeExpiredMarks ($db);
 
 ssDbClose($db);
 

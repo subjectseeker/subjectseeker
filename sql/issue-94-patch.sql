@@ -81,10 +81,10 @@ CREATE TABLE IF NOT EXISTS `ARTICLE_IDENTIFIER` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `AUTHOR_ARTICLE`
+-- Table structure for table `ARTICLE_AUTHOR_LINK`
 --
 
-CREATE TABLE IF NOT EXISTS `AUTHOR_ARTICLE` (
+CREATE TABLE IF NOT EXISTS `ARTICLE_AUTHOR_LINK` (
   `ARTICLE_ID` int(15) NOT NULL COMMENT 'Reference to an article created by an author.',
   `ARTICLE_AUTHOR_ID` int(15) NOT NULL COMMENT 'Reference to an author of an article.',
   UNIQUE KEY `FK_AUTHOR_TO_ARTICLE` (`ARTICLE_ID`,`ARTICLE_AUTHOR_ID`)

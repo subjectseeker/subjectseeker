@@ -245,7 +245,7 @@ function scanPosts() {
 					$postSummary = strip_tags($postSummaries[$i], '<br>');
 					$blogName = $blogNames[$i];
 					$hasCitation = $hasCitations[$i];
-					$editorRecommended = getEditorsPicksStatus($postId, $db);
+					$editorRecommended = getRecommendationsCount($postId, NULL, NULL, 1, $db);
 					$citations = postIdToCitation($postId, $db);
 					if ($postTitle == NULL) {
 						$postTitle = $postUri;

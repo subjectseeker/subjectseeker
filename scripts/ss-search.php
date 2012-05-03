@@ -3,6 +3,7 @@
 // Put us in Eastern Time; eventually, this should be set by a
 // parameter of some sort.
 date_default_timezone_set( "America/New_York" );
+header('Access-Control-Allow-Origin: *');
 
 include_once "ss-globals.php";
 include_once "ss-util.php";

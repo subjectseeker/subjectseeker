@@ -65,7 +65,7 @@ function AdminPosts() {
   $db = ssDbConnect();
 		if (is_user_logged_in()){
 			global $current_user;
-				get_currentuserinfo();
+			get_currentuserinfo();
 			$displayName = $current_user->user_login;
 			$email = $current_user->user_email;
 			$userId = addUser($displayName, $email, $db);
