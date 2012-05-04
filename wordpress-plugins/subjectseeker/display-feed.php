@@ -96,22 +96,23 @@ function displayFeed($query, $minimal) {
 			$personaId = addPersona($userId, $displayName, $db);
 		}
 		
-		
-		while ($row = mysql_fetch_array($postsData)) {
-			$post = NULL;
-			$postDate = date("m-d-y", strtotime($row["BLOG_POST_DATE_TIME"]));
-			if (! isset($posts["$postDate"])) $posts["$postDate"] = array();
-			$post["id"] = $row["BLOG_POST_ID"];
-			$post["author"] = $row["BLOG_AUTHOR_ACCOUNT_NAME"];
-			$post["blog_name"] = $row[ "BLOG_NAME"];
-			$post["blog_uri"] = $row[ "BLOG_URI"];
-			$post["date"] = strtotime($row["BLOG_POST_DATE_TIME"]);
-			$post["feed_uri"] = $row[ "BLOG_SYNDICATION_URI"];
-			$post["summary"] = $row[ "BLOG_POST_SUMMARY"];
-			$post["title"] = $row[ "BLOG_POST_TITLE"];
-			$post["uri"] = $row[ "BLOG_POST_URI"];
-			$post["hasCitation"] = $row["BLOG_POST_HAS_CITATION"];
-			array_push($posts["$postDate"], $post);
+		if ($postsData) {
+			while ($row = mysql_fetch_array($postsData)) {
+				$post = NULL;
+				$postDate = date("m-d-y", strtotime($row["BLOG_POST_DATE_TIME"]));
+				if (! isset($posts["$postDate"])) $posts["$postDate"] = array();
+				$post["id"] = $row["BLOG_POST_ID"];
+				$post["author"] = $row["BLOG_AUTHOR_ACCOUNT_NAME"];
+				$post["blog_name"] = $row[ "BLOG_NAME"];
+				$post["blog_uri"] = $row[ "BLOG_URI"];
+				$post["date"] = strtotime($row["BLOG_POST_DATE_TIME"]);
+				$post["feed_uri"] = $row[ "BLOG_SYNDICATION_URI"];
+				$post["summary"] = $row[ "BLOG_POST_SUMMARY"];
+				$post["title"] = $row[ "BLOG_POST_TITLE"];
+				$post["uri"] = $row[ "BLOG_POST_URI"];
+				$post["hasCitation"] = $row["BLOG_POST_HAS_CITATION"];
+				array_push($posts["$postDate"], $post);
+			}
 		}
 		
 		if ($posts == NULL) {
@@ -153,7 +154,7 @@ function displayFeed($query, $minimal) {
 					// Check if user has recommended this post
 					if ($personaId) $userRecStatus = getRecommendationsCount($postId, NULL, $personaId, NULL, $db);
 					
-					$editorsPicksStatus = getRecommendationsCount($postId, NULL, NULL, 2, $db);
+					$editorsPicksStatus = getRecommendationsCount($postId, NULL, NULL, 1, $db);
 					
 					// Get number of recommendations for this post
 					$recCount = getRecommendationsCount($postId, NULL, NULL, NULL, $db);

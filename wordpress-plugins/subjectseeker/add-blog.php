@@ -142,7 +142,7 @@ function displayBlogForm ($errormsg, $db) {
   print "<p>*Required field</p>\n<p>\n";
   print "*Blog name: <input type=\"text\" name=\"blogname\" size=\"40\" value=\"$blogname\"/>\n</p>\n<p>\n*Blog URL: <input type=\"text\" name=\"blogurl\" size=\"40\" value=\"$blogurl\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)";
   print "</p><p>*Blog syndication URL: <input type=\"text\" name=\"blogsyndicationuri\" size=\"40\" value=\"$blogsyndicationuri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)";
-  print "</p><p>Blog description:<br /><textarea name=\"blogdescription\" rows=\"5\" cols=\"70\">$blogdescription</textarea><br />\n";
+  print "</p><p>Blog description:<br /><textarea name=\"blogdescription\" rows=\"5\" cols=\"60\">$blogdescription</textarea><br />\n";
 
   print "Blog topics: <select name='topic1'>\n";
   print "<option value='-1'>None</option>\n";
@@ -161,7 +161,7 @@ function displayBlogForm ($errormsg, $db) {
 
 <p>
 <p><input type="checkbox" name="userIsAuthor" /> I want to be identified as an author of this blog.</p>
-<input type="submit" value="Add blog" />
+<input class="ss-button" type="submit" value="Add blog" />
 </p>
 </form>
 

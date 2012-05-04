@@ -65,14 +65,14 @@ function crawlBlogs($blog, $db) {
 // Input: Blog ID, DB handle.
 // Action: Insert mark to scan blogs for citations.
 function insertCitationMarker ($blogId, $db) {
-	$sql = "REPLACE INTO SCAN_POSTS (BLOG_ID, MARKER_DATE_TIME, MARKER_TYPE_ID) VALUES ($blogId, NOW(), 1)";
+	$sql = "REPLACE INTO SCAN_POST (BLOG_ID, MARKER_DATE_TIME, MARKER_TYPE_ID) VALUES ($blogId, NOW(), 1)";
 	mysql_query($sql, $db);
 }
 
 // Input: DB Handle
 // Output: array of posts urls to be scanned for citations.
 function getMarkedBlogPosts ($db) {
-	$sql = "SELECT post.BLOG_POST_ID, post.BLOG_ID, post.BLOG_POST_URI FROM BLOG_POST post, SCAN_POSTS sp WHERE sp.BLOG_ID = post.BLOG_ID ORDER BY post.BLOG_POST_DATE_TIME DESC LIMIT 10";
+	$sql = "SELECT post.BLOG_POST_ID, post.BLOG_ID, post.BLOG_POST_URI FROM BLOG_POST post, SCAN_POST sp WHERE sp.BLOG_ID = post.BLOG_ID ORDER BY post.BLOG_POST_DATE_TIME DESC LIMIT 10";
 	$results = mysql_query($sql, $db);
 	
 	$posts = array();
@@ -89,7 +89,7 @@ function getMarkedBlogPosts ($db) {
 // Input: DB Handle
 // Action: Remove markers that are older than 5 days
 function removeExpiredMarks ($db) {
-	$sql = "DELETE FROM SCAN_POSTS WHERE MARKER_DATE_TIME < DATE_SUB(NOW(),INTERVAL 5 day)";
+	$sql = "DELETE FROM SCAN_POST WHERE MARKER_DATE_TIME < DATE_SUB(NOW(),INTERVAL 5 day)";
 	$results = mysql_query($sql, $db);
 }
 
@@ -826,9 +826,8 @@ function formatSearchPostResults($resultData, $citationsInSummary, $errormsgs, $
 			$xml .= "    </source>\n";
 			$xml .= "  </entry>\n";
 		}
-	
-		$xml .= "</feed>\n";
 	}
+	$xml .= "</feed>\n";
 	return $xml;
 }
 

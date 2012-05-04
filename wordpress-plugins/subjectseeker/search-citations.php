@@ -70,7 +70,7 @@ function searchCitations() {
 	if ($step == NULL) {
 		if (! is_user_logged_in()){
 			global $loginUrl;
-			print "<p class=\"ss-warning\">You should <a href=\"$loginUrl\" title=\"Log In Page\">Log In</a> for your blogs to be automatically scanned for citations.</p>";
+			print "<p class=\"ss-warning\">You should <a href=\"$loginUrl\" title=\"Log In Page\">log in</a> for your blogs to be automatically scanned for citations.</p>";
 		}
 		
 		print "<h3>Search Citation</h3>
