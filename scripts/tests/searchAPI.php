@@ -42,7 +42,8 @@ if (! preg_match("/Unrecognized filter: foobar/", $result)) {
 // Search with unknown value
 print "Unknown value:.....";
 $result = doAPISearch("?type=topic&filter0=toplevel&value0=foobar");
-if (! preg_match("/Unrecognized value for filter: /", $result)) {
+//print "\n$result\n";
+if (! preg_match("/Unrecognized value: /", $result)) {
   print "Failure\n";
 } else {
   print "Success\n";
@@ -51,8 +52,8 @@ if (! preg_match("/Unrecognized value for filter: /", $result)) {
 // Posts in particular blog, but incorrect identifier
 print "Bad identifier:.....";
 $result = doAPISearch("?type=post&filter0=blog&value0=foo&modifier0=identifier");
-//print "\n$result\n";
-if (! preg_match("/Identifier value must be numeric: /", $result)) {
+print "\n$result\n";
+if (! preg_match("/Identifier value must be numeric/", $result)) {
   print "Failure\n";
 } else {
   print "Success\n";
@@ -171,7 +172,7 @@ if (isPostResult($result)) {
 
 // DOI
 print "Specify DOI:.....";
-$result = doAPISearch("?type=post&filter0=citation&modifier0=doi&value0=10.1162/jocn.2006.18.11.1947");
+$result = doAPISearch("?type=post&filter0=citation&modifier0=doi&value0=10.1002/stvr.253");
 //print "\n$result\n";
 if (isPostResult($result)) {
   print "Success\n";
