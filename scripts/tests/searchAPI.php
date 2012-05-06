@@ -40,10 +40,9 @@ if (! preg_match("/Unrecognized filter: foobar/", $result)) {
 }
 
 // Search with unknown value
-// FIXME
 print "Unknown value:.....";
 $result = doAPISearch("?type=topic&filter0=toplevel&value0=foobar");
-if (! preg_match("/Unrecognized value: foobar/", $result)) {
+if (! preg_match("/Unrecognized value for filter: /", $result)) {
   print "Failure\n";
 } else {
   print "Success\n";

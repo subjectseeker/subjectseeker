@@ -72,7 +72,7 @@ function insertCitationMarker ($blogId, $db) {
 // Input: DB Handle
 // Output: array of posts urls to be scanned for citations.
 function getMarkedBlogPosts ($db) {
-	$sql = "SELECT post.BLOG_POST_ID, post.BLOG_ID, post.BLOG_POST_URI FROM BLOG_POST post, SCAN_POST sp WHERE sp.BLOG_ID = post.BLOG_ID ORDER BY post.BLOG_POST_DATE_TIME DESC LIMIT 10";
+	$sql = "SELECT post.BLOG_POST_ID, post.BLOG_ID, post.BLOG_POST_URI FROM BLOG_POST post, SCAN_POST sp WHERE MARKER_TYPE_ID = 1 AND sp.BLOG_ID = post.BLOG_ID ORDER BY post.BLOG_POST_DATE_TIME DESC LIMIT 10";
 	$results = mysql_query($sql, $db);
 	
 	$posts = array();
@@ -275,14 +275,17 @@ function generateTopicWhere ($queryList, &$errormsgs) {
 	$whereList = array();
 
   foreach ($queryList as $query) {
-
+		// Escape strings that could be included in the SQL query
+		$searchValue = mysql_real_escape_string($query->value);
+		$searchType = mysql_real_escape_string($query->modifier);
+		
     if ($query->name === "toplevel") {
-      $toplevel = "true";
-      if ($query->value === "false") {
-        $toplevel = "false";
-      }
+			if ($searchValue == "false") $toplevel = "0";
+			elseif ($searchValue == "true" || $searchValue == NULL) $toplevel = "1";
+			else array_push ($errormsgs, "Unrecognized value: $searchValue");
+			
 			array_push($whereList, "topic.TOPIC_TOP_LEVEL_INDICATOR=$toplevel");
-			if ($query->modifier) { array_push ($errormsgs, "Unrecognized modifier: " . $query->modifier);}
+			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
     } else {
       array_push ($errormsgs, "Unknown filter: " . $query->name);
@@ -338,10 +341,10 @@ function generateBlogWhere ($queryList, &$errormsgs) {
       array_push ($errormsgs, "Can't search for blogs by citation");
 
     } else if ($query->name === "has-citation") {
-      $hasCitation = "1";
-      if ($searchValue === "false") {
-        $hasCitation = "0";
-      }
+			if ($searchValue == "false") $hasCitation = "0";
+			elseif ($searchValue == "true" || $searchValue == NULL) $hasCitation = "1";
+			else array_push ($errormsgs, "Unrecognized value: $searchValue");
+			
       array_push ($whereList, "post.BLOG_POST_HAS_CITATION=$hasCitation AND post.BLOG_ID=blog.BLOG_ID");
 			
       if ($searchType === "doi" || $searchType === "pmid" || $searchType === "arxiv" || $searchType === "other") {
@@ -352,12 +355,9 @@ function generateBlogWhere ($queryList, &$errormsgs) {
       }
       
     } else if ($query->name == "identifier") {
-      if (is_numeric($searchValue)) {
-        array_push ($whereList, "blog.BLOG_ID=$searchValue");
-      }
-      else {
-        array_push ($errormsgs, "Identifier value must be numeric.");
-      }
+      if (is_numeric($searchValue)) array_push ($whereList, "blog.BLOG_ID=$searchValue");
+      else array_push ($errormsgs, "Identifier value must be numeric.");
+			
       if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
       
     } else if ($query->name == "title") {
@@ -468,7 +468,10 @@ function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs)
 		if ($query->name == "blog") {
 			if ($searchType === "title-some") {  array_push ($whereList, "blog.BLOG_NAME LIKE '%$searchValue%'"); }
 			elseif ($searchType === "title-all") {  array_push ($whereList, "blog.BLOG_NAME = '$searchValue'"); }
-			elseif ($searchType === "identifier") {  array_push ($whereList, "blog.BLOG_ID = $searchValue"); }
+			elseif ($searchType === "identifier") {
+				if (is_numeric($searchValue)) array_push ($whereList, "blog.BLOG_ID = '$searchValue'");
+				else array_push ($errormsgs, "Identifier value must be numeric.");
+			}
 			elseif ($searchType === "topic") {
 				if ($blogTopics === TRUE) $blogTopicsQuery .= " OR ";
 				$blogTopicsQuery .= "t.TOPIC_NAME='" . mysql_real_escape_string($searchValue) . "' AND blog.BLOG_ID=pbt.BLOG_ID AND pbt.TOPIC_ID=t.TOPIC_ID";
@@ -477,12 +480,9 @@ function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs)
 			else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
 		} else if ($query->name === "identifier") {
-			if (is_numeric($searchValue)) {
-				array_push ($whereList, "post.BLOG_POST_ID=$searchValue");
-			}
-			else {
-				array_push ($errormsgs, "Identifier value must be numeric.");
-			}
+			if (is_numeric($searchValue)) array_push ($whereList, "post.BLOG_POST_ID=$searchValue");
+			else array_push ($errormsgs, "Identifier value must be numeric.");
+			
 			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 		
 		} else if ($query->name === "topic") {
@@ -512,8 +512,9 @@ function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs)
 			$groupCheck = TRUE;
 			
     } else if ($query->name === "has-citation") {
-      $hasCitation = "1";
-      if ($query->value === "false") $hasCitation = "0";
+      if ($searchValue == "false") $hasCitation = "0";
+			elseif ($searchValue == "true" || $searchValue == NULL) $hasCitation = "1";
+			else array_push ($errormsgs, "Unrecognized value: $searchValue");
 			
 			array_push ($whereList, "post.BLOG_POST_HAS_CITATION=$hasCitation");
 			
@@ -526,10 +527,10 @@ function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs)
 			}
 			
     } else if ($query->name === "recommender-status") {
-			$privilege = "0";
-      if ($query->value === "editor") {
-        $privilege = "1";
-      }
+      if ($searchValue == "editor") $privilege = "1";
+      elseif ($searchValue == "user" || $searchValue == NULL) $privilege = "0";
+			else array_push ($errormsgs, "Unrecognized value: $searchValue");
+			
 			array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID AND user.USER_ID = pers.USER_ID AND rec.PERSONA_ID = pers.PERSONA_ID AND user.USER_PRIVILEGE_ID >= $privilege");
 			$groupCheck = TRUE;
 			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
@@ -554,19 +555,20 @@ function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs)
 			else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
 		} else if ($query->name === "min-recommendations") {
-			$minimumRec = (int)$query->value;
-			array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID");
+			if (is_numeric($searchValue)) array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID");
+			else array_push ($errormsgs, "Minimum recommendations value must be numeric.");
+			
 			$groupCheck = TRUE;
 			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
 		} else if ($query->name === "is-recommended") {
-			if ($query->value === "false") {
-			 array_push ($whereList, "NOT EXISTS (SELECT rec.BLOG_POST_ID FROM RECOMMENDATION rec WHERE post.BLOG_POST_ID = rec.BLOG_POST_ID)");
-			}
-			else {
+			if ($searchValue == "false") array_push ($whereList, "NOT EXISTS (SELECT rec.BLOG_POST_ID FROM RECOMMENDATION rec WHERE post.BLOG_POST_ID = rec.BLOG_POST_ID)");
+			elseif ($searchValue == "true" || $searchValue == NULL) {
 				array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID");
 				$groupCheck = TRUE;
 			}
+			else array_push ($errormsgs, "Unrecognized value: $searchValue");
+			
 			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
 		} else {
@@ -673,7 +675,6 @@ function formatSearchPostResults($resultData, $citationsInSummary, $errormsgs, $
     $xml .=  "</feed>\n";
     return $xml;
   }
-	$i = 0;
 	if ($resultData) {
 		while ($row = mysql_fetch_array ($resultData)) {
 			// Timezone stuff
@@ -3535,34 +3536,40 @@ function verifyClaim($blogId, $userId, $blogUri, $blogSyndicationUri, $db) {
     return "no-claim";
   }
 	
-	// Verify that the token exists in the syndication feed
-  foreach ($feed->get_items(0, 5) as $item) {
-    $blogContent = $item->get_content();
-    $pos = strpos($blogContent, $claimToken);
-    if (strcmp("", $pos) != 0 && $pos >= 0) {
-      return "verified";
-    }
-		// If not in this entry of the syndication feed, go to the post and check the HTML code
-		else {
-			$ch = curl_init();    // initialize curl handle
-			curl_setopt($ch, CURLOPT_URL, $item->get_permalink()); // set url to post to
-			curl_setopt($ch, CURLOPT_FAILONERROR, 1);
-			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
-			curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 4s
-			$result = curl_exec($ch);
-			$cerror = curl_error($ch);
-
-			// Error fetching page -> unverified
-			if (($cerror != null & strlen($cerror) > 0) || strlen($result) == 0) {
-				return "unverified";
-			}
-			
-			if (strpos($result, $claimToken) == TRUE) {
+	$feed = getSimplePie($blogSyndicationUri);
+	if ($feed->error()) {
+		print "ERROR: $blogUri (ID $blogId): " . $feed->error() . "\n";
+	}
+	else {
+		// Verify that the token exists in the syndication feed
+		foreach ($feed->get_items(0, 5) as $item) {
+			$blogContent = $item->get_content();
+			$pos = strpos($blogContent, $claimToken);
+			if (strcmp("", $pos) != 0 && $pos >= 0) {
 				return "verified";
 			}
+			// If not in this entry of the syndication feed, go to the post and check the HTML code
+			else {
+				$ch = curl_init();    // initialize curl handle
+				curl_setopt($ch, CURLOPT_URL, $item->get_permalink()); // set url to post to
+				curl_setopt($ch, CURLOPT_FAILONERROR, 1);
+				curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
+				curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
+				curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 4s
+				$result = curl_exec($ch);
+				$cerror = curl_error($ch);
+	
+				// Error fetching page -> unverified
+				if (($cerror != null & strlen($cerror) > 0) || strlen($result) == 0) {
+					return "unverified";
+				}
+				
+				if (strpos($result, $claimToken) == TRUE) {
+					return "verified";
+				}
+			}
 		}
-  }
+	}
 
   return "unverified";
 
