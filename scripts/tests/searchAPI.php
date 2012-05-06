@@ -3,7 +3,7 @@
 <?php
 
 include_once "../ss-globals.php";
-include_once "../ss-util.php";
+//include_once "../ss-util.php";
 
 print "Search API test (searchAPI.php)...\n";
 
@@ -51,9 +51,8 @@ if (! preg_match("/Unrecognized value for filter: /", $result)) {
 // Posts in particular blog, but incorrect identifier
 print "Bad identifier:.....";
 $result = doAPISearch("?type=post&filter0=blog&value0=foo&modifier0=identifier");
-print "\n$result\n";
-if (isPostResult($result)) {
-  // actually we should get a proper error message here
+//print "\n$result\n";
+if (! preg_match("/Identifier value must be numeric: /", $result)) {
   print "Failure\n";
 } else {
   print "Success\n";
@@ -270,5 +269,33 @@ function isPostResult($result) {
 function isBlogResult($result) {
   return preg_match("/<blog><name>/", $result);
 }
+
+
+// DELETEME
+
+// Open a connection to the DB. Return a handle to it.
+function ssDbConnect() {
+
+  global $dbUser;
+  global $dbPass;
+  global $host;
+  global $dbName;
+
+  $cid = mysql_connect($host,$dbUser,$dbPass);
+  if (!$cid) { echo("ERROR: " . mysql_error() . "\n"); }
+  mysql_select_db($dbName, $cid);
+
+  $success = mysql_set_charset("utf8", $cid);
+  if (!$success) { echo("ERROR: " . mysql_error() . "\n"); }
+
+  return $cid;
+}
+
+// Given a handle to the DB, close the connection.
+function ssDbClose($dbConnection) {
+  mysql_close($dbConnection);
+}
+
+
 
 ?>
