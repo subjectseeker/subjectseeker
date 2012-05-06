@@ -356,7 +356,7 @@ function generateBlogWhere ($queryList, &$errormsgs) {
       
     } else if ($query->name == "identifier") {
       if (is_numeric($searchValue)) array_push ($whereList, "blog.BLOG_ID=$searchValue");
-      else array_push ($errormsgs, "Identifier value must be numeric.");
+      else array_push ($errormsgs, "Identifier value must be numeric: $searchValue");
 			
       if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
       
@@ -470,7 +470,7 @@ function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs)
 			elseif ($searchType === "title-all") {  array_push ($whereList, "blog.BLOG_NAME = '$searchValue'"); }
 			elseif ($searchType === "identifier") {
 				if (is_numeric($searchValue)) array_push ($whereList, "blog.BLOG_ID = '$searchValue'");
-				else array_push ($errormsgs, "Identifier value must be numeric.");
+				else array_push ($errormsgs, "Identifier value must be numeric: $searchValue");
 			}
 			elseif ($searchType === "topic") {
 				if ($blogTopics === TRUE) $blogTopicsQuery .= " OR ";
@@ -481,7 +481,7 @@ function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs)
 			
 		} else if ($query->name === "identifier") {
 			if (is_numeric($searchValue)) array_push ($whereList, "post.BLOG_POST_ID=$searchValue");
-			else array_push ($errormsgs, "Identifier value must be numeric.");
+			else array_push ($errormsgs, "Identifier value must be numeric: $searchValue");
 			
 			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 		
@@ -556,7 +556,7 @@ function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs)
 			
 		} else if ($query->name === "min-recommendations") {
 			if (is_numeric($searchValue)) array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID");
-			else array_push ($errormsgs, "Minimum recommendations value must be numeric.");
+			else array_push ($errormsgs, "Minimum recommendations value must be numeric: $searchValue");
 			
 			$groupCheck = TRUE;
 			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
