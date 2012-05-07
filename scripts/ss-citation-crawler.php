@@ -24,8 +24,9 @@ function getMarkedBlogs ($db) {
 
 // Input: Blog ID, DB Handle
 // Output: array of posts urls to be scanned for citations.
+// TO DO: Remove this function and use search function instead.
 function getMarkedPosts ($blogId, $db) {
-	$sql = "SELECT BLOG_POST_ID, BLOG_POST_URI FROM BLOG_POST WHERE BLOG_ID = $blogId ORDER BY BLOG_POST_DATE_TIME LIMIT 5";
+	$sql = "SELECT BLOG_POST_ID, BLOG_POST_URI FROM BLOG_POST WHERE BLOG_ID = $blogId ORDER BY BLOG_POST_DATE_TIME DESC LIMIT 10";
 	$results = mysql_query($sql, $db);
 	
 	$posts = array();
@@ -75,7 +76,9 @@ foreach ($links as $link) {
 			}
 		}
 	}
-	unset($feed);
+	
+	$feed = NULL;
+	$data = NULL;
 }
 
 // Connect to the database.
@@ -118,6 +121,10 @@ foreach ($links as $link) {
 	foreach ($urlData as $link) {
 		$urls[] = (string)$link->href;
 	}
+	
+	$xml = NULL;
+	$html = NULL;
+	$doc = NULL;
 }
 
 $db = ssDbConnect();
