@@ -9,6 +9,43 @@
 include_once "ss-globals.php";
 include_once "ss-util.php";
 
+// Input: DB Handle
+// Output: array of posts urls to be scanned for citations.
+function getMarkedBlogs ($db) {
+	$sql = "SELECT BLOG_ID FROM SCAN_POST WHERE MARKER_TYPE_ID = 1";
+	$results = mysql_query($sql, $db);
+
+	while ($row = mysql_fetch_array($results)) {
+		$blogIds[] = $row["BLOG_ID"];
+	}
+	
+	return $blogIds;
+}
+
+// Input: Blog ID, DB Handle
+// Output: array of posts urls to be scanned for citations.
+function getMarkedPosts ($blogId, $db) {
+	$sql = "SELECT BLOG_POST_ID, BLOG_POST_URI FROM BLOG_POST WHERE BLOG_ID = $blogId ORDER BY BLOG_POST_DATE_TIME LIMIT 5";
+	$results = mysql_query($sql, $db);
+	
+	$posts = array();
+	while ($row = mysql_fetch_array($results)) {
+		$post["id"] = $row["BLOG_POST_ID"];
+		$post["blogId"] = $blogId;
+		$post["url"] = $row["BLOG_POST_URI"];
+		array_push($posts, $post);
+	}
+	
+	return $posts;
+}
+
+// Input: DB Handle
+// Action: Remove markers that are older than 5 days
+function removeExpiredMarks ($db) {
+	$sql = "DELETE FROM SCAN_POST WHERE MARKER_DATE_TIME < DATE_SUB(NOW(),INTERVAL 5 day)";
+	$results = mysql_query($sql, $db);
+}
+
 // List of feeds to find common posts.
 $links = array(
 'http://www.researchblogging.org/feeds/alltopics/english.xml',
@@ -104,10 +141,16 @@ while ($row = mysql_fetch_array($results)) {
 }
 
 // Get blogs from users that have generated a citation recently
-$markedPosts = getMarkedBlogPosts ($db);
-foreach ($markedPosts as $markedPost) {
-	array_push($posts, $markedPost);
+$blogIds = getMarkedBlogs ($db);
+foreach ($blogIds as $blogId) {
+	$markedPosts = getMarkedPosts ($blogId, $db);
+	foreach ($markedPosts as $markedPost) {
+		array_push($posts, $markedPost);
+	}
 }
+$blogIds = NULL;
+$markedPosts = NULL;
+$markedPost = NULL;
 
 // Our $posts list now contains posts which have some common data
 // with posts in the feed we're crawling.

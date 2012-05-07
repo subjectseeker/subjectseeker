@@ -186,13 +186,15 @@ function AdminPosts() {
 				}
 				if ($result != NULL && $step == 'edit') {
 					global $adminPosts;
-					print "<div class=\"ss-div-2\">$postTitle (ID $postId): <ul class=\"ss-error\">$result</ul></div>
+					print "<div class=\"ss-div-2\"><p>$postTitle (ID $postId):</p> <ul class=\"ss-error\">$result</ul></div>
 					<form class=\"ss-div\" method=\"POST\">
 					<input type=\"hidden\" name=\"step\" value=\"confirmed\" />
 					<input type=\"hidden\" name=\"postId\" value=\"$postId\" />
 					<input type=\"hidden\" name=\"title\" value=\"".htmlspecialchars($postTitle, ENT_QUOTES)."\" />
 					<input type=\"hidden\" name=\"url\" value=\"".htmlspecialchars($postUrl, ENT_QUOTES)."\" />
 					<input type=\"hidden\" name=\"summary\" value=\"".htmlspecialchars($postSummary, ENT_QUOTES)."\" />
+					<input type=\"hidden\" name=\"postDate\" value=\"".htmlspecialchars($postDate, ENT_QUOTES)."\" />
+					<input type=\"hidden\" name=\"addedDate\" value=\"".htmlspecialchars($addedDate, ENT_QUOTES)."\" />
 					<input type=\"hidden\" name=\"recommended\" value=\"$recommended\" />
 					<input type=\"hidden\" name=\"status\" value=\"$postStatus\" />
 					<input type=\"hidden\" name=\"image\" value=\"$image\" />

@@ -62,37 +62,6 @@ function crawlBlogs($blog, $db) {
 	return $message;
 }
 
-// Input: Blog ID, DB handle.
-// Action: Insert mark to scan blogs for citations.
-function insertCitationMarker ($blogId, $db) {
-	$sql = "REPLACE INTO SCAN_POST (BLOG_ID, MARKER_DATE_TIME, MARKER_TYPE_ID) VALUES ($blogId, NOW(), 1)";
-	mysql_query($sql, $db);
-}
-
-// Input: DB Handle
-// Output: array of posts urls to be scanned for citations.
-function getMarkedBlogPosts ($db) {
-	$sql = "SELECT post.BLOG_POST_ID, post.BLOG_ID, post.BLOG_POST_URI FROM BLOG_POST post, SCAN_POST sp WHERE MARKER_TYPE_ID = 1 AND sp.BLOG_ID = post.BLOG_ID ORDER BY post.BLOG_POST_DATE_TIME DESC LIMIT 10";
-	$results = mysql_query($sql, $db);
-	
-	$posts = array();
-	while ($row = mysql_fetch_array($results)) {
-		$post["id"] = $row["BLOG_POST_ID"];
-		$post["blogId"] = $row["BLOG_ID"];
-		$post["url"] = $row["BLOG_POST_URI"];
-		array_push($posts, $post);
-	}
-	
-	return $posts;
-}
-
-// Input: DB Handle
-// Action: Remove markers that are older than 5 days
-function removeExpiredMarks ($db) {
-	$sql = "DELETE FROM SCAN_POST WHERE MARKER_DATE_TIME < DATE_SUB(NOW(),INTERVAL 5 day)";
-	$results = mysql_query($sql, $db);
-}
-
 /*
  * Curl functions
  */
@@ -3159,11 +3128,11 @@ function checkCitations ($postUri, $postId, $db) {
 	
   $doc = new DOMDocument();
   @$doc->loadHTML($html);
+	$xpath = new DOMXPath( $doc );
 	$xml = simplexml_import_dom($doc);
 	
 	// Search for Z3988 class and return all its contents
 	$getCitations = $xml->xpath('//*[@class=\'Z3988\']');
-	
 	// Parse citation
 	foreach ($getCitations as $data) {
 		$values = urldecode((string)$data->attributes()->title);
@@ -3171,7 +3140,7 @@ function checkCitations ($postUri, $postId, $db) {
 		preg_match("/(?<=ss.included=)./", $values, $ssInclude);
 		if (($rbInclude[0] == 1 && $ssInclude[0] == NULL) || ($ssInclude[0] == 1)) {
 			storeTopics ($postId, $values, $db);
-			$citation[] = $data -> asXML();;
+			$citations[] = $data -> asXML();;
 		}
 	}
 	
@@ -3301,6 +3270,13 @@ function storeArticle ($articleData, $source, $db) {
 	mysql_query($sql, $db);
 	
 	return $articleId;
+}
+
+// Input: Blog ID, DB handle.
+// Action: Insert mark to scan blogs for citations.
+function insertCitationMarker ($blogId, $db) {
+	$sql = "REPLACE INTO SCAN_POST (BLOG_ID, MARKER_DATE_TIME, MARKER_TYPE_ID) VALUES ($blogId, NOW(), 1)";
+	mysql_query($sql, $db);
 }
 
 // Input: citation text in COinS format
