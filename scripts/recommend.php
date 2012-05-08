@@ -36,11 +36,11 @@ $recCount = getRecommendationsCount($postId, NULL, NULL, NULL, $db);
 // Update recommendation button.
 if ($recStatus == TRUE) {
 	print "<div class=\"recommend\" id=\"remove\" title=\"Remove recommendation and note\" style=\"background-image: url($imagesUrl/icons/ss-sprite.png); height: 18px; background-position: center -19px; background-repeat: no-repeat;\"></div>
-	$count";
+	$recCount";
 }
 else {
 	print "<div class=\"recommend\" id=\"recommend\" title=\"Recommend\" style=\"background-image: url($imagesUrl/icons/ss-sprite.png); height: 18px; background-position: center 0px; background-repeat: no-repeat;\"></div>
-	$count";
+	$recCount";
 }
 
 ?>

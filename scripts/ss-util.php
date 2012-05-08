@@ -196,27 +196,10 @@ function generateSearchQuery ($queryList, $settings, &$errormsgs, $db) {
   $offset = "OFFSET $offsetNumber";
 
   // Construct FROM part of query
-  $from = "";
-  foreach ($fromList as $oneFrom => $status) {
-    if ($from === "") {
-      $from = "FROM $oneFrom";
-    } else {
-      $from .= ", $oneFrom";
-    }
-  }
-  $from .= " ";
-
-  // Construct WHERE part of query
-  $where = "";
-  foreach ($whereList as $oneWhere) {
-    if ($where === "") {
-      $where = "WHERE ($oneWhere)";
-    } else {
-      $where .= " AND ($oneWhere)";
-    }
-  }
-  $where .= " ";
+	$from = constructFrom($fromList);
 	
+  // Construct WHERE part of query
+	$where = constructWhere($whereList);
 	
   // construct SQL query
   $sql = "$select $from $where $group $count $order $limit $offset;";
@@ -228,6 +211,40 @@ function generateSearchQuery ($queryList, $settings, &$errormsgs, $db) {
  	$resultData = mysql_query($sql, $db);
 	
 	return $resultData;
+}
+
+// Input: Array of SQL where statements
+// Output: String for SQL query
+function constructWhere ($whereList) {
+	$whereList = array_unique($whereList);
+	
+	$where = "";
+  foreach ($whereList as $oneWhere) {
+    if ($where === "") {
+      $where = "WHERE ($oneWhere)";
+    } else {
+      $where .= " AND ($oneWhere)";
+    }
+  }
+  $where .= " ";
+	
+	return $where;
+}
+
+// Input: Array of SQL from statements
+// Output: String for SQL query
+function constructFrom ($fromList) {
+	$from = "";
+  foreach ($fromList as $oneFrom => $status) {
+    if ($from === "") {
+      $from = "FROM $oneFrom";
+    } else {
+      $from .= ", $oneFrom";
+    }
+  }
+  $from .= " ";
+	
+	return $from;
 }
 
 // Input: list of search queries for a topic search
@@ -1355,22 +1372,32 @@ function markCrawled ($blogId, $db) {
 // Input: Post ID, Type of count, Persona ID, Privilege ID, DB handle
 // Output: Number of recommendations or comments for this post
 function getRecommendationsCount($postId, $type, $personaId, $userPrivilegeId, $db) {
-	$from = "FROM RECOMMENDATION rec";
-	$where = "WHERE rec.BLOG_POST_ID = $postId";
+	$whereList = array();
+	
+	$fromList["RECOMMENDATION rec"] = true;
+	array_push ($whereList, "rec.BLOG_POST_ID = $postId");
 	if ($personaId) {
 		// Don't add table if it's going to be added later
-		if (! $userPrivilegeId) $from .= ", PERSONA pers";
-		$where .= " AND pers.PERSONA_ID = $personaId";
+		$fromList["PERSONA pers"] = true;
+		array_push ($whereList, "pers.PERSONA_ID = $personaId", "pers.PERSONA_ID = rec.PERSONA_ID");
 	}
 	if (is_numeric($userPrivilegeId)) {
-		$from .= ", PERSONA pers, USER user";
+		$fromList["PERSONA pers"] = true;
+		$fromList["USER user"] = true;
 		if ($userPrivilegeId == 1) $privilegeQuery = "> 0";
 		else $privilegeQuery = "= $userPrivilegeId";
-		$where .= "  AND pers.PERSONA_ID = rec.PERSONA_ID AND pers.USER_ID = user.USER_ID AND user.USER_PRIVILEGE_ID $privilegeQuery";
+		array_push ($whereList, "pers.PERSONA_ID = rec.PERSONA_ID", "pers.USER_ID = user.USER_ID", "user.USER_PRIVILEGE_ID $privilegeQuery");
 	}
 	if ($type == "comments") {
-		$where .= " AND REC_COMMENT != ''";
+		array_push ($whereList, "REC_COMMENT != ''");
 	}
+	
+	// Construct FROM part of query
+	$from = constructFrom($fromList);
+	
+  // Construct WHERE part of query
+	$where = constructWhere($whereList);
+	
 	$sql = "SELECT COUNT(rec.PERSONA_ID) $from $where";
 	$result = mysql_query($sql, $db);
 	$count = mysql_result($result, 0);

@@ -10,7 +10,7 @@ include_once "ss-globals.php";
 include_once "ss-util.php";
 
 // Input: DB Handle
-// Output: array of posts urls to be scanned for citations.
+// Output: array of marked blog IDs
 function getMarkedBlogs ($db) {
 	$sql = "SELECT BLOG_ID FROM SCAN_POST WHERE MARKER_TYPE_ID = 1";
 	$results = mysql_query($sql, $db);
@@ -23,7 +23,7 @@ function getMarkedBlogs ($db) {
 }
 
 // Input: Blog ID, DB Handle
-// Output: array of posts urls to be scanned for citations.
+// Output: array of posts to be scanned for citations.
 // TO DO: Remove this function and use search function instead.
 function getMarkedPosts ($blogId, $db) {
 	$sql = "SELECT BLOG_POST_ID, BLOG_POST_URI FROM BLOG_POST WHERE BLOG_ID = $blogId ORDER BY BLOG_POST_DATE_TIME DESC LIMIT 10";
