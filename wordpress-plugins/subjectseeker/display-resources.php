@@ -74,7 +74,7 @@ function doDisplayResources() {
 	$errormsgs = array();
 	$settings["type"] = "blog";
 	$settings["limit"] = "500";
-	$blogsData = generateSearchQuery ($queryList, $settings, $errormsgs, $db);
+	$blogsData = generateSearchQuery ($queryList, $settings, 0, $errormsgs, $db);
 	
 	if (! empty($errormsgs)) {
 		print "<div id=\"padding-content\">";
@@ -100,9 +100,9 @@ function doDisplayResources() {
 	}
 	
 	else {
-		print "<hr />";
+		print "<h2>Index of Active Scientific Sources</h2>
+		<hr />";
 		foreach ($blogs as $item) {
-			
 			if (! $item["description"]) {
 				$item["description"] = "No summary available for this blog.";
 			}

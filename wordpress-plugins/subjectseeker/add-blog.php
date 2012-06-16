@@ -65,86 +65,88 @@ function get_ssAddBlog($settings = array()) {
  * Non-plugin functions
  */
 
-function determineStep()
-{
-
+function determineStep() {
   if (is_user_logged_in()){
-
     global $current_user;
     get_currentuserinfo();
     $displayName = $current_user->user_login;
     $email = $current_user->user_email;
+	}
+	else {
+		global $loginUrl;
+		print "<p class=\"ss-warning\">You can claim your blog if you <a href=\"$loginUrl\" title=\"Log In Page\">log in</a>.</p>";
+	}
+	
+	$step = $_REQUEST["step"];
+	$blogId = $_REQUEST["blogId"];
 
-    $step = $_REQUEST["step"];
-    $blogId = $_REQUEST["blogId"];
+	// Connect to DB.
+	$db  = ssDbConnect();
 
-    // Connect to DB.
-    $db  = ssDbConnect();
-
-    if ($step === null) {
-      displayBlogForm(null, $db);
-    } else if ($step === "blogInfo") {
-      doAddBlog($db);
-    } else if ($step === "verify") {
-      doVerifyClaim($blogId, $displayName, $db);
-    } else if ($step === "userAuthorLinkForm") {
-      doLinkUserAndAuthor($displayName, $db);
-    } else {
-      print "ERROR: Unknown step $step.";
-    }
-
-    // DELETEME ssDbClose($db);
-    // this line of code causes errors in other plugins on the same page
-    // dunno why, but the doc says it is not necessary to explicitly close a db connection
-
-  } else {
-    print "You must log in before you can add a blog.<br />\n";
-  }
+	if ($step === null) {
+		displayBlogForm(null, $db);
+	} else if ($step === "blogInfo") {
+		doAddBlog($db);
+	} else if ($step === "verify") {
+		if (! $displayName) {
+			global $loginUrl;
+			print "<p class=\"ss-error\">Error: You must <a href=\"$loginUrl\" title=\"Log In Page\">log in</a> to claim a blog.</p>\n";
+			return;
+		}
+		doVerifyClaim($blogId, $displayName, $db);
+	} else if ($step === "userAuthorLinkForm") {
+		if (! $displayName) {
+			global $loginUrl;
+			print "<p class=\"ss-error\">Error: You must <a href=\"$loginUrl\" title=\"Log In Page\">log in</a> to claim a blog.</p>\n";
+			return;
+		}
+		doLinkUserAndAuthor($displayName, $db);
+	} else {
+		print "ERROR: Unknown step $step.";
+	}
 }
 
 function displayBlogForm ($errormsg, $db) {
-  $blogname = $_REQUEST["blogname"];
-  $blogurl = $_REQUEST["blogurl"];
-  $blogsyndicationuri = $_REQUEST["blogsyndicationuri"];
-  $blogdescription = $_REQUEST["blogdescription"];
+  $blogName = $_REQUEST["blogname"];
+  $blogUri = $_REQUEST["blogurl"];
+  $blogSyndicationUri = $_REQUEST["blogsyndicationuri"];
+  $blogDescription = $_REQUEST["blogdescription"];
 
-  global $current_user;
-  get_currentuserinfo();
-  $displayName = $current_user->user_login;
-
-  // If this is the first time this user has tried to interact with
-  // the SS system, create a USER entry for them
-  $userId = addUser($displayName, $email, $db);
+	if (is_user_logged_in()){
+		global $current_user;
+		get_currentuserinfo();
+		$displayName = $current_user->user_login;
+	
+		// If this is the first time this user has tried to interact with
+		// the SS system, create a USER entry for them
+		$userId = addUser($displayName, $email, $db);
+	}
 
   // Only active users can claim blogs
   $userStatus = getUserStatus($userId, $db);
   if ($userStatus != 0) {
-    print "<p class=\"error\"><font color=\"red\">You cannot claim this blog as your account is not currently active. You may <a href='/contact-us/'>contact us</a> to ask for more information.</font></p>\n";
+    print "<p class=\"ss-error\">You cannot claim this blog as your account is not currently active. You may <a href='/contact-us/'>contact us</a> to ask for more information.</p>\n";
     return;
   }
 
 
 ?>
-
-<h2>Add a new blog to the system</h2>
-   <p>If you have a large number of blogs to add to the system, please <a href='/contact-us/'>contact us</a> to discuss a data upload.</p>
+<h2>Add a new source.</h2>
+<p>Submit a new source to be aggregated by our system. If you have a large number of blogs to add to the system, please <a href='/contact-us/'>contact us</a> to discuss a data upload.</p>
 <form method="POST">
 <input type="hidden" name="step" value="blogInfo" />
 <?php
 
-   if ($errormsg !== null) {
-     print "<p><font color='red'>Error: $errormsg</font></p>\n";
-   }
+	if ($errormsg !== null) {
+		print "<p class=\"ss-error\">Error: $errormsg</p>\n";
+	}
 
-
-  print "Welcome, $displayName<br /><br />\n";
-
-  print "<p>*Required field</p>\n<p>\n";
-  print "*Blog name: <input type=\"text\" name=\"blogname\" size=\"40\" value=\"$blogname\"/>\n</p>\n<p>\n*Blog URL: <input type=\"text\" name=\"blogurl\" size=\"40\" value=\"$blogurl\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)";
-  print "</p><p>*Blog syndication URL: <input type=\"text\" name=\"blogsyndicationuri\" size=\"40\" value=\"$blogsyndicationuri\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)";
-  print "</p><p>Blog description:<br /><textarea name=\"blogdescription\" rows=\"5\" cols=\"60\">$blogdescription</textarea><br />\n";
-
-  print "Blog topics: <select name='topic1'>\n";
+  print "<h3>General Information</h3>
+	<p>Blog Name: <input type=\"text\" name=\"blogName\" size=\"40\" value=\"\"/></p>\n
+	<p>Blog URL: <input type=\"text\" name=\"blogUri\" size=\"40\" value=\"\" /><br /><span class=\"subtle-text\">(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</span></p>\n
+	<p>Blog Syndication URL: <input type=\"text\" name=\"blogSyndicationUri\" size=\"40\" value=\"\" /><br /><span class=\"subtle-text\">(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</span></p>
+	<p>Blog Description <span class=\"subtle-text\">(Optional)</span>:<br /><textarea name=\"blogDescription\" rows=\"5\" cols=\"60\"></textarea></p>\n";
+  print "<p>Blog Topics: <select name='topic1'>\n";
   print "<option value='-1'>None</option>\n";
   $topicList = getTopicList(true, $db);
   while ($row = mysql_fetch_array($topicList)) {
@@ -156,87 +158,66 @@ function displayBlogForm ($errormsg, $db) {
   while ($row = mysql_fetch_array($topicList)) {
     print "<option value='" . $row["TOPIC_ID"] . "'> " . $row["TOPIC_NAME"] . "</option>\n";
   }
-  print "</select>\n";
-?>
-
-<p>
-<p><input type="checkbox" name="userIsAuthor" /> I want to be identified as an author of this blog.</p>
-<input class="ss-button" type="submit" value="Add blog" />
-</p>
-</form>
-
-<?php
+  print "</select></p>\n<p>";
+	if ($userId) {
+		print "<p><input type=\"checkbox\" name=\"userIsAuthor\" /> I want to be identified as an author of this blog.</p>";
+	}
+	print "<hr class=\"ss-div-2\" />
+	<h3>Social Networks</h3>
+	<p>Blog Twitter Handle <span class=\"subtle-text\">(Optional)</span>: <input type=\"text\" name=\"twitterHandle\" size=\"40\" value=\"\"/></p>\n
+	<hr class=\"ss-div-2\" />
+	<input class=\"ss-button\" type=\"submit\" value=\"Add Blog\" />
+	</form>";
 }
 
 function doAddBlog ($db) {
-  $blogname = $_REQUEST["blogname"];
-  $blogurl = $_REQUEST["blogurl"];
-  $blogsyndicationuri = $_REQUEST["blogsyndicationuri"];
-  $blogdescription = $_REQUEST["blogdescription"];
+  $blogName = $_REQUEST["blogName"];
+  $blogUri = $_REQUEST["blogUri"];
+  $blogSyndicationUri = $_REQUEST["blogSyndicationUri"];
+  $blogDescription = $_REQUEST["blogDescription"];
   $topic1 = $_REQUEST["topic1"];
   $topic2 = $_REQUEST["topic2"];
+	$twitterHandle = $_REQUEST["twitterHandle"];
   $userIsAuthor = $_REQUEST["userIsAuthor"];
 
   global $current_user;
   get_currentuserinfo();
   $displayName = $current_user->user_login;
   $email = $current_user->user_email;
-  
-  // check that there is a name
-  if ($blogname == null) {
-	  displayblogForm("You need to submit a name for the blog", $db);
-	  return;
-  }
-
-  // check that blog URL is fetchable
-  if (! uriFetchable($blogurl)) {
-    displayBlogForm("Unable to fetch the contents of your blog at $blogurl. Did you remember to put \"http://\" before the URL when you entered it? If you did, make sure your blog page is actually working, or <a href='/contact-us/'>contact us</a> to ask for help in resolving this problem.", $db);
-    return;
-  }
-
-  // check that syndication feed is parseable
-  $feed = getSimplePie($blogsyndicationuri);
-  if ($feed->get_type() == 0) {
-    displayBlogForm("Unable to parse feed at $blogsyndicationuri. Are you sure it is Atom or RSS?", $db);
-    return;
-  }
-  
-  // Check that the user has selected at least one topic
-  if ($topic1 == -1 && $topic2 == -1) {
-	  displayBlogForm("You need to choose at least one topic.", $db);
-	  return;
-  }
-  
-  // check that blog URL and blog syndication URL are not the same
-  if ($blogurl == $blogsyndicationuri) {
-	  displayBlogForm("The blog URL (homepage) and the blog syndication URL (RSS or Atom feed) need to be different.", $db);
-	  return;
-  }
-
-  // If this is the first time this user has tried to interact with
-  // the SS system, create a USER entry for them
-  $userId = addUser($displayName, $email, $db);
-	$userPriv = getUserPrivilegeStatus($userId, $db);
 	
-  $addBlog = addBlog($blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $db);
-
-  $blogId = $addBlog["id"];
-
-  if ($addBlog["errormsg"] === null) {
-    echo "<p>Successfully added blog to the system.</p>";
-		if ($userPriv == 0) {
-			 echo "<p>This blog will not be publicly displayed in the system until it has been approved by a $sitename editor.</p>";
+	$errors = checkBlogData(NULL, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, NULL, $topic1, $topic2, $twitterHandle, $userId, $db);
+	
+	if ($errors) {
+		print "<ul class=\"ss-error\">$errors</ul>";
+	}
+	else {
+		// If this is the first time this user has tried to interact with
+		// the SS system, create a USER entry for them
+		$userId = addUser($displayName, $email, $db);
+		$userPriv = getUserPrivilegeStatus($userId, $db);
+		
+		$addBlog = addBlog($blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $db);
+	
+		$blogId = $addBlog["id"];
+		
+		addBlogSocialAccount (1, $twitterHandle, $blogId, $db);
+	
+		if ($addBlog["errormsg"] === null) {
+			echo "<p>Successfully added blog to the system.</p>";
+			if ($userPriv == 0) {
+				echo "<p>This source will not be publicly displayed in the system until it has been approved by an editor.</p>";
+			}
+		} else {
+			// Blog is already in the system.
+			print "<p class=\"ss-error\">ERROR: " . $addBlog["errormsg"] . "</p>\n";
+			print "<p class=\"info\">This could be because it was pre-populated in our database, someone else submitted it, or because our editors rejected it.</p><p class=\"info\">If it was rejected, you should have received an email from us explaining why.</p><p class=\"info\">Otherwise, you can <a href=\"/claimblog/?blogId=$blogId\">claim the blog</a> to show that you are (one of) the author(s). See our <a href=\"/help\">help pages</a> for more information.</p>\n";
+			return;
 		}
-  } else {
-    // Blog is already in the system.
-    print "<p class=\"ss-error\">ERROR: " . $addBlog["errormsg"] . "</p>\n";
-    print "<p class=\"info\">This could be because it was pre-populated in our database, someone else submitted it, or because our editors rejected it.</p><p class=\"info\">If it was rejected, you should have received an email from us explaining why.</p><p class=\"info\">Otherwise, you can <a href=\"/claimblog/?blogId=$blogId\">claim the blog</a> to show that you are (one of) the author(s). See our <a href=\"/help\">help pages</a> for more information.</p>\n";
-    return;
-  }
-
-  if ($userIsAuthor === "on") {
-    doClaimBlog($blogId, $displayName, $email, $db);
-  }
+		
+		if ($userIsAuthor === "on") {
+			doClaimBlog($blogId, $displayName, $email, $db);
+		}
+	}
 }
 
 ?>

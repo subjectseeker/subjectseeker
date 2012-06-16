@@ -65,38 +65,42 @@ function get_ssEditBlog($settings = array()) {
  * Non-plugin functions
  */
 
-function determineEditStep()
-{
-
+function determineEditStep() {
   if (is_user_logged_in()){
+		
+		// Connect to DB.
+		$db  = ssDbConnect();
 
-    global $current_user;
-    get_currentuserinfo();
-    $displayName = $current_user->user_login;
-    $email = $current_user->user_email;
-
-    $step = $_REQUEST["step"];
-    $blogId = $_REQUEST["blogId"];
-
-    // Connect to DB.
-    $db  = ssDbConnect();
-
-    if ($step === null) {
-      displayEditBlogsForm(null, $db);
-    } else if ($step === "doEdit") {
-      doEditBlog($db);
-    } else if ($step === "verify") {
-      doVerifyEditClaim($db);
-    } else {
-      print "ERROR: Unknown step $step.";
-    }
-
-    // DELETEME ssDbClose($db);
-    // this line of code causes errors in other plugins on the same page
-    // dunno why, but the doc says it is not necessary to explicitly close a db connection
+		global $current_user;
+		get_currentuserinfo();
+		$displayName = $current_user->user_login;
+		$email = $current_user->user_email;
+		$userId = addUser($displayName, $email, $db);
+		$userPriv = getUserPrivilegeStatus($userId, $db);
+	
+		$step = $_REQUEST["step"];
+		$blogId = $_REQUEST["blogId"];
+		
+		if ($step) {
+			confirmEditBlog ($step, $userId, $userPriv, $db);
+		}
+		
+		$blogIds = getBlogIdsByUserId($userId, $db);
+		if (sizeof($blogIds) == 0) {
+			print "<p class='msg'>$displayName has no blogs.</p>";
+			return;
+		}
+	
+		$blogData = blogIdsToBlogData($blogIds, $db);
+		
+		print "<h2>Edit your active sites</h2>
+		<hr />";
+		while ($row = mysql_fetch_array($blogData)) {
+			editBlogForm($row, $userPriv, "open", $db);
+		}
 
   } else {
-    print "You must log in before you can edit your blog.<br />\n";
+    print "<p>You must log in before you can edit your blog.</p>\n";
   }
 }
 

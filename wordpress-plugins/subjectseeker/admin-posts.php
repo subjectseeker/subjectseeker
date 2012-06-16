@@ -71,7 +71,6 @@ function AdminPosts() {
 			$userId = addUser($displayName, $email, $db);
 			$userPriv = getUserPrivilegeStatus($userId, $db);
 			
-			print "<p>Hello, $displayName.</p>\n";	
 			if ($userPriv > 1) { // admin
 				$arrange = $_REQUEST["arrange"];
 				$order = $_REQUEST["order"];
@@ -179,10 +178,8 @@ function AdminPosts() {
 						}
 						print "<hr />";
 					}
-					
 					editPost ($postId, $postTitle, $postUrl, $postSummary, $postStatus, $userId, $displayName, $postDate, $addedDate, $db);
 					print "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> $postTitle (ID $postId) was updated.</div>";
-					
 				}
 				if ($result != NULL && $step == 'edit') {
 					global $adminPosts;
@@ -242,7 +239,7 @@ function AdminPosts() {
 					<p>Post Time: <input type=\"text\" name=\"postDate\" size=\"40\" value=\"$postDate\"/></p>
 					<p>Added Time: <input type=\"text\" name=\"addedDate\" size=\"40\" value=\"$addedDate\"/></p>
 					<p>Title: <input type=\"text\" name=\"title\" size=\"40\" value=\"".htmlspecialchars($postTitle, ENT_QUOTES)."\"/></p>
-					<p><a href=\"$postUrl\" target=\"_blank\">URL:</a> <input type=\"text\" name=\"url\" size=\"40\" value=\"".htmlspecialchars($postUrl, ENT_QUOTES, "UTF-8")."\" /></p>
+					<p><a href=\"$postUrl\" target=\"_blank\">URL:</a> <input type=\"text\" name=\"url\" size=\"40\" value=\"".htmlspecialchars($postUrl, ENT_QUOTES)."\" /></p>
 					<p>Summary:<br />
 					<textarea name=\"summary\" rows=\"5\" cols=\"55\">$postSummary</textarea></p>";
 					print "<p>Status: <select name='status'>";

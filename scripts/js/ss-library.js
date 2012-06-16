@@ -7,8 +7,7 @@ $(document).ready(function() {
 	function updateComments (element) {
 		var parent = $(element).parents('.data-carrier');
 		var id = $(parent).attr("id");
-		var persona = $(parent).attr('data-personaId');
-		var dataString = 'id='+ id + '&persona='+ persona + '&step=showComments';
+		var dataString = 'id='+ id + '&step=showComments';
 		var insert = $(parent).find('.comments-list-wrapper');
 		$(insert).html(loadingGif).fadeIn('slow');
 			$.ajax({
@@ -31,10 +30,16 @@ $(document).ready(function() {
 	}
 	
 	function toggleSlider (button) {
-		$(button).next('.ss-slide-wrapper').slideToggle(400, "swing", function() {
+		var slider = $(button).next('.ss-slide-wrapper');
+		slider.slideToggle(400, "swing", function() {
 			updateCommentsButton(this);
+			if(slider.is(':visible')){
+				$(button).find(".arrow-down,.arrow-up").attr("class", "arrow-up");
+			}
+			else {
+				$(button).find(".arrow-down,.arrow-up").attr("class", "arrow-down");
+			}
 		});
-		$(button).find(".arrow-down,.arrow-up").toggleClass("arrow-up arrow-down");
 	}
 	
 	function updateCommentsButton (element) {
@@ -81,9 +86,9 @@ $(document).ready(function() {
 		onSelect: updateCoords
 	});
 	
-	$('.ss-slide-wrapper, #loading-message').hide();
+	$('#loading-message').hide();
 	
-	$('.recommend').each(function() {
+	$('.red-star,.grey-star').each(function() {
 		if($(this).attr('id') == 'recommend') {
 			$(this).parents('.data-carrier').find('.rec-comment').hide();
 		}
@@ -133,14 +138,18 @@ $(document).ready(function() {
 	$('.data-carrier').on('click', '.submit-comment', function() {
 		var parent = $(this).parents('.data-carrier');
 		var id = $(parent).attr("id");
-		var persona = $(parent).attr("data-personaId");
 		var step = $(this).attr("data-step");
 		var comment = $(parent).find('textarea').val();
 		var commentButton = $(parent).find('.comment-button');
-		var dataString = 'id='+ id + '&persona='+ persona + '&comment=' + comment + '&step=' + step;
 		var insert = $(parent).find('.comments-list-wrapper');
 		var commentTextArea = $(parent).find('.text-area');
 		var commentNotification = commentTextArea.next('.comment-notification');
+		
+		if (parent.find('.tweet-note').is(":checked")) {
+			var tweetNote = 'true';
+		}
+		
+		var dataString = 'id='+ id + '&comment=' + comment + '&tweet=' + tweetNote + '&step=' + step;
 		
 		insert.html(loadingGif).fadeIn('slow');
 		$.ajax({
@@ -167,7 +176,7 @@ $(document).ready(function() {
 				updateComments(insert);
 				commentTextArea.slideUp();
 			}
-		});	
+		});
 	});
 	
 	$('.comment-button').click(function() {
@@ -187,16 +196,16 @@ $(document).ready(function() {
 		toggleSlider(sliderButton);
 	});
 	
-	$('.recommendation-wrapper').on('click', '.recommend', function() {
+	$('.recommendation-wrapper').on('click', '.red-star,.grey-star', function() {
 		var parent = $(this).parents('.data-carrier');
+		var user = $(parent).attr("data-user");
 		var id = $(parent).attr("id");
 		var step = $(this).attr("id");
-		var persona = $(parent).attr("data-personaId");
-		var dataString = 'id='+ id + '&persona='+ persona + '&step=' + step;
+		var dataString = 'id='+ id +'&step=' + step;
 		var recWrapper = $(this).closest('.recommendation-wrapper');
 		var commentTextArea = $(parent).find('.rec-comment');
 		
-		if (persona == '') {
+		if (user.lenght == 0) {
 			$('#notification-area').slideDown();
 			$('#notification-content').html('<p>You must register to be able to recommend posts.</p><a class="ss-button" href="/wp-login.php">Log In</a> <a class="ss-button" href="/wp-signup.php">Register</a>');
 		}
@@ -229,12 +238,13 @@ $(document).ready(function() {
 	});
 	
 	$('.textArea').keyup(function() {
+		var parent = $(this).parents('.data-carrier');
 		var area = $(this);
 		var count = area.val().length
-		if(count > 120) {
-			area.val(area.val().substr(0, 120));
+		if(count > 104) {
+			area.val(area.val().substr(0, 104));
 		}
-		area.nextAll('.alignright').children('.charsLeft').html(120 - area.val().length);
+		parent.find('.charsLeft').html(104 - area.val().length);
 	});
 	
 	$('.categories-wrapper').click(function() {

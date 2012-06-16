@@ -61,8 +61,7 @@ function get_ssUserPanel($settings = array()) {
 
 function doUserPanel() {
   $db = ssDbConnect();
-	print "<div id=\"user-panel-container\">
-	<ul class=\"user-panel\">";
+	print "<div id=\"user-panel-container\">";
   if (is_user_logged_in()){
 		global $current_user;
 		global $userProfile;
@@ -71,10 +70,12 @@ function doUserPanel() {
     $email = $current_user->user_email;
     $userId = addUser($displayName, $email, $db);
     $userPriv = getUserPrivilegeStatus($userId, $db);
+		$userSocialAccount = getUserSocialAccount(1, $userId, $db);
 		
 		global $userBlogs;
 		global $userPosts;
-		print "<li class=\"panel-button\"><a href=\"$userProfile\">User Profile</a></li>
+		print "<ul class=\"user-panel\">
+		<li class=\"panel-button\"><a href=\"$userProfile\">User Profile</a></li>
 		<li class=\"panel-button\">".wp_loginout( $before = '', $after = '', $echo = true)." </li>
 		<li class=\"panel-button\"><a href=\"$userBlogs\">Your blogs</a></li>
 		<li class=\"panel-button\"><a href=\"$userPosts\">Your posts</a></li>
@@ -91,13 +92,21 @@ function doUserPanel() {
 				print "<li class=\"panel-button\"><a href=\"$adminUsers\">Administer Users</a></li>";
 			}
 		}
+		print "</ul>";
+		if ($userSocialAccount) {
+			print "<div style=\"font-size:1em; font-weight:bold\" class=\"center-text\"><a title=\"Go to Twitter profile\" class=\"twitter-icon\" href=\"https://twitter.com/#!/".$userSocialAccount["SOCIAL_NETWORKING_ACCOUNT_NAME"]."\"></a> <a class=\"center-text\" title=\"Go to synchronization page\" href=\"/sync/twitter/\">".$userSocialAccount["SOCIAL_NETWORKING_ACCOUNT_NAME"]."</a></div>";
+		}
+		else {
+			print "<div style=\"font-size:1em; font-weight:bold\" class=\"center-text\"><div class=\"twitter-icon\"></div> <a title=\"Go to synchronization page\" href=\"/sync/twitter/\">Sync Twitter</a></div>";
+		}
 	}
 	else {
 		global $registerUrl;
-		print "<li class=\"panel-button\"><a href=\"$registerUrl\">Register</a></li>
-		<li class=\"panel-button\">".wp_loginout( $before = '', $after = '', $echo = true)." </li>";
+		print "<ul class=\"user-panel\">
+		<li class=\"panel-button\"><a href=\"$registerUrl\">Register</a></li>
+		<li class=\"panel-button\">".wp_loginout( $before = '', $after = '', $echo = true)." </li>
+		</ul>";
 	}
-	print "</ul>
-	</div>";
+	print "</div>";
 }
 ?>

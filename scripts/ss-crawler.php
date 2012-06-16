@@ -2,7 +2,7 @@
 
 <?php
 
-$fp = fopen("lock.txt", "r+");
+$fp = fopen("/home/sciseek/subjectseeker/live/scripts/lock.txt", "r+");
 
 if (flock($fp, LOCK_EX|LOCK_NB)) { 
 

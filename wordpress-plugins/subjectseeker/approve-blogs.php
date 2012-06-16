@@ -70,65 +70,33 @@ function doApproveBlogs() {
     $displayName = $current_user->user_login;
     $email = $current_user->user_email;
     $userId = addUser($displayName, $email, $db);
-
     $userPriv = getUserPrivilegeStatus($userId, $db);
-
-    print "<p>Hello, $displayName.</p>\n";
 	
     if ($userPriv > 0) { // moderator or admin
-    if ($step == null) {		
-		print "<h2>List of pending blogs</h2>";
-		displayEditPendingBlogs ($db);
+			if ($step == null) {		
+				print "<h2>List of Pending Blogs</h2>";
+			} 
+			else {
+				print "<h2>Administrative action</h2>";
+				confirmEditBlog ($step, $userId, $userPriv, $db);
+			}
+			print "<form method=\"POST\">\n
+			<input type=\"hidden\" name=\"step\" value=\"edit\" />";
+			parse_str("type=blog&filter0=status&value0=1&sort=added-date&order=desc", $parsedQuery);
+			$queryList = httpParamsToSearchQuery($parsedQuery);
+			$settings = httpParamsToExtraQuery($parsedQuery);
+			$settings["type"] = "blog";
+			$blogData = generateSearchQuery ($queryList, $settings, $userPriv, $errormsgs, $db);
 			
-    } else {
-		
-        print "<h2>Administrative action</h2>";
-		
-		$blogs["id"] = $_REQUEST["blogId"];
-		$blogs["name"] = $_REQUEST["blogname"];
-		$blogs["uri"] = $_REQUEST["blogurl"];
-		$blogs["syndicationuri"] = $_REQUEST["blogsyndicationuri"];
-		$blogs["description"] = $_REQUEST["blogdescription"];
-		$blogs["topic1"] = $_REQUEST["topic1"];
-		$blogs["topic2"] = $_REQUEST["topic2"];
-		
-		foreach ($blogs["id"] as $id => $value) {
-			$blogId = $blogs["id"][$id];
-			$blogname = $blogs["name"][$id];
-			$blogurl = $blogs["uri"][$id];
-			$blogsyndicationuri = $blogs["syndicationuri"][$id];
-			$blogdescription = $blogs["description"][$id];
-			$topic1 = $blogs["topic1"][$id];
-			$topic2 = $blogs["topic2"][$id];
-			$status = $_REQUEST["$blogId-blog"];
-			
-	  	$result = checkBlogData ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db);
-	  	$oldBlogName = getBlogName($blogId, $db);
-	  
-			if ($result == NULL) {
-				if ($status == 1) {
-					approveBlog($blogId, $db);
-					print "<p>Blog $blogname (id $blogId) APPROVED</p>\n";
-				} 
-				elseif ($status == 2) {
-					rejectBlog($blogId, $db);
-					$contacts = getBlogContacts($blogId, $db);
-					print "<p>Blog $oldBlogName (id $blogId) REJECTED (email contact(s):";
-					foreach ($contacts as $contact) {
-						print " <a href=\"mailto:$contact\">$contact</a>";
-						}
-						print ")</p>\n";
-						}
-						print "<p>$blogname (id $blogId) was updated.</p>";  
-				} else {
-					print "<p>$oldBlogName (id $blogId): <ul class=\"ss-error\">$result</ul></p>";
-					}
+			if ($blogData) {
+				print "<hr />";
+				while ($row = mysql_fetch_array($blogData)) {
+					editBlogForm ($row, $userPriv, "open", $db);
 				}
-				$blogList = getPendingBlogs($db);
-				if ($blogList != null) {
-				return displayEditPendingBlogs ($db);
-				}
-      }
+			}
+			else {
+				print "<div id=\"padding-content\">There are no sources pending approval.</div>";
+			}
     } else { # not moderator or admin
       print "You are not authorized to view the list of blogs for approval.<br />";
     }

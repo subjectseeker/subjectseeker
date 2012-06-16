@@ -212,7 +212,7 @@ function searchCitations() {
 			$email = $current_user->user_email;
 			$userId = addUser($displayName, $email, $db);
 			
-			$blogIds = getBlogIdsByUserId($userId, $blogId, $db);
+			$blogIds = getBlogIdsByUserId($userId, $db);
 			
 			foreach ($blogIds as $blogId) {
 				insertCitationMarker ($blogId, $db);

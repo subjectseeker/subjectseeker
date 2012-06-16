@@ -80,7 +80,7 @@ function scanPosts() {
 		$order = $_REQUEST["order"];
 		$pagesize = $_REQUEST["n"];
 		$offset = $_REQUEST["offset"];
-		$blog = $_REQUEST["blog"];
+		$blogId = $_REQUEST["blog"];
 		if ($arrange == null) {
 			$arrange = "publicationTime";
 		}
@@ -94,14 +94,10 @@ function scanPosts() {
 			$offset = "0";
 		}
 		
-		// Get blog ids of the requested blogs from the user.
-		$userBlogs = getBlogIdsByUserId($userId, $blog, $db);
+		// Get blog ids of from user.
+		$userBlogs = getBlogIdsByUserId($userId, $db);
 		if ($userBlogs == NULL) {
 			return print "$displayName has no active blogs.";
-		}
-		
-		if ($step == NULL) {
-			print "<p>Please select the posts that you would like to scan for citations.</p>";
 		}
 		
 		// Filters
@@ -146,10 +142,8 @@ function scanPosts() {
 		print "</select>";
 		print " | <select name='blog'>\n";
 		print "<option value=''>All blogs</option>\n";
-		// Get blog ids from all the blogs from the user
-		$userBlogsList = getBlogIdsByUserId($userId, NULL, $db);
 		// Get blog names and ids
-		$blogsList = getBlogList($userBlogsList, 'blogName', 'descending', 100, 0, $db);
+		$blogsList = getBlogList($userBlogs, 'blogName', 'descending', 100, 0, $db);
 		foreach ($blogsList as $blogs) {
 			$id = $blogs["id"];
 			$name = $blogs["name"];
@@ -173,6 +167,10 @@ function scanPosts() {
 				$scanPosts .= "<hr />";
 			}
 		}
+		if ($blogId) {
+			// Get only posts of a specific blog if requested
+			$userBlogs = array($blogId);
+		}
 		// Get blog posts data from blog ids
 		$blogPostData = blogIdsToBlogPostData($userBlogs, $arrange, $order, $pagesize, $offset, $db);
 		while ($row = mysql_fetch_array($blogPostData)) {
@@ -193,9 +191,10 @@ function scanPosts() {
 			}
 			
 			if ($step == 'scan') {
-				// Results from the scan
+				// Results from the post crawler
 				print "<hr />
 				$scanPosts";
+				// Scan posts for citations
 				foreach ($postIds as $i => $value) {
 					$blogId = $blogIds[$i];
 					$postId = $postIds[$i];
@@ -232,6 +231,8 @@ function scanPosts() {
 			}
 			
 			if ($step == NULL) {
+				print "<p>Please select the posts that you would like to scan for citations.</p>";
+				
 				// List of posts
 				print "<form method=\"POST\">\n
 				<input type=\"hidden\" name=\"step\" value=\"scan\" />

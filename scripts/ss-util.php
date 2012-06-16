@@ -1,5 +1,17 @@
 <?php
 
+/*
+
+Copyright © 2010–2012 Christopher R. Maden and Jessica Perry Hekman.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*/
+
 include_once "ss-globals.php";
 require_once(dirname(__FILE__).'/../wp-includes/class-simplepie.php');
 
@@ -45,17 +57,22 @@ function crawlBlogs($blog, $db) {
 	$feed->set_cache_duration(0);
 	$feed->init();
 	if ($feed->error()) {
-		$message .= "<div class=\"ss-div-2\"><span class=\"red-circle\"></span> ERROR: $blogUri (ID $blogId): " . $feed->error() . "</div>\n";
-	}
-	else {
-		$message .= "<div class=\"ss-div-2\"><span class=\"green-circle\"></span> $blogName has been scanned for new posts.</div>";
+		$message = "<p class=\"ss-error\">ERROR: $blogUri (ID $blogId): " . $feed->error() . "</p>\n";
+		return $message;
 	}
 
 	foreach ($feed->get_items(0, 50) as $item) {
-		addSimplePieItem($item, $feed->get_language(), $blogId, $db);
+		$postId = addSimplePieItem($item, $feed->get_language(), $blogId, $db);
 		$item = NULL;
+		if ($postId) {
+			$postIds[] = $postId;
+		}
 	}
 	markCrawled($blogId, $db);
+	
+	$newPostCount = count($postIds);
+	
+	$message = "<p class=\"ss-successful\">$blogName (ID $blogId) has been scanned, $newPostCount new posts found.</p>";
 
 	$feed = NULL;
 
@@ -123,7 +140,7 @@ function getDownloadCurl($uri) {
 // Input: type of object to search for (blog/post/topic); list of query parameters; DB handle
 // Output: XML document containing search results
 // For more information on query parameters, see search API documentation in wiki
-function generateSearchQuery ($queryList, $settings, &$errormsgs, $db) {
+function generateSearchQuery ($queryList, $settings, $userPriv, &$errormsgs, $db) {
 
   global $numResults;
 	global $maximumResults;
@@ -132,10 +149,6 @@ function generateSearchQuery ($queryList, $settings, &$errormsgs, $db) {
   $whereList = array();
 	$groupCheck = FALSE;
 	$type = $settings["type"];
-	$resultsNumber = $settings["limit"];
-	$resultsOffset = $settings["offset"];
-
-  $order = "ORDER BY ";
 	
 	if ($type == "") {
 		array_push ($errormsgs, "No search type specified.");
@@ -145,33 +158,36 @@ function generateSearchQuery ($queryList, $settings, &$errormsgs, $db) {
     $select = "SELECT topic.TOPIC_ID, topic.TOPIC_NAME, topic.TOPIC_TOP_LEVEL_INDICATOR";
     $fromList = generateTopicFrom($queryList);
     $whereList = generateTopicWhere ($queryList, $errormsgs);
-    $order .= "TOPIC_NAME ASC" ;
 
     // bump up default limit for topics
     $numResults = 200;
 
   } else if ($type === "blog") {
-    $select = "SELECT blog.BLOG_ID, blog.BLOG_NAME,
-                blog.BLOG_URI, blog.BLOG_SYNDICATION_URI, blog.BLOG_STATUS_ID,
-                blog.BLOG_DESCRIPTION, blog.ADDED_DATE_TIME";
-    $order .= "blog.BLOG_NAME ASC";
+    $select = "SELECT blog.*";
+    $order = "ORDER BY blog.BLOG_NAME ASC";
 		// TODO order by blog with most recent post
     // how to do this? update blog table every time we add a post?
-		$group .= "GROUP BY blog.BLOG_ID";
-    $fromList = generateBlogFrom($queryList);
-    $whereList = generateBlogWhere($queryList, $errormsgs);
+		$group = "GROUP BY blog.BLOG_ID";
+    $fromList = generateBlogFrom($queryList, $userPriv);
+    $whereList = generateBlogWhere($queryList, $userPriv, $errormsgs);
+		$order = generateBlogSort ($settings, $whereList, $fromList, $userPriv, $errormsgs);
+		
+		if ($settings["show-all"] == "true" && $userPriv > 0) {
+			unset($whereList["blogStatusId"]);
+		}
 
   } else if ($type === "post") {
-    $order .= "post.BLOG_POST_DATE_TIME DESC";
-    $fromList = generatePostFrom($queryList);
-   	$whereList = generatePostWhere($queryList, $groupCheck, $minimumRec, $errormsgs);
-		if ($settings["showAll"] != "true") array_push($whereList, "(post.BLOG_POST_DATE_TIME < NOW())");
+    $fromList = generatePostFrom($queryList, $userPriv);
+   	$whereList = generatePostWhere($queryList, $userPriv, $groupCheck, $minimumRec, $errormsgs);
+		$order = generatePostSort ($settings, $whereList, $fromList, $groupCheck, $errormsgs);
+		
+		if ($settings["show-all"] != "true") array_push($whereList, "(post.BLOG_POST_DATE_TIME < NOW())");
 		
 		// If min-recommendations filter is active, count the recommendations
 		if ($minimumRec) $count = "HAVING COUNT(rec.BLOG_POST_ID) >= $minimumRec";
 		
 		// If there could be duplicated results, group them by ID
-		if ($groupCheck) $group .= "GROUP BY post.BLOG_POST_ID";
+		if ($groupCheck) $group = "GROUP BY post.BLOG_POST_ID";
 		
 		$select .= "SELECT post.BLOG_POST_ID, post.BLOG_POST_URI, post.BLOG_POST_DATE_TIME, post.BLOG_POST_SUMMARY, post.BLOG_POST_TITLE, post.BLOG_POST_HAS_CITATION, blog.BLOG_ID, blog.BLOG_NAME, blog.BLOG_URI, blog.BLOG_SYNDICATION_URI, author.BLOG_AUTHOR_ACCOUNT_NAME";
   } else {
@@ -183,15 +199,15 @@ function generateSearchQuery ($queryList, $settings, &$errormsgs, $db) {
 	
 	$limitNumber = $numResults;
   // Construct LIMIT part of query
-  if ( is_numeric($resultsNumber) and ($resultsNumber > 0  and $resultsNumber <= $maximumResults) ) {
-  	$limitNumber = (string)(int)$resultsNumber;
+  if ( is_numeric($settings["limit"]) and ($settings["limit"] > 0  and $settings["limit"] <= $maximumResults) ) {
+  	$limitNumber = (string)(int)$settings["limit"];
   }
   $limit = "LIMIT $limitNumber";
 
   // Construct OFFSET part of query, default to 0.
   $offsetNumber = 0;
-  if ( is_numeric($resultsOffset) and ($resultsOffset > 0 ) ) {
-  	$offsetNumber = (string)(int)$resultsOffset;
+  if ( is_numeric($settings["offset"]) and ($settings["offset"] > 0 ) ) {
+  	$offsetNumber = (string)(int)$settings["offset"];
   }
   $offset = "OFFSET $offsetNumber";
 
@@ -270,7 +286,7 @@ function generateTopicWhere ($queryList, &$errormsgs) {
 			elseif ($searchValue == "true" || $searchValue == NULL) $toplevel = "1";
 			else array_push ($errormsgs, "Unrecognized value: $searchValue");
 			
-			array_push($whereList, "topic.TOPIC_TOP_LEVEL_INDICATOR=$toplevel");
+			array_push($whereList, array("topic.TOPIC_TOP_LEVEL_INDICATOR ="=>"$toplevel"));
 			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
     } else {
@@ -284,7 +300,7 @@ function generateTopicWhere ($queryList, &$errormsgs) {
 
 // Input: list of search queries for a blog search
 // Return: string useful in FROM clause in SQL search, based on input queries
-function generateBlogFrom ($queryList) {
+function generateBlogFrom ($queryList, $userPriv) {
 	
 	$fromList["BLOG blog"] = true;
 
@@ -294,10 +310,6 @@ function generateBlogFrom ($queryList) {
       $fromList["BLOG blog"] = true;
       $fromList["PRIMARY_BLOG_TOPIC pbt"] = true;
       $fromList["TOPIC t"] = true;
-
-    } else if ($query->name === "citation") {
-        // Nothing to do here
-				
     } else if ($query->name === "has-citation") {
       $fromList["BLOG_POST post"] = true;
     }
@@ -307,9 +319,11 @@ function generateBlogFrom ($queryList) {
 
 // Input: list of search queries for a blog search
 // Return: string useful in WHERE clause in SQL search, based on input queries
-function generateBlogWhere ($queryList, &$errormsgs) {
-
-  $whereList = array();
+function generateBlogWhere ($queryList, $userPriv, &$errormsgs) {
+	
+	// Name the index of this array item to be overriden when appropriate.
+	// Eventually it would be good to name all indexes of the search conditions.
+	$whereList = array("blogStatusId"=>"blog.BLOG_STATUS_ID = 0");
 	
   foreach ($queryList as $query) {
 		
@@ -361,7 +375,17 @@ function generateBlogWhere ($queryList, &$errormsgs) {
       elseif ($searchType === "some" || $searchType == NULL) { array_push ($whereList, "blog.BLOG_URI LIKE '%$searchValue%'"); }
       else { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
       
-    } else {
+    } elseif ($query->name == "status") {
+			if ($userPriv > 0) {
+				if (is_numeric($searchValue)) {
+					$whereList["blogStatusId"] = "blog.BLOG_STATUS_ID = '$searchValue'";
+				}
+      	else array_push ($errormsgs, "Status value must be numeric: $searchValue");
+			}
+			else {
+				array_push ($errormsgs, "You don't have the privileges to use filter: " . $query->name);
+			}
+		} else {
       array_push ($errormsgs, "Unrecognized filter: " . $query->name);
     }
   }
@@ -373,9 +397,36 @@ function generateBlogWhere ($queryList, &$errormsgs) {
   return $whereList;
 }
 
+// Input: list of search queries for a blog search
+// Return: string useful in SORT clause in SQL search, based on input queries
+function generateBlogSort ($settings, &$whereList, &$fromList, &$errormsgs) {
+	$sortBy = $settings["sort"];
+	$orderBy = $settings["order"];
+	
+	if (!$sortBy) {
+		$sortBy = "alphabetical";
+	}
+	if (!$orderBy) {
+		$orderBy = "asc";
+	}
+	
+	// Valid sort and order values, and their columns.
+	$validSorts = array ("id" => "blog.BLOG_ID","status" => "blog.BLOG_STATUS_ID","alphabetical" => "blog.BLOG_NAME","added-date" => "blog.ADDED_DATE_TIME","crawled-date" => "blog.CRAWLED_DATE_TIME");
+	$validOrders = array("desc" => "DESC","asc" => "ASC");
+	
+	if ($validSorts["$sortBy"] && $validOrders["$orderBy"]) {
+		$order = "ORDER BY " . $validSorts["$sortBy"] . " " . $validOrders["$orderBy"];
+	}
+	else {
+		array_push ($errormsgs, "Unknown order: $sortBy $orderBy");
+	}
+	
+	return $order;
+}
+
 // Input: list of search queries for a post search
 // Return: string useful in FROM clause in SQL search, based on input queries
-function generatePostFrom ($queryList) {
+function generatePostFrom ($queryList, $userPriv) {
 
 	$fromList["BLOG_POST post"] = true;
   $fromList["BLOG blog"] = true;
@@ -409,9 +460,6 @@ function generatePostFrom ($queryList) {
     } else if ($query->name === "topic") {
       $fromList["POST_TOPIC pt"] = true;
       $fromList["TOPIC t"] = true;
-    } else if ($query->name === "has-citation" || $query->name == "title" || $query->name == "summary" || $query->name == "url") {
-      // nothing special to do
-			
     } else if ($query->name === "blog") {
 			if ($query->modifier == "topic") { 
 				$fromList["PRIMARY_BLOG_TOPIC pbt"] = true;
@@ -420,12 +468,11 @@ function generatePostFrom ($queryList) {
 			
 		} else if ($query->name === "recommender-status") {
 			$fromList["RECOMMENDATION rec"] = true;
-      $fromList["PERSONA pers"] = true;
 			$fromList["USER user"] = true;
 			
 		} else if ($query->name === "recommended-by") {
 			$fromList["RECOMMENDATION rec"] = true;
-      $fromList["PERSONA pers"] = true;
+			$fromList["USER user"] = true;
 			
 		} else if ($query->name === "min-recommendations") {
 			$fromList["RECOMMENDATION rec"] = true;
@@ -441,9 +488,9 @@ function generatePostFrom ($queryList) {
 
 // Input: list of search queries for a post search
 // Return: string useful in WHERE clause in SQL search, based on input queries
-function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs) {
+function generatePostWhere ($queryList, $userPriv, &$groupCheck, &$minimumRec, &$errormsgs) {
 
-  $whereList = array("blog.BLOG_ID = post.BLOG_ID", "blog.BLOG_ID = author.BLOG_ID", "post.BLOG_AUTHOR_ID = author.BLOG_AUTHOR_ID", "post.BLOG_POST_STATUS_ID = 0");
+  $whereList = array("post.BLOG_POST_STATUS_ID = 0", "blog.BLOG_STATUS_ID = 0", "blog.BLOG_ID = post.BLOG_ID", "blog.BLOG_ID = author.BLOG_ID", "post.BLOG_AUTHOR_ID = author.BLOG_AUTHOR_ID");
 	
 	foreach ($queryList as $query) {
 		
@@ -480,16 +527,16 @@ function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs)
     } else if ($query->name === "citation") {
 			
 			if ($searchType == "author") {
-				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID AND pc.CITATION_ID = citation.CITATION_ID AND auart.ARTICLE_ID = citation.ARTICLE_ID AND auart.ARTICLE_AUTHOR_ID = artau.ARTICLE_AUTHOR_ID AND artau.ARTICLE_AUTHOR_FULL_NAME LIKE '%$searchValue%'");
+				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID","pc.CITATION_ID = citation.CITATION_ID","auart.ARTICLE_ID = citation.ARTICLE_ID","auart.ARTICLE_AUTHOR_ID = artau.ARTICLE_AUTHOR_ID","artau.ARTICLE_AUTHOR_FULL_NAME LIKE '%$searchValue%'");
 			}
 			elseif ($searchType == "article-title") {
-				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID AND pc.CITATION_ID = citation.CITATION_ID AND art.ARTICLE_ID = citation.ARTICLE_ID AND art.ARTICLE_TITLE LIKE '%$searchValue%'");
+				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID","pc.CITATION_ID = citation.CITATION_ID","art.ARTICLE_ID = citation.ARTICLE_ID","art.ARTICLE_TITLE LIKE '%$searchValue%'");
 			}
 			elseif ($searchType == "journal-title") {
-				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID AND pc.CITATION_ID = citation.CITATION_ID AND art.ARTICLE_ID = citation.ARTICLE_ID AND art.ARTICLE_JOURNAL_TITLE LIKE '%$searchValue%'");
+				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID","pc.CITATION_ID = citation.CITATION_ID","art.ARTICLE_ID = citation.ARTICLE_ID","art.ARTICLE_JOURNAL_TITLE LIKE '%$searchValue%'");
 			}
 			elseif ($searchType == "id-all" || $searchType == "doi" || $searchType == "pmid" || $searchType == "arxiv" || $searchType == "other" || $searchType == NULL) {
-				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID AND pc.CITATION_ID = citation.CITATION_ID AND artid.ARTICLE_IDENTIFIER_TEXT = '$searchValue' AND citation.ARTICLE_ID = artid.ARTICLE_ID");
+				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID","pc.CITATION_ID = citation.CITATION_ID","artid.ARTICLE_IDENTIFIER_TEXT = '$searchValue'","citation.ARTICLE_ID = artid.ARTICLE_ID");
 				if ($searchType != NULL) {
 					array_push ($whereList, "artid.ARTICLE_IDENTIFIER_TYPE = '$searchType'");
 				}
@@ -506,7 +553,7 @@ function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs)
 			
 			if ($searchType === "doi" || $searchType === "pmid" || $searchType === "arxiv" || $searchType === "other") {
 				$groupCheck = TRUE;
-				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID AND pc.CITATION_ID = citation.CITATION_ID AND citation.ARTICLE_ID = artid.ARTICLE_ID AND artid.ARTICLE_IDENTIFIER_TYPE = '$searchType'");
+				array_push ($whereList, "post.BLOG_POST_ID = pc.BLOG_POST_ID","pc.CITATION_ID = citation.CITATION_ID","citation.ARTICLE_ID = artid.ARTICLE_ID","artid.ARTICLE_IDENTIFIER_TYPE = '$searchType'");
 			}
 			elseif ($searchType != "all" && $searchType != NULL && $searchType != "") {
 				array_push ($errormsgs, "Unrecognized modifier: $searchType");
@@ -517,12 +564,12 @@ function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs)
       elseif ($searchValue == "user" || $searchValue == NULL) $privilege = "0";
 			else array_push ($errormsgs, "Unrecognized value: $searchValue");
 			
-			array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID AND user.USER_ID = pers.USER_ID AND rec.PERSONA_ID = pers.PERSONA_ID AND user.USER_PRIVILEGE_ID >= $privilege");
+			array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID","user.USER_ID = rec.USER_ID","user.USER_PRIVILEGE_ID >= $privilege");
 			$groupCheck = TRUE;
 			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
 		} else if ($query->name === "recommended-by") {
-			array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID AND pers.DISPLAY_NAME = '$searchValue' AND rec.PERSONA_ID = pers.PERSONA_ID");
+			array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID","user.DISPLAY_NAME = '$searchValue'","rec.USER_ID = user.USER_ID");
 			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
 		} else if ($query->name == "title") {
@@ -573,406 +620,36 @@ function generatePostWhere ($queryList, &$groupCheck, &$minimumRec, &$errormsgs)
   return $whereList;
 }
 
-// Input: type of object to search for (blog/post/topic); list of query parameters; DB handle
-// Output: XML document containing search results
-// For more information on query parameters, see search API documentation in wiki
-function dbPublicSearch($queryList, $settings, $db) {
-	$type = $settings["type"];
-	
-	$errormsgs = array();
-	$searchResults = generateSearchQuery($queryList, $settings, $errormsgs, $db);
-	if ($searchResults == NULL) {
-		$searchResults = array();
+// Input: list of search queries for a post search
+// Return: string useful in SORT clause in SQL search, based on input queries
+function generatePostSort ($settings, &$whereList, &$fromList, &$groupCheck, &$errormsgs) {
+	$sortBy = $settings["sort"];
+	$orderBy = $settings["order"];
+	if (!$sortBy) {
+		$sortBy = "publication-date";
 	}
-
-  if ($type === "post") {
-		return (formatSearchPostResults($searchResults, $settings["citation-in-summary"], $errormsgs, $db));
-  }
-
-  $xml = "<?xml version=\"1.0\" ?>\n";
-  $xml .=  "<subjectseeker>\n";
-
-  if (count($errormsgs) > 0) {
-    foreach ($errormsgs as $error) {
-      $xml .=  "<error>$error</error>\n";
-    }
-    $xml .=  "</subjectseeker>\n";
-    return $xml;
-  }
-
-  if (strcasecmp($type, "topic") == 0) {
-
-    $xml .=  "  <topics>\n";
-    while ($row = mysql_fetch_array($searchResults)) {
-      $xml .= formatTopic($row);
-    }
-    $xml .=  " </topics>\n";
-  }
-
-  if (strcasecmp($type, "blog") == 0) {
-
-    $xml .=  "  <blogs>\n";
-    while ($row = mysql_fetch_array($searchResults)) {
-      $xml .= formatBlog($row);
-    }
-    $xml .=  " </blogs>\n";
-
-    // Here we might eventually want to return more things. Remember, right
-    // now we can only search for "blogs" or "topics." If we end up searching
-    // for citations, we might want to return a list of citation results here.
-
-  }
-
-  $xml .=  "</subjectseeker>\n";
-  return $xml;
-}
-
-// Input: post search results from DB, error message array
-// Return: Atom feed
-function formatSearchPostResults($resultData, $citationsInSummary, $errormsgs, $db) {
-	global $sitename;
+	if (!$orderBy) {
+		$orderBy = "desc";
+	}
 	
-  // When are we?
-  $now = date( "c" );
+	// Valid sort and order values, and their columns.
+	$validSorts = array ("id" => "post.BLOG_POST_ID","alphabetical" => "post.BLOG_POST_TITLE","publication-date" => "post.BLOG_POST_DATE_TIME","added-date" => "post.BLOG_POST_INGEST_DATE_TIME","recommendation-date" => "rec.REC_DATE_TIME","recommendation-count" => "COUNT(rec.REC_DATE_TIME)");
+	$validOrders = array("desc" => "DESC","asc" => "ASC");
 	
-	// Where are we?
-	$url = parse_url(getURL ());
-	$myHost = $url["scheme"] . "://" . $url["host"];
-	$myURI = $myHost . $_SERVER[ "SCRIPT_NAME" ];
-
-  $xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>
-<feed xmlns=\"http://www.w3.org/2005/Atom\" xml:lang=\"en\"
-      xmlns:ss=\"http://scienceseeker.org/ns/1\">
-  <title type=\"text\">$sitename</title>
-  <subtitle type=\"text\">Recent Posts</subtitle>
-  <link href=\"$myURI\" rel=\"self\"
-    type=\"application/atom+xml\" />
-  <link href=\"$myHost\" rel=\"alternate\" type=\"text/html\" />
-  <id>$myURI</id>
-  <updated>$now</updated>
-  <rights>No copyright asserted over individual posts; see original
-    posts for copyright and/or licensing.</rights>
-  <generator>ScienceSeeker Atom serializer</generator>\n";
-
-  if (count($errormsgs) > 0) {
-    foreach ($errormsgs as $error) {
-      $xml .=  "<error>Error: $error</error>\n";
-    }
-    $xml .=  "</feed>\n";
-    return $xml;
-  }
-	if ($resultData) {
-		while ($row = mysql_fetch_array ($resultData)) {
-			// Timezone stuff
-			$tzCache = date_default_timezone_get();
-			date_default_timezone_set( "UTC" );
-			$utcDate = strtotime( $row[ "BLOG_POST_DATE_TIME" ] );
-			date_default_timezone_set( $tzCache );
-			
-			// Put all the SQL data into $postData for easy access
-			$postData = array();
-			$postData[ "author" ] = sanitize( $row[ "BLOG_AUTHOR_ACCOUNT_NAME" ] );
-			$postData["blog_name"] = sanitize( $row[ "BLOG_NAME" ] );
-			$postData["blog_uri"] = sanitize( $row[ "BLOG_URI" ] );
-			$postData["date"] = date( "c", $utcDate );
-			$postData["feed_uri"] = sanitize( $row[ "BLOG_SYNDICATION_URI" ] );
-			$postData["id"] = $myHost . "/post/" . $row[ "BLOG_POST_ID" ];
-			$postData["summary"] = sanitize(strip_tags($row[ "BLOG_POST_SUMMARY" ], '<br>'));
-			$postData["title"] = sanitize( $row[ "BLOG_POST_TITLE" ] );
-			$postData["uri"] = sanitize( $row[ "BLOG_POST_URI" ] );
-			$postData["hasCitation"] = sanitize( $row[ "BLOG_POST_HAS_CITATION" ] );
-			
-			$postID = $row["BLOG_POST_ID"];
-			
-			// Get citations
-			if ($postData["hasCitation"] == 1) {
-				// TODO in original SQL query?
-				$postData["citations"] = postIdToCitation($postID, $db);
-			}
-			
-			// Get number of recommendations and comments
-			$postData["editorRecCount"] = getRecommendationsCount($postID, NULL, NULL, 1, $db);
-			$postData["userRecCount"] = getRecommendationsCount($postID, NULL, NULL, 0, $db);
-			$postData["commentCount"] = getRecommendationsCount($postID, "comments", NULL, NULL, $db);
-	
-			// Language is optional.
-			$langSQL = "SELECT L.LANGUAGE_IETF_CODE FROM LANGUAGE AS L, BLOG_POST AS P WHERE P.BLOG_POST_ID = $postID AND L.LANGUAGE_ID = P.LANGUAGE_ID";
-			
-			$result = mysql_query( $langSQL, $db );
-			if ( mysql_error() ) {
-				die ( "getPostData: " . mysql_error() );
-			}
-			$row = mysql_fetch_array( $result );
-			if ( $row ) {
-				$postData["lang"] = $row[ "LANGUAGE_IETF_CODE" ];
-			}
-			else {
-				$postData["lang"] = "en";
-			}
-			
-			// Post topics are polyvalued, so another query.
-			$catSQL = "SELECT T.TOPIC_NAME FROM TOPIC AS T, POST_TOPIC AS PT WHERE PT.BLOG_POST_ID = $postID AND T.TOPIC_ID = PT.TOPIC_ID;";
-			$results = mysql_query( $catSQL, $db );
-			if ( mysql_error() ) {
-				die ( "getPostData: " . mysql_error() );
-			}
-	
-			$postData[ "categories" ] = array(); // post topics
-			while ( $row = mysql_fetch_array( $results ) ) {
-				array_push( $postData[ "categories" ], $row[ "TOPIC_NAME" ] );
-			}
-	
-			// The blog category may not be present.
-			$blogCatSQL = "SELECT T.TOPIC_NAME FROM TOPIC AS T, " .
-				"PRIMARY_BLOG_TOPIC AS BT, BLOG_POST AS P WHERE P.BLOG_POST_ID " .
-				"= $postID AND BT.BLOG_ID = P.BLOG_ID AND T.TOPIC_ID = " .
-				"BT.TOPIC_ID;";
-			$result = mysql_query( $blogCatSQL, $db );
-			if ( mysql_error() ) {
-				die ( "getPostData: " . mysql_error() );
-			}
-	
-			$postData[ "blog_categories" ] = array(); // blog-level topics
-			while ( $row = mysql_fetch_array( $result ) ) {
-				array_push( $postData[ "blog_categories" ], $row[ "TOPIC_NAME" ] );
-			}
-	
-			// Now start putting it all into Atom
-			$xml .= "  <entry xml:lang=\"" . $postData[ "lang" ] . "\">\n";
-			
-			$xml .= "    <title type=\"html\">" . $postData[ "title" ] . "</title>\n";
-				
-			$xml .= "    <id>" . $postData[ "id" ] . "</id>\n";
-			
-			$xml .= "    <link href=\"" . $postData[ "uri" ] . "\" rel=\"alternate\" />\n";
-				
-			$xml .= "    <updated>" . $postData[ "date" ] . "</updated>\n";
-			
-			$xml .= "    <author>\n";
-			
-			$xml .= "      <name>" . $postData[ "author" ] . "</name>\n";
-			
-			$xml .= "    </author>\n";
-					
-			$xml .= "    <summary type=\"html\">" . $postData[ "summary" ];
-			
-			if ($citationsInSummary && $postData["citations"]) {
-				$xml .= htmlspecialchars("<br />");
-				foreach ($postData["citations"] as $citation) {
-					$xml .= htmlspecialchars("<br />".$citation["text"]);
-				}
-			}
-			
-			$xml .= "</summary>\n";
-	
-			if ($postData["hasCitation"] ) {
-				$xml .= "    <ss:citations>\n";
-				// Add citations if any
-				if ($postData["citations"]) {
-					foreach ($postData["citations"] as $citation) {
-						$articleIdentifiers = articleIdToArticleIdentifier ($citation["articleId"], $db);
-						$xml .= "      <ss:citation>\n        <ss:citationId type=\"scienceseeker\">".$citation["id"]."</ss:citationId>\n";
-						
-						foreach ($articleIdentifiers as $articleIdentifier) {
-							$xml .= "        <ss:citationId type=\"".$articleIdentifier["idType"]."\">".$articleIdentifier["text"]."</ss:citationId>\n";
-						}
-										
-						$xml .= "        <ss:citationText>".htmlspecialchars($citation["text"])."</ss:citationText>\n      </ss:citation>\n";
-					}
-				}
-				$xml .= "    </ss:citations>\n";
-			}
-			
-			$xml .= "    <ss:community>\n";
-	
-			$xml .= "      <ss:recommendations userlevel=\"user\" count=\"" . $postData["userRecCount"] . "\"/>\n";
-			
-			$xml .= "      <ss:recommendations userlevel=\"editor\" count=\"" . $postData["editorRecCount"] . "\"/>\n";
-	
-			$xml .= "      <ss:comments count=\"".$postData["commentCount"]."\" />\n";
-			
-			$xml .= "    </ss:community>\n";
-	
-			foreach ( $postData[ "categories" ] as $category ) {
-				$xml .= "    <category term=\"$category\" />\n";
-			}
-			
-			$xml .= "    <source>\n";
-			
-			$xml .= "      <title type=\"text\">" . $postData[ "blog_name" ] ."</title>\n";
-			
-			$xml .= "      <link href=\"" . $postData[ "feed_uri" ] . "\" rel=\"self\" />\n";
-			
-			$xml .= "      <link href=\"" . $postData[ "blog_uri" ] ."\" rel=\"alternate\" type=\"text/html\" />\n";
-			
-			if ( $postData[ "blog_categories" ] ) {
-				foreach ($postData["blog_categories"] as $category) {
-					$xml .= "      <category term=\"$category\" />\n";
-				}
-			}
-			$xml .= "    </source>\n";
-			$xml .= "  </entry>\n";
+	if ($validSorts["$sortBy"] && $validOrders["$orderBy"]) {
+		if ($sortBy == "recommendation-date" || $sortBy == "recommendation-count") {
+			$groupCheck = TRUE;
+			unset($fromList["RECOMMENDATION rec"]);
+			$fromList["(SELECT * FROM RECOMMENDATION ORDER BY REC_DATE_TIME DESC) rec"] = true;
+			array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID");
 		}
+		$order = "ORDER BY " . $validSorts["$sortBy"] . " " . $validOrders["$orderBy"];
 	}
-	$xml .= "</feed>\n";
-	return $xml;
-}
-
-// Input: mysql row with info about a Topic
-// Return: some XML with that topic's info.
-function formatTopic($row) {
-  $topicName = $row["TOPIC_NAME"];
-  $toplevel = $row["TOPIC_TOP_LEVEL_INDICATOR"];
-  if ($toplevel == 1) {
-    $toplevel = "true";
-  } else {
-    $toplevel = "false";
-  }
-  return ("   <topic toplevel=\"$toplevel\">$topicName</topic>\n");
-}
-
-
-// Input: mysql row with info about a Blog
-// Return: some XML with that blog's info.
-// TODO: include blog topics? list of blog authors? date of latest post?
-function formatBlog($row) {
-  $blogName = sanitize( $row["BLOG_NAME"] );
-  $blogId = $row["BLOG_ID"];
-  $blogUri = sanitize( $row["BLOG_URI"] );
-  $blogSyndicationUri = sanitize( $row["BLOG_SYNDICATION_URI"] );
-  $blogDescription = sanitize( $row["BLOG_DESCRIPTION"] );
-
-  $xml =  "   <blog><name>$blogName</name><id>$blogId</id><uri>$blogUri</uri><syndicationuri>$blogSyndicationUri</syndicationuri>";
-  if ($blogDescription != null && $blogDescription !== "") {
-    $xml .=  "<description>$blogDescription</description>";
-  }
-  $xml .=  "</blog>\n";
-  return $xml;
-}
-
-// Deprecated (TODO: remove this function)
-function searchDB() {
-
-  // The type can currently be "topic" or "blog". We may choose at some point
-  // to add more types (for example, maybe citations?).
-  global $type;
-
-  $cid = ssDbConnect();
-
-  if (strcasecmp($type, "topic") == 0) {
-    $searchResults = searchTopics($cid);
-  }
-
-  if (strcasecmp($type, "blog") == 0) {
-    $searchResults = searchBlogs($cid);
-  }
-
-  // TODO add posts
-
-  // ssDbClose($cid);
-
-  return $searchResults;
-
-}
-
-// Deprecated (TODO: remove this function)
-// Input: database handle ($cid)
-// Output: list of all topics; if the global $params specifies toplevel=1, then only return toplevel topics; otherwise, return them all (probably unwise to do that at this point -- it would be a huge number!)
-function searchTopics($cid) {
-  global $params;
-  global $dbName;
-
-  $toplevel = 0;
-
-  foreach ($params as $name => $value) {
-    if ($name === "toplevel") {
-      $toplevel = $value;
-    }
-  }
-
-  // TODO refuse to return all topics or at least limit size
-
-  return getTopicList($toplevel, $cid);
-
-}
-
-// Deprecated (TODO: remove this function)
-// Input: database handle ($cid)
-// Output: list of blogs, including some data for each blog, which match the global $params specified
-function searchBlogs($cid) {
-  global $params;
-  global $dbName;
-
-  $topicNames = array();
-  $blogIds = array();
-  $filtered = false;
-
-  // Go through the global $params and find which topics we are
-  // interested in. Note that we may have something like topic=Biology or
-  // we may have topic=Biology&tioopic=Chemistry, so we have to handle
-  // either a single string topic, or a list/array of topics
-  if ($params != null) {
-    foreach ($params as $name => $value) {
-      if (strcasecmp($name, "topic") == 0) {
-        $filtered = true;
-        if (is_array($value)) {
-          foreach ($value as $oneValue) {
-            array_push ($topicNames, $oneValue);
-          }
-        } else {
-          array_push ($topicNames, $value);
-        }
-      }
-    }
-  }
-
-  // Here, we might at some point look for some other things to filter
-  // blogs on. Right now we are only filtering on "topic" parameter. We
-  // might have other filters later, like author, citation status...
-
-
-  // if $filtered is true, it means that we found some topics (or something else) that we want to filter blog retrieval on.
-  if (! $filtered) {
-    $blogIds = getBlogIds($cid);
-  } else {
-    // Here, we know we want to filter blogs on something.
-    // Right now we just assume we are filtering on topic.
-    // If we are filtering on something else, we'll need to do some more
-    // work here. This is the place where things might get out of hand if we
-    // end up having a lot of if/else (filter by this, not that, but also
-    // this...) so if we start filtering on a lot of things, we will
-    // need to restructure this code.
-    $topicIds = topicNamesToIds($topicNames, $cid);
-    $blogIds = topicIdsToBlogIds($topicIds, $cid);
-  }
-
-  if (count($blogIds) == 0) {
-    return null;
-  }
-
-  // We have gotten a list of all the IDs of all the blogs we are interested
-  // in -- that was the hard part. Now just use a utility method to
-  // populate an array with more useful information per blog and return that.
-  return blogIdsToBlogData($blogIds, $cid);
-}
-
-
-// Deprecated (TODO: remove this function)
-// Input: type of search, map of params (name => array)
-// Return: string containing chunk of XML representing them
-function paramsToQuery($type, $params) {
-  $data = "<ssQuery><type>$type</type>";
-  foreach ($params as $key => $value) {
-    if (is_array($value)) {
-      foreach ($value as $oneValue) {
-        $data .= "<param><name>$key</name><value>$oneValue</value></param>";
-      }
-    } else {
-      $data .= "<param><name>$key</name><value>$value</value></param>";
-    }
-  }
-  $data .= "</ssQuery>";
-  return $data;
+	else {
+		array_push ($errormsgs, "Unknown order: $sortBy $orderBy");
+	}
+	
+	return $order;
 }
 
 // Input: map of params
@@ -1054,8 +731,9 @@ function httpParamsToExtraQuery($parsedQuery = NULL) {
 	$results["limit"] = $parsedQuery["n"];
 	$results["offset"] = $parsedQuery["offset"];
 	$results["type"] = $parsedQuery["type"];
-	$results["showAll"] = $parsedQuery["showAll"];
-	$resutts["output"] = $parsedQuery["output"];
+	$results["show-all"] = $parsedQuery["show-all"];
+	$results["sort"] = $parsedQuery["sort"];
+	$results["order"] = $parsedQuery["order"];
 	
 	return $results;
 }
@@ -1319,12 +997,12 @@ function getBlogList ($blogIds, $arrange, $order, $pagesize, $offset, $db) {
   while ($row = mysql_fetch_array($results)) {
     $blog["id"] = $row["BLOG_ID"];
     $blog["name"] = $row["BLOG_NAME"];
-    $blog["blogdescription"] = $row["BLOG_DESCRIPTION"];
+    $blog["description"] = $row["BLOG_DESCRIPTION"];
     $blog["uri"] = $row["BLOG_URI"];
-    $blog["syndicationuri"] = $row["BLOG_SYNDICATION_URI"];
+    $blog["syndicationUri"] = $row["BLOG_SYNDICATION_URI"];
 		$blog["status"] = $row["BLOG_STATUS_ID"];
-		$blog["addedtime"] = $row["ADDED_DATE_TIME"];
-		$blog["crawledtime"] = $row["CRAWLED_DATE_TIME"];
+		$blog["addedDate"] = $row["ADDED_DATE_TIME"];
+		$blog["crawledDate"] = $row["CRAWLED_DATE_TIME"];
     array_push($blogs, $blog);
   }
   return $blogs;
@@ -1348,20 +1026,6 @@ function getPendingBlogs($db) {
   return $blogs;
 }
 
-// Input: blog ID, DB handle
-// Action: change status of blog to APPROVED (0)
-function approveBlog($blogId, $db) {
-  $sql = "UPDATE BLOG SET BLOG_STATUS_ID=0 WHERE BLOG_ID=$blogId";
-  mysql_query($sql, $db);
-}
-
-// Input: blog ID, DB handle
-// Action: change status of blog to REJECTED (2)
-function rejectBlog($blogId, $db) {
-  $sql = "UPDATE BLOG SET BLOG_STATUS_ID=2 WHERE BLOG_ID=$blogId";
-  mysql_query($sql, $db);
-}
-
 // Input: blogID, DB handle
 // Action: mark blog as recently crawled
 function markCrawled ($blogId, $db) {
@@ -1369,24 +1033,22 @@ function markCrawled ($blogId, $db) {
   mysql_query($sql, $db);
 }
 
-// Input: Post ID, Type of count, Persona ID, Privilege ID, DB handle
+// Input: Post ID, Type of count, user ID, Privilege ID, DB handle
 // Output: Number of recommendations or comments for this post
-function getRecommendationsCount($postId, $type, $personaId, $userPrivilegeId, $db) {
+function getRecommendationsCount($postId, $type, $userId, $userPrivilegeId, $db) {
 	$whereList = array();
 	
 	$fromList["RECOMMENDATION rec"] = true;
 	array_push ($whereList, "rec.BLOG_POST_ID = $postId");
-	if ($personaId) {
-		// Don't add table if it's going to be added later
-		$fromList["PERSONA pers"] = true;
-		array_push ($whereList, "pers.PERSONA_ID = $personaId", "pers.PERSONA_ID = rec.PERSONA_ID");
+	if ($userId) {
+		$fromList["USER user"] = true;
+		array_push ($whereList, "user.USER_ID = $userId", "user.USER_ID = rec.USER_ID");
 	}
 	if (is_numeric($userPrivilegeId)) {
-		$fromList["PERSONA pers"] = true;
 		$fromList["USER user"] = true;
 		if ($userPrivilegeId == 1) $privilegeQuery = "> 0";
 		else $privilegeQuery = "= $userPrivilegeId";
-		array_push ($whereList, "pers.PERSONA_ID = rec.PERSONA_ID", "pers.USER_ID = user.USER_ID", "user.USER_PRIVILEGE_ID $privilegeQuery");
+		array_push ($whereList, "user.USER_ID = rec.USER_ID", "user.USER_PRIVILEGE_ID $privilegeQuery");
 	}
 	if ($type == "comments") {
 		array_push ($whereList, "REC_COMMENT != ''");
@@ -1398,7 +1060,7 @@ function getRecommendationsCount($postId, $type, $personaId, $userPrivilegeId, $
   // Construct WHERE part of query
 	$where = constructWhere($whereList);
 	
-	$sql = "SELECT COUNT(rec.PERSONA_ID) $from $where";
+	$sql = "SELECT COUNT(rec.USER_ID) $from $where";
 	$result = mysql_query($sql, $db);
 	$count = mysql_result($result, 0);
 	return $count; 
@@ -1410,9 +1072,7 @@ function getEditorsPicks($type, $db) {
 	if ($type == 'images') {
 		$sql .= ", rec.REC_COMMENT, rec.REC_IMAGE";
 	}
-	$sql .= " FROM RECOMMENDATION rec,
-PERSONA pers, USER user WHERE user.USER_ID = pers.USER_ID AND
-rec.PERSONA_ID = pers.PERSONA_ID AND user.USER_PRIVILEGE_ID > 0";
+	$sql .= " FROM RECOMMENDATION rec, USER user WHERE rec.USER_ID = user.USER_ID AND user.USER_PRIVILEGE_ID > 0";
 	if ($type == 'images') {
 		$sql .= " AND rec.REC_IMAGE != '' ORDER BY REC_DATE_TIME DESC LIMIT 4";
 	}
@@ -1434,7 +1094,7 @@ rec.PERSONA_ID = pers.PERSONA_ID AND user.USER_PRIVILEGE_ID > 0";
 // Return: array of email addresses of people associated with this blog
 function getBlogContacts($blogId, $db) {
   $contacts = array();
-  $sql = "select u.EMAIL_ADDRESS from BLOG_AUTHOR ba, PERSONA p, USER u where ba.BLOG_ID=$blogId and p.PERSONA_ID=ba.PERSONA_ID and u.USER_ID=p.USER_ID";
+  $sql = "select u.EMAIL_ADDRESS from BLOG_AUTHOR ba, USER u where ba.BLOG_ID=$blogId and u.USER_ID=ba.USER_ID";
   $results = mysql_query($sql, $db);
   if ($results == null || mysql_num_rows($results) == 0) {
     return $contacts;
@@ -1548,41 +1208,13 @@ function getTopicList ($topLevel, $db) {
 }
 
 // Input: user ID, DB handle
-// Output: names of personas associated with this user, or null
-function getPersonaNames ($userId, $db) {
-  $sql = "select DISPLAY_NAME from PERSONA where USER_ID=$userId";
-  $results = mysql_query($sql, $db);
-  $personaNames = array();
-  if ($results != null) {
-    while ($row = mysql_fetch_array($results)) {
-      array_push($personaNames, $row["DISPLAY_NAME"]);
-    }
-  }
-  return $personaNames;
-}
-
-// Input: persona ID, DB handle
-// Output: name of this persona ID
-function getPersonaName ($personaId, $db) {
-	$sql = "SELECT DISPLAY_NAME FROM PERSONA WHERE PERSONA_ID=$personaId";
-  $result = mysql_query($sql, $db);
-  
-	$row = mysql_fetch_array($result);
-  return $row["DISPLAY_NAME"];
-}
-
-// Input: user ID, DB handle
 // Output: ids of blogs owned by this user
-function getBlogIdsByUserId ($userId, $blogId, $db) {
+function getBlogIdsByUserId ($userId, $db) {
 
-  // PERSONA has USER_ID
-  // BLOG_AUTHOR has PERSONA_ID
+  // BLOG_AUTHOR has USER_ID
   // BLOG_AUTHOR has BLOG_ID and BLOG_AUTHOR_ACCOUNT_NAME
 
-  $sql = "select ba.BLOG_ID, p.DISPLAY_NAME from PERSONA p, BLOG_AUTHOR ba, BLOG pa where p.USER_ID=$userId and ba.PERSONA_ID=p.PERSONA_ID and pa.BLOG_STATUS_ID=0 and pa.BLOG_ID=ba.BLOG_ID";
-	if ($blogId != NULL) {
-		$sql .= " and ba.BLOG_ID=$blogId";
-	}
+  $sql = "select ba.BLOG_ID, user.DISPLAY_NAME from USER user, BLOG_AUTHOR ba, BLOG pa where user.USER_ID=$userId and ba.USER_ID=user.USER_ID and pa.BLOG_STATUS_ID=0 and pa.BLOG_ID=ba.BLOG_ID";
   $results = mysql_query($sql, $db);
   $blogIds = array();
   if ($results != null) {
@@ -1611,53 +1243,11 @@ function getUnknownAuthorId ($blogId, $db) {
 // Return: map of author ID -> author name of authors associated with this blog
 function getAuthorList ($blogId, $db) {
 
-  $authorList;
-
-  if ($blogId == null) {
-    print "ERROR: please specify blog ID (getAuthorList)\n";
-    return $authorList;
-  }
-
   // List all author names/ids from DB
-  $sql = "SELECT BLOG_AUTHOR_ID, BLOG_AUTHOR_ACCOUNT_NAME FROM BLOG_AUTHOR WHERE BLOG_ID=$blogId";
-  $results = mysql_query($sql, $db);
-
-  if ($results != null) {
-    while ($row = mysql_fetch_array($results)) {
-      $authorId = $row["BLOG_AUTHOR_ID"];
-      $authorName = $row["BLOG_AUTHOR_ACCOUNT_NAME"];
-      if ($authorName !== "Unknown") {
-        $authorList[$authorId] = $authorName;
-      }
-    }
-  }
-
-  // List all author names/ids from feed
-  $sql = "SELECT BLOG_SYNDICATION_URI, CRAWLED_DATE_TIME FROM BLOG WHERE BLOG_ID=$blogId";
-  $results =  mysql_query($sql, $db);
-  if ($results == null || mysql_num_rows($results) == 0) {
-    // TODO error message to log
-    // this should not have been empty
-    return $authorList;
-  }
-
-  $row = mysql_fetch_array($results);
-  $uri = $row["BLOG_SYNDICATION_URI"];
-
-  $feed = getSimplePie($uri);
-  foreach ($feed->get_items() as $item) {
-    $author = $item->get_author();
-    if ($author) {
-      $authorName = $author->get_name();
-      $authorId = addBlogAuthor($authorName, $blogId, $db);
-      $authorList[$authorId] = $authorName;
-    }
-    unset($item);
-  }
-  unset ($feed);
-
-  return $authorList;
-
+  $sql = "SELECT BLOG_AUTHOR_ID, BLOG_AUTHOR_ACCOUNT_NAME, USER_ID FROM BLOG_AUTHOR WHERE BLOG_ID=$blogId";
+	$results = mysql_query($sql, $db);
+	
+	return $results;
 }
 
 // Input: User status id, DB handle
@@ -1691,17 +1281,6 @@ function userPrivilegeIdToName ($userPrivilegeId, $db) {
   $name = mysql_fetch_array($results);
 
   return $name["USER_PRIVILEGE_DESCRIPTION"];
-}
-
-// Input: Persona id, DB handle
-// Return: user id to privilege id
-function personaIdToPrivilegeId ($personaId, $db) {
-	$sql = "SELECT a.USER_PRIVILEGE_ID FROM USER a, PERSONA b WHERE b.PERSONA_ID = $personaId AND b.USER_ID = a.USER_ID";
-	$results = mysql_query($sql, $db);
-	
-	$privilegeId = mysql_fetch_array($results);
-
-	return $privilegeId["USER_PRIVILEGE_ID"];
 }
 
 // Input: Blog status id, DB handle
@@ -1863,7 +1442,7 @@ function articleIdToArticleIdentifier ($articleId, $db) {
 // Input: array of blog IDs, DB handle
 // Output: mysql rows of blog data
 function blogIdsToBlogData ($blogIds, $db) {
-
+	
   $firstBlog = array_shift ($blogIds);
 
   $sql = "SELECT * FROM BLOG WHERE BLOG_ID = $firstBlog";
@@ -1881,7 +1460,6 @@ function blogIdsToBlogData ($blogIds, $db) {
   }
 
   return $results;
-
 }
 
 // Input: array of blog IDs, arrangement keyword, direction keyword, limit of results, offset, DB handle
@@ -1960,11 +1538,22 @@ function dateStringToSql($datestr) {
 // Return: post object ID
 function addSimplePieItem ($item, $language, $blogId, $db) {
   $itemURI = insanitize( $item->get_permalink() );
-
-  $existing = getPost("postUri", $itemURI , $db);
-
+	$postTitle = mysql_real_escape_string($item->get_title());
+	$postDate = $item->get_local_date();
+	if ($postDate) {
+  	$timestamp = dateStringToSql($postDate);
+	}
+	else {
+		$timestamp = date("Y-m-d H:i:s");
+	}
+	
+	$sql = "SELECT BLOG_POST_ID FROM BLOG_POST WHERE (BLOG_POST_TITLE = '$postTitle' AND BLOG_POST_DATE_TIME = '$timestamp') OR (BLOG_POST_URI = '$itemURI')";
+	$result =  mysql_query($sql, $db);
+	$row = mysql_fetch_array($result);
+	$existing = $row["BLOG_POST_ID"];
+	
   if ($existing) {
-    return $existing["dbId"];
+    return;
   }
 
   $blogAuthor = $item->get_author();
@@ -1975,24 +1564,14 @@ function addSimplePieItem ($item, $language, $blogId, $db) {
   if (count ($authorList) == 1) {
     // if exactly one author, set default author name to it
     // (instead of "Unknown")
-    foreach ($authorList as $oneAuthorId => $oneAuthorName) {
-      $blogAuthorName = $oneAuthorName;
-    }
+		$row = mysql_fetch_array($authorList);
+    $blogAuthorName = $row["BLOG_AUTHOR_ACCOUNT_NAME"];
   }
 
   if ($blogAuthor && strlen($blogAuthor->get_name()) > 0) {
     $blogAuthorName = $blogAuthor->get_name();
   }
   $blogAuthorId = addBlogAuthor($blogAuthorName, $blogId, $db);
-	
-	$postDate = $item->get_local_date();
-	
-	if ($postDate) {
-  	$timestamp = dateStringToSql($item->get_local_date());
-	}
-	else {
-		$timestamp = date("Y-m-d H:i:s");
-	}
 
   $languageId = "NULL";
   if ($language) {
@@ -2064,6 +1643,61 @@ function linkTopicToPost($postId, $topicId, $source, $db) {
   }
 }
 
+// Input: Social Network ID, User ID, DB Handle
+// Output: User social name and tokens
+function getUserSocialAccount ($socialNetworkId, $userId, $db) {
+	$sql = "SELECT * FROM USER_SOCIAL_ACCOUNT WHERE SOCIAL_NETWORK_ID = '$socialNetworkId' AND USER_ID = '$userId'";
+	$result = mysql_query($sql, $db);
+	
+	$row = mysql_fetch_array($result);
+	
+	return $row;
+}
+
+// Input: Social Network ID, User Social Name, OAuth Token, OAuth Secret Token, User ID, DB handle
+// Action: Add user social account
+function addUserSocialAccount ($socialNetworkId, $socialNetworkAccountName, $oauthToken, $oauthSecretToken, $userId, $db) {
+	$socialNetworkAccountName = mysql_real_escape_string($socialNetworkAccountName);
+	
+	$sql = "REPLACE INTO USER_SOCIAL_ACCOUNT (SOCIAL_NETWORK_ID, SOCIAL_NETWORKING_ACCOUNT_NAME, OAUTH_TOKEN, OAUTH_SECRET_TOKEN, USER_ID) VALUES ('$socialNetworkId', '$socialNetworkAccountName', '$oauthToken', '$oauthSecretToken', '$userId')";
+	$result = mysql_query($sql, $db);
+}
+
+// Input: Social Network ID, User ID, DB Handle
+// Action: Remove user social account
+function removeUserSocialAccount($socialNetworkId, $userId, $db) {
+	$sql = "DELETE FROM USER_SOCIAL_ACCOUNT WHERE SOCIAL_NETWORK_ID = '$socialNetworkId' AND USER_ID = '$userId'";
+	mysql_query($sql, $db);
+}
+
+// Input: Social network account name, Social Network ID, Blog ID, DB handle
+// Action: Add blog social account
+function addBlogSocialAccount ($socialNetworkAccountName, $socialNetworkId, $blogId, $db) {
+	$socialNetworkAccountName = mysql_real_escape_string($socialNetworkAccountName);
+	
+	$sql = "REPLACE INTO BLOG_SOCIAL_ACCOUNT (SOCIAL_NETWORK_ID, SOCIAL_NETWORKING_ACCOUNT_NAME, BLOG_ID) VALUES ('$socialNetworkId', '$socialNetworkAccountName', '$blogId')";
+	mysql_query($sql, $db);
+}
+
+// Input: Social Network ID, Blog ID, DB Handle
+// Output: Blog social name and tokens
+function getBlogSocialAccount ($socialNetworkId, $blogId, $db) {
+	$sql = "SELECT * FROM BLOG_SOCIAL_ACCOUNT WHERE SOCIAL_NETWORK_ID = '$socialNetworkId' AND BLOG_ID = '$blogId'";
+	$result = mysql_query($sql, $db);
+	
+	$row = mysql_fetch_array($result);
+	
+	return $row;
+}
+
+// Input: Social Network ID, Blog ID, DB Handle
+// Action: Remove blog social account
+function removeBlogSocialAccount($socialNetworkId, $blogId, $db) {
+	$sql = "DELETE FROM BLOG_SOCIAL_ACCOUNT WHERE SOCIAL_NETWORK_ID = '$socialNetworkId' AND BLOG_ID = '$blogId'";
+	mysql_query($sql, $db);
+}
+
+
 // Input: name of topic, DB handle
 // Action: if this topic does not yet exist, insert it
 // Return: ID of (new or previously existing) topic
@@ -2127,12 +1761,12 @@ function getPost ($arrange, $value, $db) {
 // Input: Post ID, DB handle
 // Result: Comments data
 function getComments($postId, $db) {
-	$sql = "SELECT PERSONA_ID, REC_DATE_TIME, REC_COMMENT FROM RECOMMENDATION WHERE BLOG_POST_ID=$postId AND REC_COMMENT != '' ORDER BY REC_DATE_TIME ASC";
+	$sql = "SELECT USER_ID, REC_DATE_TIME, REC_COMMENT FROM RECOMMENDATION WHERE BLOG_POST_ID = '$postId' AND REC_COMMENT != '' ORDER BY REC_DATE_TIME ASC";
 	$results = mysql_query($sql, $db);
 	
 	$comments = array();
   while ($row = mysql_fetch_array($results)) {
-    $comment["personaId"] = $row["PERSONA_ID"];
+    $comment["userId"] = $row["USER_ID"];
     $comment["date"] = $row["REC_DATE_TIME"];
 		$comment["comment"] = $row["REC_COMMENT"];
     array_push($comments, $comment);
@@ -2190,7 +1824,7 @@ function getBlogAuthorId($name, $blogId, $db) {
 // Input: ID of blog, DB handle
 // Return: List of IDs of users who are authors on this blog and have edit permissions
 function getBlogAuthorIds ($blogId, $db) {
-  $sql = "select p.USER_ID from PERSONA p, BLOG_AUTHOR ba where p.PERSONA_ID = ba.PERSONA_ID and ba.BLOG_ID=$blogId";
+  $sql = "select user.USER_ID from USER user, BLOG_AUTHOR ba where user.USER_ID = ba.USER_ID and ba.BLOG_ID=$blogId";
 
   $results = mysql_query($sql, $db);
 
@@ -2311,7 +1945,7 @@ function associateTopic($topic2, $blogId, $db) {
 // Input: blog ID, DB handle
 // Output: list of topic IDs for this blog
 function getBlogTopics($blogId, $db) {
-  $sql = "SELECT TOPIC_ID FROM PRIMARY_BLOG_TOPIC WHERE BLOG_ID=$blogId";
+  $sql = "SELECT TOPIC_ID FROM PRIMARY_BLOG_TOPIC WHERE BLOG_ID=$blogId ORDER BY TOPIC_ID ASC";
   $results = mysql_query($sql, $db);
   $blogtopics = array();
 
@@ -2333,6 +1967,8 @@ function removeTopics($blogId, $db) {
  * Common HTML code
  */
  
+// Input: URL to update without parameters, Next page button text, previous page button text.
+// Output: HTML code for page buttons.
 function pageButtons ($baseUrl, $nextText = "Next Page »", $prevText = "« Previous Page") {
 	$httpQuery = updateHttpQuery();
 	
@@ -2353,350 +1989,317 @@ function pageButtons ($baseUrl, $nextText = "Next Page »", $prevText = "« Prev
 	print "</div>";
 }
 
+// Input: Array of blog data, user privilege ID, DB handle
+// Output: HTML Edit blog form.
+function editBlogForm ($blogData, $userPriv, $sliderSetting, $db) {
+	$blogId = $blogData["BLOG_ID"];
+	$blogName = $blogData["BLOG_NAME"];
+	$blogUri = $blogData["BLOG_URI"];
+	$blogDescription = $blogData["BLOG_DESCRIPTION"];
+	$blogSyndicationUri = $blogData["BLOG_SYNDICATION_URI"];
+	$blogAddedDate = $blogData["ADDED_DATE_TIME"];
+	$blogCrawledDate = $blogData["CRAWLED_DATE_TIME"];
+	$blogStatusId = $blogData["BLOG_STATUS_ID"];
+	$blogSocialAccount = getBlogSocialAccount(1, $blogId, $db);
+	$blogtopics = getBlogTopics($blogId, $db);
+	$blogStatus = ucwords(blogStatusIdToName ($blogStatusId, $db));
+	
+	print "<div class=\"ss-entry-wrapper\">
+	<div class=\"post-header\">$blogId | <a class=\"red-title\" href=\"$blogUri\" target=\"_blank\">$blogName</a> | $blogStatus | $blogAddedDate</div>
+	<div class=\"ss-div-button\">";
+	if ($sliderSetting == "open") {
+		print "<div class=\"arrow-up\" title=\"Show Info\"></div>
+		</div>
+		<div class=\"ss-slide-wrapper\" style=\"display: block;\">";
+	}
+	else {
+		print "<div class=\"arrow-down\" title=\"Show Info\"></div>
+		</div>
+		<div class=\"ss-slide-wrapper\">";
+	}
+	print "
+	<br />
+	<h3>General Information</h3>
+	<form method=\"POST\">
+	<input type=\"hidden\" name=\"step\" value=\"edit\" />
+	<input type=\"hidden\" name=\"blogId\" value=\"$blogId\" />
+	<p>Added date: $blogAddedDate</p>
+	<p>Last crawl date: $blogCrawledDate</p>
+	<p>Blog name: <input type=\"text\" name=\"blogName\" size=\"40\" value=\"".htmlspecialchars($blogName, ENT_QUOTES)."\"/></p>\n
+	<p><a href=\"$blogUri\" target=\"_blank\">Blog URL:</a> <input type=\"text\" name=\"blogUri\" size=\"55\" value=\"".htmlspecialchars($blogUri, ENT_QUOTES)."\" /><br /><span class=\"subtle-text\">(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</span></p>
+	<p><a href=\"$blogSyndicationUri\" target=\"_blank\">Blog Syndication URL:</a> <input type=\"text\" name=\"blogSyndicationUri\" size=\"55\" value=\"".htmlspecialchars($blogSyndicationUri, ENT_QUOTES)."\" /><br /><span class=\"subtle-text\">(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</span></p>
+	<p>Blog description:<br /><textarea name=\"blogDescription\" rows=\"5\" cols=\"55\">$blogDescription</textarea></p>\n
+	<p>Blog topics: <select name='topic1'>\n
+	<option value='-1'>None</option>\n";
+	$topicList = getTopicList(true, $db);
+	while ($row = mysql_fetch_array($topicList)) {
+		print "<option value='" . $row["TOPIC_ID"] . "'";
+		if ($row["TOPIC_ID"] == $blogtopics[0]) {
+			print " selected";
+		}
+		print ">" . $row["TOPIC_NAME"] . "</option>\n";
+	}
+	print "</select>&nbsp;<select name='topic2'>\n
+	<option value='-1'> None</option>\n";
+	$topicList = getTopicList(true, $db);
+	while ($row = mysql_fetch_array($topicList)) {
+		print "<option value='" . $row["TOPIC_ID"] . "'";
+		if ($row["TOPIC_ID"] == $blogtopics[1]) {
+			print " selected";
+		}
+		print ">" . $row["TOPIC_NAME"] . "</option>\n";
+	}
+	print "</select></p>\n
+	<p>Blog status: <select name='blogStatus'>\n";
+	$statusList = getBlogStatusList ($db);
+	while ($row = mysql_fetch_array($statusList)) {
+		if ($userPriv == 0) {
+			if ($row["BLOG_STATUS_ID"] != 0 && $row["BLOG_STATUS_ID"] != 3) {
+				continue;
+			}
+		}
+		print "<option value='" . $row["BLOG_STATUS_ID"] . "'";
+		if ($row["BLOG_STATUS_ID"] == $blogStatusId) {
+			print " selected";
+					}
+		print ">" . ucwords($row["BLOG_STATUS_DESCRIPTION"]) . "</option>\n";
+	}
+	print "</select></p>\n";
+	if ($userPriv > 0) {
+		$authorList = getAuthorList ($blogId, $db);
+		if (mysql_num_rows($authorList) != 0) {
+			print "<div class=\"toggle-button\">Administer Authors</div>
+			<div id=\"padding-content\" class=\"ss-slide-wrapper\">";
+			while ($row = mysql_fetch_array($authorList)) {
+				print "<h4>Author</h4>
+				<input type=\"hidden\" name=\"authorId[]\" value=\"".$row["BLOG_AUTHOR_ID"]."\" />
+				<p>Author Name: ".$row["BLOG_AUTHOR_ACCOUNT_NAME"]."</p>
+				<p>Author User ID: <input type=\"text\" name=\"authorUserId[]\" size=\"40\" value=\"".htmlspecialchars($row["USER_ID"], ENT_QUOTES)."\" /></p>";
+			}
+			print "</div>
+			<br />";
+		}
+	}
+	print "<h3>Social Networks</h3>
+	<p>Blog Twitter handle <span class=\"subtle-text\">(Optional)</span>: <input type=\"text\" name=\"twitterHandle\" size=\"40\" value=\"".$blogSocialAccount["SOCIAL_NETWORKING_ACCOUNT_NAME"]."\"/></p>\n
+	<input class=\"ss-button\" name=\"editBlog\" type=\"submit\" value=\"Edit blog\" /> <input class=\"ss-button\" name=\"crawlBlog\" type=\"submit\" value=\"Scan for new posts\" />\n
+	</form>\n
+	</div>
+	</div>
+	<hr />";
+}
+
+// Input: Step of the editing process, user ID, user Privilege, DB Handle
+// Action: Check and edit submitted blog data.
+function confirmEditBlog ($step, $userId, $userPriv, $db) {
+	if ($step) {
+		$blogId = $_REQUEST["blogId"];
+		$blogName = $_REQUEST["blogName"];
+		$blogUri = $_REQUEST["blogUri"];
+		$blogSyndicationUri = $_REQUEST["blogSyndicationUri"];
+		$blogDescription = $_REQUEST["blogDescription"];
+		$topic1 = $_REQUEST["topic1"];
+		$topic2 = $_REQUEST["topic2"];
+		$authorId = $_REQUEST["authorId"];
+		$authorUserId = $_REQUEST["authorUserId"];
+		$blogStatusId = $_REQUEST["blogStatus"];
+		$twitterHandle = $_REQUEST["twitterHandle"];
+		$oldBlogName = getBlogName($blogId, $db);
+		$errors = checkBlogData($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $blogStatusId, $topic1, $topic2, $twitterHandle, $userId, $db);
+		
+		// If user is requesting a blogUri or blogsyndicationuri change, ensure that they own the new url
+		$origBlogSyndicationUri = getBlogSyndicationUri($blogId, $db);
+		$origBlogUri = getBlogUri($blogId, $db);
+	
+		// If blog URL or syndication URL have changed, we need to re-verify the claim to the blog (the author's ability to write to it)
+		if ($errors == NULL && $step == "edit" && $userPriv == 0 && ($origBlogSyndicationUri !== $blogSyndicationUri || $origBlogUri != $blogUri)) {
+			$claimToken = retrieveVerifiedClaimToken ($blogId, $userId, $db);
+			clearClaimToken($blogId, $userId, $claimToken, $db);
+	
+			$claimToken = retrievePendingClaimToken ($blogId, $userId, $db);
+			if ($claimToken == null) {
+				$claimToken = generateClaimToken();
+				storeClaimToken($claimToken, $blogId, $userId, $db);
+			}
+			
+			displayBlogClaimToken($claimToken, $blogId, $displayName, $db);
+			return;
+		}
+		elseif ($_REQUEST["crawlBlog"]) {
+			$blog = array("syndicationuri"=>$blogSyndicationUri, "id"=>$blogId, "name"=>$blogName);
+			print crawlBlogs($blog, $db);
+		}
+		elseif ($step == "confirmed" || ($errors == NULL && $step == "edit")) {
+			editBlog ($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $blogStatusId, $topic1, $topic2, $db);
+			
+			if ($twitterHandle) {
+				addBlogSocialAccount($twitterHandle, 1, $blogId, $db);
+			}
+			else {
+				removeBlogSocialAccount(1, $blogId, $db);
+			}
+			
+			if ($authorId) {
+				foreach ($authorId as $key => $authorId) {
+					$authorUserId = $authorUserId[$key];
+					editAuthor ($authorId, $authorUserId, $db);
+				}
+			}
+			print "<p class=\"ss-successful\">$blogName (ID $blogId) has been updated.</p>"; 
+		}
+		elseif ($errors != NULL && $step == "edit") {
+			print "<p>$oldBlogName (ID $blogId): <ul class=\"ss-error\">$errors</ul></p>";
+			if ($userPriv > 0) {
+				print "<form class=\"ss-div\" method=\"POST\">
+				<input type=\"hidden\" name=\"step\" value=\"confirmed\" />
+				<input type=\"hidden\" name=\"blogId\" value=\"$blogId\" />
+				<input type=\"hidden\" name=\"blogName\" value=\"".htmlspecialchars($blogName, ENT_QUOTES)."\" />
+				<input type=\"hidden\" name=\"blogUri\" value=\"".htmlspecialchars($blogUri, ENT_QUOTES)."\" />
+				<input type=\"hidden\" name=\"blogSyndicationUri\" value=\"".htmlspecialchars($blogSyndicationUri, ENT_QUOTES)."\" />
+				<input type=\"hidden\" name=\"blogDescription\" value=\"".htmlspecialchars($blogDescription, ENT_QUOTES)."\" />
+				<input type=\"hidden\" name=\"twitterHandle\" value=\"".htmlspecialchars($twitterHandle, ENT_QUOTES)."\" />
+				<input type=\"hidden\" name=\"authorId\" value=\"$authorId\" />
+				<input type=\"hidden\" name=\"authorUserId\" value=\"$authorUserId\" />
+				<input type=\"hidden\" name=\"topic1\" value=\"$topic1\" />
+				<input type=\"hidden\" name=\"topic2\" value=\"$topic2\" />
+				<input type=\"hidden\" name=\"blogStatus\" value=\"$blogStatusId\" />
+				<input type=\"hidden\" name=\"crawl\" value=\"$crawl\" />
+				<p>There has been an error, are you sure you want to apply these changes?</p>
+				<input class=\"ss-button\" name=\"confirm\" type=\"submit\" value=\"Confirm\" />
+				</form>";
+			}
+		} 
+		else if ($step == "verify") {
+			$result = verifyClaim($blogId, $userId, $blogUri, $blogSyndicationUri, $db);
+		
+			if ($result === "no-claim") {
+				print "<p class=\"ss-error\">There has been a problem retrieving your claim token.</p>";
+				return;
+			} 
+			else if ($result == "verified") {
+				$claimToken = getClaimToken($blogId, $userId, $db);
+				$success = markClaimTokenVerified($blogId, $userId, $claimToken, $db);
+				if (! $success) {
+					print "<p class=\"ss-error\">Failed to update database with your claim token.</p>";
+					return;
+				}
+				else {
+					editBlog ($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $blogStatusId, $topic1, $topic2, $db);
+					
+					if ($twitterHandle) {
+						addBlogSocialAccount($twitterHandle, 1, $blogId, $db);
+					}
+					else {
+						removeBlogSocialAccount(1, $blogId, $db);
+					}
+					
+					if ($authorId) {
+						foreach ($authorId as $key => $authorId) {
+							$authorUserId = $authorUserId[$key];
+							editAuthor ($authorId, $authorUserId, $db);
+						}
+					}		
+					
+					print "<p class=\"ss-successful\">$blogName (ID $blogId) has been updated.</p>";
+					return;
+				}
+			} 
+			else {
+				$claimToken = getClaimToken($blogId, $userId, $db);
+				print "<p class=\"ss-error\">Your claim token ($claimToken) was not found on your blog and/or your syndication feed.</p>\n";
+				displayBlogClaimToken($claimToken, $blogId, $displayName, $db);
+				return;
+			}
+		}
+	}
+}
 
 /*
  * Edit stuff
  */
 
-function displayEditBlogsForm ($msg, $db) {
-  $blogname = $_REQUEST["blogname"];
-  $blogurl = $_REQUEST["blogurl"];
-  $blogsyndicationuri = $_REQUEST["blogsyndicationuri"];
-  $blogdescription = $_REQUEST["blogdescription"];
-
-  global $current_user;
-  get_currentuserinfo();
-  $displayName = $current_user->user_login;
-
-  print "Welcome, $displayName<br /><br />\n";
-
-  if ($msg) {
-    print "<p class='msg'>$msg</p><br />";
-  }
-
-  // If this is the first time this user has tried to interact with
-  // the SS system, create a USER entry for them
-  $userId = addUser($displayName, $email, $db);
-	
-  $blogIds = getBlogIdsByUserId($userId, $blogId, $db);
-  if (sizeof($blogIds) == 0) {
-    print "<p class='msg'>$displayName has no blogs.</p><br />";
-    return;
-  }
-
-  $blogData = blogIdsToBlogData($blogIds, $db);
-
-  while ($row = mysql_fetch_array($blogData)) {
-    displayEditBlogForm($db, $row);
-  }
-
-  // Only active users can edit blogs
-  $userStatus = getUserStatus($userId, $db);
-  if ($userStatus != 0) {
-    print "<p class=\"error\"><font color=\"red\">You cannot edit your blog as your account is not currently active. You may <a href='/contact-us/'>contact us</a> to ask for more information.</font></p>\n";
-    return;
-  }
-}
-
-function displayEditBlogForm($db, $data) {
-  $blogId = $data["BLOG_ID"];
-  $blogname = $data["BLOG_NAME"];
-  $blogurl = $data["BLOG_URI"];
-  $blogsyndicationuri = $data["BLOG_SYNDICATION_URI"];
-  $blogdescription = $data["BLOG_DESCRIPTION"];
-  $blogtopics = getBlogTopics($blogId, $db);
-  //$topic1 = $_REQUEST["topic1"];
-  //$topic2 = $_REQUEST["topic2"];
-
-  print "<h2>Edit $blogname</h2>\n";
-
-?> 
-<form method="POST">
-<input type="hidden" name="step" value="doEdit" />
-<?php
-
-   print "<input type=\"hidden\" name=\"blogId\" value=\"$blogId\" />\n";
-
-   if ($errormsg !== null) {
-     print "<p><font color='red'>Error: $errormsg</font></p>\n";
-   }
-
-  print "<p>*Required field</p>\n<p>\n";
-  print "*Blog name: <input type=\"text\" name=\"blogname\" size=\"40\" value=\"".htmlspecialchars($blogname, ENT_QUOTES)."\"/>\n</p>\n<p>\n*Blog URL: <input type=\"text\" name=\"blogurl\" size=\"40\" value=\"".htmlspecialchars($blogurl, ENT_QUOTES)."\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>";
-  print "<p>*Blog syndication URL: <input type=\"text\" name=\"blogsyndicationuri\" size=\"40\" value=\"".htmlspecialchars($blogsyndicationuri, ENT_QUOTES)."\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</p>";
-  print "<p>Blog description:<br /><textarea name=\"blogdescription\" rows=\"5\" cols=\"55\">$blogdescription</textarea></p>\n";
-
-  print "<p>*Blog topic: <select name='topic1'>\n";
-  print "<option value='-1'>None</option>\n";
-  $topicList = getTopicList(true, $db);
-  while ($row = mysql_fetch_array($topicList)) {
-    print "<option value='" . $row["TOPIC_ID"] . "'";
-    if ($row["TOPIC_ID"] == $blogtopics[0]) {
-      print " selected";
-    }
-    print ">" . $row["TOPIC_NAME"] . "</option>\n";
-  }
-  print "</select>\n";
-
-  print " <select name='topic2'>\n";
-  print "<option value='-1'> None</option>\n";
-  $topicList = getTopicList(true, $db);
-  while ($row = mysql_fetch_array($topicList)) {
-    print "<option value='" . $row["TOPIC_ID"] . "'";
-    if ($row["TOPIC_ID"] == $blogtopics[1]) {
-      print " selected";
-    }
-    print ">" . $row["TOPIC_NAME"] . "</option>\n";
-  }
-  print "</select></p>\n";
-?>
-
-<p>
-<input class="ss-button" type="submit" value="Edit blog info" />
-</p>
-</form>
-<p><hr /></p>
-<?php
-
-   }
-   
-function displayEditPendingBlogs ($db) {
-	print "<form method=\"POST\">\n";
-	print "<input type=\"hidden\" name=\"step\" value=\"edit\" />";
-	$blogList = getPendingBlogs($db);
-	foreach ($blogList as $blog) {
-		$blogId = $blog["id"];
-		$blogName = $blog["name"];
-		$blogUri = $blog["uri"];
-		$blogDescription = $blog["blogdescription"];
-		$blogSyndicationUri = $blog["syndicationuri"];
-		$blogtopics = getBlogTopics($blogId, $db);
-		//$topic1 = $_REQUEST["topic1"];
-		//$topic2 = $_REQUEST["topic2"];
-		
-		$contacts = getBlogContacts($blogId, $db);
-		
-		print "<input type=\"hidden\" name=\"blogId[]\" value=\"$blogId\" />\n";
-		if ($errormsg !== null) {
-			print "<p><font color='red'>Error: $errormsg</font></p>\n";
-		}
-		print "<p><span class=\"ss-bold\">$blogName</span></p>";
-		if ($contacts) {
-			print "<p>Author's Email";
-			foreach ($contacts as $contact) {
-				print " <a href=\"mailto:$contact\">$contact</a>";
-			}
-			print "</p>";
-		}
-		print "<p>*Required field</p>\n";
-		print "<p>*Blog name: <input type=\"text\" name=\"blogname[]\" size=\"40\" value=\"".htmlspecialchars($blogName, ENT_QUOTES)."\"/></p>\n";
-		print "<p>*<a href=\"$blogUri\" style=\"none\" target=\"_blank\">Blog URL:</a> <input type=\"text\" name=\"blogurl[]\" size=\"40\" value=\"".htmlspecialchars($blogUri, ENT_QUOTES)."\" /><br />(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>";
-		print "<p>*<a href=\"$blogSyndicationUri\" style=\"none\" target=\"_blank\">Blog syndication URL:</a> <input type=\"text\" name=\"blogsyndicationuri[]\" size=\"40\" value=\"".htmlspecialchars($blogSyndicationUri, ENT_QUOTES)."\" /> <br />(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</p>";
-		print "<p>Blog description:<br /><textarea name=\"blogdescription[]\" rows=\"5\" cols=\"55\">$blogDescription</textarea></p>\n";
-		print "<p>*Blog topics: <select name='topic1[]'>\n";
-		print "<option value='-1'>None</option>\n";
-		$topicList = getTopicList(true, $db);
-		while ($row = mysql_fetch_array($topicList)) {
-			print "<option value='" . $row["TOPIC_ID"] . "'";
-			if ($row["TOPIC_ID"] == $blogtopics[0]) {
-				print " selected";
-			}
-			print ">" . $row["TOPIC_NAME"] . "</option>\n";
-		}
-		print "</select>&nbsp;<select name='topic2[]'>\n";
-		print "<option value='-1'> None</option>\n";
-		$topicList = getTopicList(true, $db);
-		while ($row = mysql_fetch_array($topicList)) {
-			print "<option value='" . $row["TOPIC_ID"] . "'";
-			if ($row["TOPIC_ID"] == $blogtopics[1]) {
-				print " selected";
-            }
-			print ">" . $row["TOPIC_NAME"] . "</option>\n";
-		}
-		print "</select></p>\n";
-		print "<p><input type=\"radio\" name=\"$blogId-blog\" value=\"1\" /> Approve<br />";
-		print "<input type=\"radio\" name=\"$blogId-blog\" value=\"2\" /> Reject<br /></p>";  
-		}
-	print "<input class=\"ss-button\" type=\"submit\" value=\"Submit\" />\n";
-	print "</form>\n";
-}
-
-function doEditBlog ($db) {
-  $blogId = $_REQUEST["blogId"];
-  $blogName = $_REQUEST["blogname"];
-  $blogUri = $_REQUEST["blogurl"];
-  $blogSyndicationUri = $_REQUEST["blogsyndicationuri"];
-  $blogDescription = $_REQUEST["blogdescription"];
-  $topic1 = $_REQUEST["topic1"];
-  $topic2 = $_REQUEST["topic2"];
-  $userIsAuthor = $_REQUEST["userIsAuthor"];
-
-  global $current_user;
-  get_currentuserinfo();
-  $displayName = $current_user->user_login;
-  $email = $current_user->user_email;
-
-  // If this is the first time this user has tried to interact with
-  // the SS system, create a USER entry for them
-  $userId = addUser($displayName, $email, $db);
-
-  // If user is requesting a blogUri or blogsyndicationuri change, ensure that they own the new url
-  $origBlogSyndicationUri = getBlogSyndicationUri($blogId, $db);
-  $origBlogUri = getBlogUri($blogId, $db);
-
-  // If blog URL or syndication URL have changed, we need to re-verify the claim to the blog (the author's ability to write to it)
-  if ($origBlogSyndicationUri !== $blogSyndicationUri || $origBlogUri != $blogUri) {
-    $claimToken = retrieveVerifiedClaimToken ($blogId, $userId, $db);
-    clearClaimToken($blogId, $userId, $claimToken, $db);
-
-    $claimToken = retrievePendingClaimToken ($blogId, $userId, $db);
-    if ($claimToken == null) {
-      $claimToken = generateClaimToken();
-      storeClaimToken($claimToken, $blogId, $userId, $db);
-    }
-
-    $result = checkBlogData($blogId, $blogName, $origBlogUri, $origBlogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $displayname, $db);
-
-    print "<p>To change the URL of your feed, you must re-claim your blog.</p>";
-    displayBlogClaimToken($claimToken, $blogId, $displayName, $blogUri, $blogSyndicationUri, $db);
-    return;
-  }
-
-  $result = checkBlogData($blogId, $blogName, $origBlogUri, $origBlogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $displayname, $db);
-
-  if ($result == NULL) {
-		editBlog ($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $db);
-    displayEditBlogsForm("$blogName was updated.", $db);
-    return;
-  } else {
-    displayEditBlogsForm("<p>ERROR: <ul class=\"ss-error\">$result</ul></p>", $db);
-  }
-}
-
-function doVerifyEditClaim ($db) {
-  $blogId = $_REQUEST["blogId"];
-  $blogUri = $_REQUEST["blogUri"];
-  $blogSyndicationUri = $_REQUEST["blogSyndicationUri"];
-  $blogName = getBlogName($blogId, $db);
-
-  global $current_user;
-  get_currentuserinfo();
-  $displayName = $current_user->user_login;
-  $userId = getUser($displayName, $db);
-  $result = verifyClaim($blogId, $userId, $blogUri, $blogSyndicationUri, $db);
-
-  if ($result === "no-claim") {
-      doEditBlog($db);
-      return;
-  } else if ($result == "verified") {
-    $claimToken = getClaimToken($blogId, $userId, $db);
-    $success = markClaimTokenVerified($blogId, $userId, $claimToken, $db);
-    if (! $success) {
-      print "Error, failed to update db";
-      return;
-    }
-
-    $blogDescription = getBlogDescription($blogId, $db);
-    $blogTopics = getBlogTopics($blogId, $db);
-    $topic1 = null; $topic2 = null;
-    if (sizeof($blogTopics) > 0) {
-      $topic1 = $blogTopics[0];
-    }
-    if (sizeof ($blogTopcs) > 1) {
-      $topic2 = $blogTopics[1];
-    }
-
-    $result = editBlog($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $blogDelete, $displayName, $db);
-
-    displayEditBlogsForm("Blog $blogName edited.", $db);
-    return;
-  } else {
-    $claimToken = getClaimToken($blogId, $userId, $db);
-    print "<p>Your claim token ($claimToken) was not found on your blog and/or your syndication feed.</p>\n";
-    displayBlogClaimToken($claimToken, $blogId, $displayName, $blogUri, $blogSyndicationUri, $db);
-  }
-}
-
-
 // Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, user ID, user display name, DB handle
 // Action: check blog metadata
 // Return: error message or null
-function checkBlogData($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $userId, $displayname, $db) {
-  // get old info about this blog
-  $results = blogIdsToBlogData(array(0 => $blogId), $db);
-  $oldBlogData = mysql_fetch_array($results);
-  $oldBlogname = $oldBlogData["BLOG_NAME"];
-
-  // if not logged in as an author or as admin, fail
-  if (! canEdit($userId, $blogId, $db)) {
-    $result .= "<li>$displayname does not have editing privileges for blog $oldBlogname.</li>";
-  }
-
-  // user exists? active (0)?
-  $userStatus = getUserStatus($userId, $db);
-  if ($userStatus == null) {
-    $result .= "<li>No such user $displayname.</li>";
-  }
-  if ($userStatus != 0) {
-    $result .= "<li>User $displayname is not active; could not update blog info.</li>";
-  }
-
-  // blog exists? need blog id!
-  $blogStatus = getBlogStatusId($blogId, $db);
-  if ($blogStatus == null) {
-    $result .= "<li>No such blog $blogId.</li>";
-  }
+function checkBlogData($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $blogStatusId, $topic1, $topic2, $twitterHandle, $userId, $db) {
 	
-	$userPriv = getUserPrivilegeStatus($userId, $db);
-  if ($blogStatus != 0) {
-    if ($userPriv == 0) { // not moderator or admin
-      $result .= "<li>The entry for blog $oldBlogname (ID $blogId) is not currently active, so it cannot be updated.</li>";
-    }
-  }
+	if ($blogId) {
+		// blog exists? need blog id!
+		$blogStatus = getBlogStatusId($blogId, $db);
+		if ($blogStatus == null) {
+			return $result .= "<li>No such blog $blogId.</li>";
+		}
+	}
+	
+	$oldBlogName = getBlogName($blogId, $db);
+	
+	if ($userId) {
+		// if not logged in as an author or as admin, fail
+		if (! canEdit($userId, $blogId, $db)) {
+			$result .= "<li>You don't have editing privileges for $oldBlogName.</li>";
+		}
+		
+		$userPriv = getUserPrivilegeStatus($userId, $db);
+		if ($userPriv == 0 && ($blogStatusId =! 0 || $blogStatusId =! 3)) {
+			$result .= "<li>You don't have editing privileges for set this status.</li>";
+		}
+	}
   
   // check that there is a name
   if ($blogname == null) {
-	  $result .= "<li>You need to submit a name for the blog.</li>";
-	  
+	  $result .= "<li>Name field is required.</li>";
   }
+	
+	if (! $blogsyndicationuri) {
+		$result .= "<li>Syndication URL field is required.</li>";
+	}
+	else {
+		// check that syndication feed is parseable
+		$feed = getSimplePie($blogsyndicationuri);
+		if ($feed->get_type() == 0) {
+			$result .= "<li>Unable to parse feed at $blogsyndicationuri. Are you sure it is Atom or RSS?</li>";
+		}
+	}
 
+	if (! $blogurl) {
+		$result .= "<li>URL field is required.</li>";
+	}
   // check that blog URL is fetchable
-  if (! uriFetchable($blogurl)) {
-    $result .= ("<li>Unable to fetch the contents of your blog at $blogurl. Did you remember to put \"http://\" before the URL when you entered it? If you did, make sure your blog page is actually working, or <a href='/contact-us/'>contact us</a> to ask for help in resolving this problem.</li>");
-  }
-
-  // check that syndication feed is parseable
-  $feed = getSimplePie($blogsyndicationuri);
-  if ($feed->get_type() == 0) {
-    $result .= ("<li>Unable to parse feed at $blogsyndicationuri. Are you sure it is Atom or RSS?</li>");
+  elseif (! uriFetchable($blogurl)) {
+    $result .= "<li>Unable to fetch the contents of your blog at $blogurl. Did you remember to put \"http://\" before the URL when you entered it? If you did, make sure your blog page is actually working, or <a href='/contact-us/'>contact us</a> to ask for help in resolving this problem.</li>";
   }
   
   // check that blog URL and blog syndication URL are not the same
   if ($blogurl == $blogsyndicationuri) {
-  	$result .= ("<li>The blog URL (homepage) and the blog syndication URL (RSS or Atom feed) need to be different.</li>");
+  	$result .= ("<li>The homepage URL and syndication URL (RSS or Atom feed) must be different.</li>");
   }
   
   // Check that the user has selected at least one topic
   if ($topic1 == -1 && $topic2 == -1) {
   	$result .= ("<li>You need to choose at least one topic.</li>");
   }
+	
+	if ($twitterHandle && preg_match("/[^@\w\d]+/", $twitterHandle)) {
+		$result .= "<li>$twitterHandle is not a valid Twitter handle.</li>";
+	}
 
   return $result;
 }
 
 // Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, DB handle
 // Action: edit blog metadata
-function editBlog ($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $topic1, $topic2, $db) {
+function editBlog ($blogId, $blogName, $blogUrl, $blogSyndicationUrl, $blogDescription, $blogStatusId, $topic1, $topic2, $db) {
 	
 	// escape stuff
-  $blogname = mysql_real_escape_string($blogname);
-  $blogdescription = mysql_real_escape_string($blogdescription);
-	// TODO probably should be escaping the URIs as well
+  $blogName = mysql_real_escape_string($blogName);
+  $blogDescription = mysql_real_escape_string($blogDescription);
+	$blogUrl = mysql_real_escape_string($blogUrl);
+	$blogSyndicationUrl = mysql_real_escape_string($blogSyndicationUrl);
 	
 	// update easy data
-	$sql = "UPDATE BLOG SET BLOG_NAME='$blogname', BLOG_URI='$blogurl', BLOG_SYNDICATION_URI='$blogsyndicationuri', BLOG_DESCRIPTION='$blogdescription' WHERE BLOG_ID=$blogId";
+	$sql = "UPDATE BLOG SET BLOG_NAME='$blogName', BLOG_URI='$blogUrl', BLOG_SYNDICATION_URI='$blogSyndicationUrl', BLOG_DESCRIPTION='$blogDescription', BLOG_STATUS_ID='$blogStatusId' WHERE BLOG_ID=$blogId";
 	mysql_query($sql, $db);
-
+	
   // remove all topics for this blog
   removeTopics($blogId, $db);
 
@@ -2757,14 +2360,14 @@ function checkPostData($postId, $postTitle, $postSummary, $postUrl, $userId, $di
 
 // Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, DB handle
 // Action: edit blog metadata
-function editPost ($postId, $postTitle, $postUrl, $postSummary, $postStatus, $userId, $displayName, $postDate, $addedDate, $db) {
+function editPost ($postId, $postTitle, $postUrl, $postSummary, $postStatusId, $userId, $displayName, $postDate, $addedDate, $db) {
 	
 	// escape stuff
   $postTitle = mysql_real_escape_string($postTitle);
   $postSummary = mysql_real_escape_string($postSummary);
-  // TODO probably should be escaping the URIs as well
+	$postUrl = mysql_real_escape_string($postUrl);
 
-	$sql = "UPDATE BLOG_POST SET BLOG_POST_TITLE='$postTitle', BLOG_POST_URI='$postUrl', BLOG_POST_SUMMARY='$postSummary', BLOG_POST_STATUS_ID=$postStatus, BLOG_POST_DATE_TIME='$postDate', BLOG_POST_INGEST_DATE_TIME='$addedDate' WHERE BLOG_POST_ID=$postId";
+	$sql = "UPDATE BLOG_POST SET BLOG_POST_TITLE='$postTitle', BLOG_POST_URI='$postUrl', BLOG_POST_SUMMARY='$postSummary', BLOG_POST_STATUS_ID=$postStatusId, BLOG_POST_DATE_TIME='$postDate', BLOG_POST_INGEST_DATE_TIME='$addedDate' WHERE BLOG_POST_ID=$postId";
 	mysql_query($sql, $db);
 
 }
@@ -2827,16 +2430,21 @@ function editUser ($userID, $userName, $userStatus, $userEmail, $userPrivilege, 
   mysql_query($sql, $db);
 }
 
-// Input: blog status, DB handle
-// Action: edit blog status
-function editBlogStatus ($blogId, $blogStatus, $db) {
-  $sql = "UPDATE BLOG SET BLOG_STATUS_ID='$blogStatus' WHERE BLOG_ID=$blogId";
-  mysql_query($sql, $db);
-	
-	if (mysql_error() != null) {
-    print "ERROR: " . mysql_error() . "<br />";
-    return;
-  }
+// Input: Author ID, User ID, DB Handle
+// Action: Update author user ID.
+// This is a temporary function until we have the tools to improve the edition of authors.
+function editAuthor ($authorId, $authorUserId, $db) {
+	if (is_numeric($authorUserId)) {
+		$sql = "UPDATE BLOG_AUTHOR SET USER_ID = '$authorUserId' WHERE BLOG_AUTHOR_ID = '$authorId'";
+		mysql_query($sql, $db);
+	}
+	elseif (! $authorUserId) {
+		$sql = "UPDATE BLOG_AUTHOR SET USER_ID = NULL WHERE BLOG_AUTHOR_ID = '$authorId'";
+		mysql_query($sql, $db);
+	}
+	else {
+		print "<p class=\"ss-error\">Edit author error: user ID must be numeric.</p>";
+	}
 }
 
 // Input: user ID, blog ID, DB handle
@@ -2848,7 +2456,12 @@ function canEdit($userId, $blogId, $db) {
   }
 
   $authorIds = getBlogAuthorIds($blogId, $db);
-  return (in_array ($userId, $authorIds));
+	if (is_array($authorIds)) {
+  	return (in_array ($userId, $authorIds));
+	}
+	else {
+		return FALSE;
+	}
 }
 
 // Input: blog ID, DB handle
@@ -2873,6 +2486,18 @@ function getUserName($userId, $db) {
   }
   $row = mysql_fetch_array($results);
   return $row["USER_NAME"];
+}
+
+// Input: user ID, DB handle
+// Return: name of this user, or null
+function getDisplayName($userId, $db) {
+  $sql = "SELECT DISPLAY_NAME FROM USER WHERE USER_ID=$userId";
+  $results = mysql_query($sql, $db);
+  if ($results == null || mysql_num_rows($results) == 0) {
+    return null;
+  }
+  $row = mysql_fetch_array($results);
+  return $row["DISPLAY_NAME"];
 }
 
 // Input: blog ID, DB handle
@@ -2909,16 +2534,6 @@ function getBlogUri($blogId, $db) {
   }
   $row = mysql_fetch_array($results);
   return $row["BLOG_URI"];
-}
-
-// Input: post ID, persona ID, DB handle
-// Return: get recommendation related image from this post and user
-function getPostImage($postId, $personaId, $db) {
-	$sql = "SELECT REC_IMAGE FROM RECOMMENDATION WHERE BLOG_POST_ID = $postId";
-	$results = mysql_query($sql, $db);
-	
-	$row = mysql_fetch_array($results);
-  return $row["REC_IMAGE"];
 }
 
 // Input: UserId, DB handle
@@ -2973,52 +2588,25 @@ function getUser($username, $db) {
   return $row["USER_ID"];
 }
 
-// Input: user ID, display name, DB handle
-// Action: create new Persona for this User with the given name
-// Return: ID of (new or previously existing) Persona
-function addPersona($userId, $displayName, $db) {
-  $personaId = getPersona($userId, $displayName, $db);
-  if ($personaId != null) {
-    return $personaId;
-  }
-
-  $sql = "INSERT INTO PERSONA (USER_ID, DISPLAY_NAME) VALUES ($userId, '" . mysql_real_escape_string($displayName) . "')";
-  mysql_query($sql, $db);
-  return mysql_insert_id();
-}
-
-// Input: user ID, display name, DB handle
-// Return: return matching Persona, or null
-function getPersona($userId, $displayName, $db) {
-  $sql = "SELECT PERSONA_ID FROM PERSONA WHERE USER_ID=$userId AND DISPLAY_NAME='" . mysql_real_escape_string($displayName) . "'";
-
-  $results = mysql_query($sql, $db);
-  if ($results == null || mysql_num_rows($results) == 0) {
-    return null;
-  }
-  $row = mysql_fetch_array($results);
-  return $row["PERSONA_ID"];
-}
-
 // Input: author ID, DB handle
-// Return: boolean representing whether or not this author ID is "claimed" (attached to a user via a persona)
+// Return: boolean representing whether or not this author ID is "claimed" (attached to a user via a user)
 function isAuthorClaimed($authorId, $db) {
   // TODO perhaps be smarter about this -- is the associated user active?
-  $sql = "SELECT PERSONA_ID FROM BLOG_AUTHOR WHERE BLOG_AUTHOR_ID=$authorId";
+  $sql = "SELECT USER_ID FROM BLOG_AUTHOR WHERE BLOG_AUTHOR_ID=$authorId";
   $results = mysql_query($sql, $db);
   if ($results == null || mysql_num_rows($results) == 0) {
     return false;
   }
   $row = mysql_fetch_array($results);
-  $personaId = $row['PERSONA_ID'];
-  return ($personaId != null);
+  $userId = $row['USER_ID'];
+  return ($userId != null);
 }
 
 
 // Input: blog ID, DB handle
 // Return: boolean representing whether or not this blog can be "claimed"
 function isBlogClaimable($blogId, $db) {
-  $sql = "select BLOG_AUTHOR_ID from BLOG_AUTHOR where BLOG_ID=$blogId and PERSONA_ID IS NULL";
+  $sql = "select BLOG_AUTHOR_ID from BLOG_AUTHOR where BLOG_ID=$blogId and USER_ID IS NULL";
   $results = mysql_query($sql, $db);
   if ($results == null || mysql_num_rows($results) == 0) {
     return false;
@@ -3026,11 +2614,11 @@ function isBlogClaimable($blogId, $db) {
   return true;
 }
 
-// Input: author ID, persona ID, DB handle
-// Action: link this Author and this Persona
-function linkAuthorToPersona($authorId, $personaId, $db) {
-  // set blog_author_account_name = persona display_name
-  $sql = "UPDATE BLOG_AUTHOR ba, PERSONA p SET ba.PERSONA_ID=$personaId, ba.BLOG_AUTHOR_ACCOUNT_NAME=p.DISPLAY_NAME WHERE ba.BLOG_AUTHOR_ID=$authorId AND p.PERSONA_ID = $personaId";
+// Input: author ID, user ID, DB handle
+// Action: link this Author and this user
+function linkAuthorToUser($authorId, $userId, $db) {
+  // set blog_author_account_name = user display_name
+  $sql = "UPDATE BLOG_AUTHOR ba, USER u SET ba.USER_ID=$userId, ba.BLOG_AUTHOR_ACCOUNT_NAME=u.DISPLAY_NAME WHERE ba.BLOG_AUTHOR_ID=$authorId AND p.USER_ID = $userId";
   mysql_query($sql, $db);
 }
 
@@ -3472,6 +3060,48 @@ function generateCitation ($articleData) {
 
 /* Claim stuff */
 
+function doVerifyEditClaim ($db) {
+  $blogId = $_REQUEST["blogId"];
+  $blogUri = $_REQUEST["blogUri"];
+  $blogSyndicationUri = $_REQUEST["blogSyndicationUri"];
+  $blogName = getBlogName($blogId, $db);
+
+  global $current_user;
+  get_currentuserinfo();
+  $displayName = $current_user->user_login;
+  $userId = getUser($displayName, $db);
+  $result = verifyClaim($blogId, $userId, $blogUri, $blogSyndicationUri, $db);
+
+  if ($result === "no-claim") {
+		doEditBlog($db);
+		return;
+  } else if ($result == "verified") {
+    $claimToken = getClaimToken($blogId, $userId, $db);
+    $success = markClaimTokenVerified($blogId, $userId, $claimToken, $db);
+    if (! $success) {
+      print "Error, failed to update database.";
+      return;
+    }
+
+    $blogDescription = getBlogDescription($blogId, $db);
+    $blogTopics = getBlogTopics($blogId, $db);
+    $topic1 = null; $topic2 = null;
+    if (sizeof($blogTopics) > 0) {
+      $topic1 = $blogTopics[0];
+    }
+    if (sizeof ($blogTopcs) > 1) {
+      $topic2 = $blogTopics[1];
+    }
+
+    displayEditBlogsForm("Blog $blogName edited.", $db);
+    return;
+  } else {
+    $claimToken = getClaimToken($blogId, $userId, $db);
+    print "<p>Your claim token ($claimToken) was not found on your blog and/or your syndication feed.</p>\n";
+    displayBlogClaimToken($claimToken, $blogId, $displayName, $db);
+  }
+}
+
 // Input: blog ID, user ID, DB handle
 // Returns: claim token associated with this blog ID and user ID, and currently pending
 function getClaimToken($blogId, $userId, $db) {
@@ -3504,7 +3134,7 @@ function doClaimBlog($blogId, $displayName, $email, $db) {
     storeClaimToken($claimToken, $blogId, $userId, $db);
   }
 
-  displayBlogClaimToken($claimToken, $blogId, $displayName, null, null, $db);
+  displayBlogClaimToken($claimToken, $blogId, $displayName, $db);
 }
 
 function doVerifyClaim($blogId, $displayName, $db) {
@@ -3512,8 +3142,8 @@ function doVerifyClaim($blogId, $displayName, $db) {
   $result = verifyClaim($blogId, $userId, getBlogUri($blogId, $db), getBlogSyndicationUri($blogId, $db), $db);
 
   if ($result === "no-claim") {
-      doClaimBlog($blogId, $displayName, $email, $db);
-      return;
+  	doClaimBlog($blogId, $displayName, $email, $db);
+  	return;
   } else if ($result == "verified") {
     $claimToken = getClaimToken($blogId, $userId, $db);
     $success = markClaimTokenVerified($blogId, $userId, $claimToken, $db);
@@ -3639,7 +3269,7 @@ function clearClaimToken($blogId, $userId, $claimToken, $db) {
 function storeClaimToken($claimToken, $blogId, $userId, $db) {
 
   // Is there already a pending claim token? If so, set it to "overridden" (2)
-  $sql = "UPDATE CLAIM_BLOG SET CLAIM_STATUS_ID=2 WHERE BLOG_ID=$blogId AND USER_ID=$userId AND CLAIM_STATUS_ID=0";
+  $sql = "UPDATE CLAIM_BLOG SET CLAIM_STATUS_ID=2 WHERE BLOG_ID = '$blogId' AND USER_ID = '$userId' AND CLAIM_STATUS_ID = '0'";
   mysql_query($sql, $db);
   if (mysql_error()) {
     die ("storeClaimToken: " . mysql_error() . " ($sql)\n");
@@ -3657,26 +3287,44 @@ function storeClaimToken($claimToken, $blogId, $userId, $db) {
 
 // Input: blog claim token, blog ID, display name of user, DB handle
 // Action: Display message to user with blog claim token, explaining how to use it to claim the blog in question
-function displayBlogClaimToken($claimToken, $blogId, $displayName, $blogUri, $blogSyndicationUri, $db) {
-  $blogName = getBlogName($blogId, $db);
+function displayBlogClaimToken($claimToken, $blogId, $displayName, $db) {
+	$blogName = $_REQUEST["blogName"];
+	$blogUri = $_REQUEST["blogUri"];
+	$blogSyndicationUri = $_REQUEST["blogSyndicationUri"];
+	$blogDescription = $_REQUEST["blogDescription"];
+	$blogAddedDate = $_REQUEST["addedDate"];
+	$blogCrawledDate = $_REQUEST["crawledDate"];
+	$topic1 = $_REQUEST["topic1"];
+	$topic2 = $_REQUEST["topic2"];
+	$blogStatusId = $_REQUEST["blogStatus"];
+	$twitterHandle = $_REQUEST["twitterHandle"];
+	$crawl = $_REQUEST["crawl"];
+	
+	if (! $blogId) {
+		$blogId = $_REQUEST["blogId"];
+	}
+	if (! $blogName) {
+		$blogName = getBlogName($blogId, $db);
+	}
 
-  if ($blogUri == null) {
-    $blogUri = getBlogUri($blogId, $db);
-  }
-
-  if ($blogSyndicationUri == null) {
-    $blogSyndicationUri = getBlogSyndicationUri($blogId, $db);
-  }
-
-  print "<p>To claim this blog ($blogName), we need to verify that you actually are actually an author of this blog. Please place the following HTML code in the <span class=\"ss-bold\">most recent</span> post on your blog. It will be invisible to readers, and you can remove it once your blog has been verified by our system.</p>\n";
-  print "<p><b>Claim token:</b> $claimToken</p>\n";
-  print "<p><b>HTML code to include:</b> &lt;p&gt;&lt;span style=\"display:none\"&gt;$claimToken&lt;/span&gt;&lt;/p&gt;\n"; 
-  print "<p>Once the token is displayed on your blog, in a post or in a meta tag in the header, <a href='javaScript:document.doVerifyForm.submit()'>continue to the next step.</a>";
-  print "<form method='POST' name='doVerifyForm'>\n<input type='hidden' name='step' value='verify' />\n";
-  print "<input type='hidden' name='blogId' value='$blogId' />\n";
-  print "<input type='hidden' name='blogUri' value='$blogUri' />\n";
-  print "<input type='hidden' name='blogSyndicationUri' value='$blogSyndicationUri' />\n";
-  print "</form>";
+  print "<p>To claim this blog ($blogName), we need to verify that you actually are an author of this blog. Please place the following HTML code in the <span class=\"ss-bold\">most recent</span> post on your blog. It will be invisible to readers, and you can remove it once your blog has been verified by our system.</p>\n
+	<p><span class=\"ss-bold\">Claim token:</span> $claimToken</p>\n
+	<p><span class=\"ss-bold\">HTML code to include:</span> &lt;p&gt;&lt;span style=\"display:none\"&gt;$claimToken&lt;/span&gt;&lt;/p&gt;\n
+	<p>Once the token is displayed in a post of your site, press the button below</p> 
+	<form method='POST' name='doVerifyForm'>\n
+	<input type='hidden' name='step' value='verify' />\n
+	<input type=\"hidden\" name=\"blogId\" value=\"$blogId\" />
+	<input type=\"hidden\" name=\"blogName\" value=\"".htmlspecialchars($blogName, ENT_QUOTES)."\" />
+	<input type=\"hidden\" name=\"blogUri\" value=\"".htmlspecialchars($blogUri, ENT_QUOTES)."\" />
+	<input type=\"hidden\" name=\"blogSyndicationUri\" value=\"".htmlspecialchars($blogSyndicationUri, ENT_QUOTES)."\" />
+	<input type=\"hidden\" name=\"blogDescription\" value=\"".htmlspecialchars($blogDescription, ENT_QUOTES)."\" />
+	<input type=\"hidden\" name=\"twitterHandle\" value=\"".htmlspecialchars($twitterHandle, ENT_QUOTES)."\" />
+	<input type=\"hidden\" name=\"topic1\" value=\"$topic1\" />
+	<input type=\"hidden\" name=\"topic2\" value=\"$topic2\" />
+	<input type=\"hidden\" name=\"blogStatus\" value=\"$blogStatusId\" />
+	<input type=\"hidden\" name=\"crawl\" value=\"$crawl\" />
+	<input class=\"ss-button\" name=\"submit\" type=\"submit\" value=\"Continue to the next step\" />
+	</form>";
 }
 
 
@@ -3730,33 +3378,20 @@ function displayUserAuthorLinkForm($blogId, $userId, $displayName, $db) {
           $firstAuthor = $authorName;
         }
         if ($claimed) {
-          print "<input type=\"checkbox\" name=\"author$authorId\" disabled=\"true\"/> $authorName (claimed)<br />\n";
+          print "<p><input type=\"checkbox\" name=\"author$authorId\" disabled=\"true\"/> $authorName <span class=\"subtle-text\">(claimed)</span></p>\n";
         } else {
-          print "<input type=\"checkbox\" name=\"author$authorId\" /> $authorName<br />\n";
+          print "<p><input type=\"checkbox\" name=\"author$authorId\" /> $authorName</p>\n";
         }
       }
     }
 
-    $personaNames = getPersonaNames($userId, $db);
-
-    $personaName = $personaNames[0];
-
-    // TODO provide list, allow user to select one
-
-    if ($personaName == null) {
-      $personaName = $firstAuthor;
-    }
-    if ($personaName == null) {
-      $personaName = $displayName;
-    }
-
-  print "<p>Please enter the name by which you would like to be known, for example when you post comments on $sitename: <input type=\"text\" name=\"personaName\" value=\"$personaName\" size=\"20\" /></p>\n";
-
-  print "<input type=\"submit\" value=\"Submit\">";
-  print "</form>\n";
+    $userName = getDisplayName($userId, $db);
+	
+		print "<input type=\"submit\" value=\"Submit\">";
+		print "</form>\n";
 
   } else {
-    print "<p><font color='red'>This blog has already been claimed. If you feel this is in error, please <a href='/contact-us/'>contact us</a>.</p>";
+    print "<p class=\"ss-error\">This blog has already been claimed. If you feel this is in error, please <a href='/contact-us/'>contact us</a>.</p>";
   }
 
   print "<p><hr /></p>\n";
@@ -3769,21 +3404,12 @@ function doLinkUserAndAuthor($displayName, $db) {
 
   $userId = $_REQUEST["userId"];
   $blogId = $_REQUEST["blogId"];
-  $personaName = $_REQUEST["personaName"];
-
-  if ($personaName == null || $personaName === "") {
-    print "ERROR: An author name is required before this blog can be added to $sitename.<br />\n";
-    displayUserAuthorLinkForm($blogId, $userId, $displayName, $db);
-    return;
-  }
-
-  $personaId = addPersona($userId, $personaName, $db);
-
+	
   foreach ($_REQUEST as $name => $value) {
     $value = $value;
     if (substr($name, 0, 6) === "author" && $value === "on") {
       $authorId = substr($name, 6);
-      linkAuthorToPersona($authorId, $personaId, $db);
+      linkAuthorToUser($authorId, $userId, $db);
       $authorName = getBlogAuthorName($authorId, $blogId, $db);
       $success = true;
     }
@@ -3799,7 +3425,7 @@ function doLinkUserAndAuthor($displayName, $db) {
     }
 
     if ($unknownAuthorId != null && ! isAuthorClaimed($unknownAuthorId, $db) && count($authorList) == 0) {
-      linkAuthorToPersona($unknownAuthorId, $personaId, $db);
+      linkAuthorToUser($unknownAuthorId, $userId, $db);
       $success = true;
     } else {
       // either there are authors and no "unknown" authors
@@ -3812,7 +3438,7 @@ function doLinkUserAndAuthor($displayName, $db) {
 
   if ($success) {
 		global $userPosts;
-    print "Congratulations, $personaName, you've claimed your blog. Click on '<a href=\"$userPosts\">Your Blogs</a>' to edit your blog settings.<br />\n";
+    print "Congratulations, $desiredName, you've claimed your blog. Click on '<a href=\"$userPosts\">Your Blogs</a>' to edit your blog settings.<br />\n";
   }
 
 }
@@ -3968,6 +3594,80 @@ function paramCharacterDataHandler($parser, $cdata) {
   // TODO modifier, idtype
   // TODO generalize
 
+}
+
+/*
+ * Twitter
+ */
+ 
+ 
+function twitterVerification () {
+	session_start();
+	define("CONSUMER_KEY", "pMHogEGrU3B5iT7f6n4xdw");
+	define("CONSUMER_SECRET", "dMsucj6TPFlBxLbf44fEcBKzD70CxfUpezRDeCjlw");
+	
+	$connection = new TwitterOAuth(CONSUMER_KEY, CONSUMER_SECRET);
+	$request_token = $connection->getRequestToken("http://dev.scienceseeker.org/");
+	$_SESSION['oauth_token'] = $request_token['oauth_token'];
+	$_SESSION['oauth_token_secret'] = $request_token['oauth_token_secret'];
+	
+	$url = $connection->getAuthorizeURL($request_token);
+	header('Location: ' . $url);
+}
+
+function tweetNote ($note) {
+	session_start();
+	define("CONSUMER_KEY", "pMHogEGrU3B5iT7f6n4xdw");
+	define("CONSUMER_SECRET", "dMsucj6TPFlBxLbf44fEcBKzD70CxfUpezRDeCjlw");
+	if (isset($_REQUEST['oauth_token']) && $_SESSION['oauth_token'] !== $_REQUEST['oauth_token']) {
+		echo 'Session expired';
+	}
+	else {
+		$connection = new TwitterOAuth(CONSUMER_KEY, CONSUMER_SECRET, $_SESSION['oauth_token'], $_SESSION['oauth_token_secret']);
+		$token_credentials = $connection->getAccessToken();
+		
+		
+		$connection = new TwitterOAuth(CONSUMER_KEY, CONSUMER_SECRET, $token_credentials['oauth_token'], $token_credentials['oauth_token_secret']);
+		$tweetmsg = 'Hello World!';
+		$result = $connection->post('statuses/update', array('status' => $tweetmsg));
+		$httpCode = $connection->http_code;
+		if ($httpCode == 200) {
+			$resultmsg = 'Tweet Posted: '.$tweetmsg;
+		}
+		else {
+			$resultmsg = 'Could not post Tweet. Error: '.$httpCode.' Reason: '.$result->error;
+		}
+	}
+}
+ 
+ 
+ 
+
+function tweet() {
+	
+	$tweet_text = 'Test tweet, move along.';
+	print "Posting...\n";
+	
+	// Use Matt Harris' OAuth library to make the connection
+  // This lives at: https://github.com/themattharris/tmhOAuth
+  require_once('/tmhoauth/tmhOAuth.php');
+  
+  $connection = new tmhOAuth(array(
+    'consumer_key' => 'pMHogEGrU3B5iT7f6n4xdw',
+    'consumer_secret' => 'dMsucj6TPFlBxLbf44fEcBKzD70CxfUpezRDeCjlw',
+    'user_token' => '302786545-bLKQFgi0dbobedJpw2sFTZbiIqRGB6VYOfN1A4uM',
+    'user_secret' => 'gsbndiN5yNsxGMfwPQdTPDKesIzySqJ4R28i27IMz0Q',
+  )); 
+  
+  // Make the API call
+  $connection->request('POST', 
+    $connection->url('1/statuses/update'), 
+    array('status' => $tweet_text));
+  
+  $result = $connection->response['code'];
+	
+	print "Response code: " . $result . "\n";
+	
 }
 
 /*

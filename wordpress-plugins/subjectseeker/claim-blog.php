@@ -57,8 +57,7 @@ register_activation_hook( __FILE__, array( &$ssClaimBlog, 'setupActivation' ));
 
 function get_ssClaimBlog($settings = array()) {
 	global $ssClaimBlog;
-
-        determineClaimStep($settings);
+	determineClaimStep();
 }
 
 // Non-widget functions
