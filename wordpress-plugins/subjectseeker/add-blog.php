@@ -141,11 +141,29 @@ function displayBlogForm ($errormsg, $db) {
 		print "<p class=\"ss-error\">Error: $errormsg</p>\n";
 	}
 
+  // Attempt to prepopulate from URL if blogUri param set
+  //
+ $submitUri = $_REQUEST["blogUri"];
+ if ($submitUri != NULL) {
+   //   $submitUri = "http://dogzombie.blogspot.com/2012/06/mobile-veterinary-practice-and-federal.html";
+   $feed = getSimplePie($submitUri);
+   $blogName; $blogUri; $blogDescription; $blogSyndicationUri;
+
+   if ($feed->error()) {
+     print "<p class=\"ss-error\">Unable to find feed for $submitUri.</p>\n";
+   } else {
+     $blogName = $feed->get_title();
+     $blogUri = $feed->get_link();
+     $blogDescription = $feed->get_description();
+     $blogSyndicationUri = $feed->subscribe_url();
+   }
+ }
+
   print "<h3>General Information</h3>
-	<p>Blog Name: <input type=\"text\" name=\"blogName\" size=\"40\" value=\"\"/></p>\n
-	<p>Blog URL: <input type=\"text\" name=\"blogUri\" size=\"40\" value=\"\" /><br /><span class=\"subtle-text\">(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</span></p>\n
-	<p>Blog Syndication URL: <input type=\"text\" name=\"blogSyndicationUri\" size=\"40\" value=\"\" /><br /><span class=\"subtle-text\">(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</span></p>
-	<p>Blog Description <span class=\"subtle-text\">(Optional)</span>:<br /><textarea name=\"blogDescription\" rows=\"5\" cols=\"60\"></textarea></p>\n";
+	<p>Blog Name: <input type=\"text\" name=\"blogName\" size=\"40\" value=\"$blogName\"/></p>\n
+	<p>Blog URL: <input type=\"text\" name=\"blogUri\" size=\"40\" value=\"$blogUri\" /><br /><span class=\"subtle-text\">(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</span></p>\n
+	<p>Blog Syndication URL: <input type=\"text\" name=\"blogSyndicationUri\" size=\"40\" value=\"$blogSyndicationUri\" /><br /><span class=\"subtle-text\">(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</span></p>
+	<p>Blog Description <span class=\"subtle-text\">(Optional)</span>:<br /><textarea name=\"blogDescription\" rows=\"5\" cols=\"60\">$blogDescription</textarea></p>\n";
   print "<p>Blog Topics: <select name='topic1'>\n";
   print "<option value='-1'>None</option>\n";
   $topicList = getTopicList(true, $db);
@@ -177,47 +195,44 @@ function doAddBlog ($db) {
   $blogDescription = $_REQUEST["blogDescription"];
   $topic1 = $_REQUEST["topic1"];
   $topic2 = $_REQUEST["topic2"];
-	$twitterHandle = $_REQUEST["twitterHandle"];
+  $twitterHandle = $_REQUEST["twitterHandle"];
   $userIsAuthor = $_REQUEST["userIsAuthor"];
 
   global $current_user;
   get_currentuserinfo();
   $displayName = $current_user->user_login;
   $email = $current_user->user_email;
-	
-	$errors = checkBlogData(NULL, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, NULL, $topic1, $topic2, $twitterHandle, $userId, $db);
-	
-	if ($errors) {
-		print "<ul class=\"ss-error\">$errors</ul>";
-	}
-	else {
-		// If this is the first time this user has tried to interact with
-		// the SS system, create a USER entry for them
-		$userId = addUser($displayName, $email, $db);
-		$userPriv = getUserPrivilegeStatus($userId, $db);
-		
-		$addBlog = addBlog($blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $db);
-	
-		$blogId = $addBlog["id"];
-		
-		addBlogSocialAccount (1, $twitterHandle, $blogId, $db);
-	
-		if ($addBlog["errormsg"] === null) {
-			echo "<p>Successfully added blog to the system.</p>";
-			if ($userPriv == 0) {
-				echo "<p>This source will not be publicly displayed in the system until it has been approved by an editor.</p>";
-			}
-		} else {
-			// Blog is already in the system.
-			print "<p class=\"ss-error\">ERROR: " . $addBlog["errormsg"] . "</p>\n";
-			print "<p class=\"info\">This could be because it was pre-populated in our database, someone else submitted it, or because our editors rejected it.</p><p class=\"info\">If it was rejected, you should have received an email from us explaining why.</p><p class=\"info\">Otherwise, you can <a href=\"/claimblog/?blogId=$blogId\">claim the blog</a> to show that you are (one of) the author(s). See our <a href=\"/help\">help pages</a> for more information.</p>\n";
-			return;
-		}
-		
-		if ($userIsAuthor === "on") {
-			doClaimBlog($blogId, $displayName, $email, $db);
-		}
-	}
+  $errors = checkBlogData(NULL, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, NULL, $topic1, $topic2, $twitterHandle, $userId, $db);
+
+  if ($errors) {
+    print "<ul class=\"ss-error\">$errors</ul>";
+  }
+  else {
+    // If this is the first time this user has tried to interact with
+    // the SS system, create a USER entry for them
+    $userId = addUser($displayName, $email, $db);
+    $userPriv = getUserPrivilegeStatus($userId, $db);
+    $addBlog = addBlog($blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $db);
+    $blogId = $addBlog["id"];
+
+    addBlogSocialAccount (1, $twitterHandle, $blogId, $db);
+
+    if ($addBlog["errormsg"] === null) {
+      echo "<p>Successfully added blog to the system.</p>";
+      if ($userPriv == 0) {
+        echo "<p>This source will not be publicly displayed in the system until it has been approved by an editor.</p>";
+      }
+    } else {
+      // Blog is already in the system.
+      print "<p class=\"ss-error\">ERROR: " . $addBlog["errormsg"] . "</p>\n";
+      print "<p class=\"info\">This could be because it was pre-populated in our database, someone else submitted it, or because our editors rejected it.</p><p class=\"info\">If it was rejected, you should have received an email from us explaining why.</p><p class=\"info\">Otherwise, you can <a href=\"/claimblog/?blogId=$blogId\">claim the blog</a> to show that you are (one of) the author(s). See our <a href=\"/help\">help pages</a> for more information.</p>\n";
+      return;
+    }
+
+    if ($userIsAuthor === "on") {
+      doClaimBlog($blogId, $displayName, $email, $db);
+    }
+  }
 }
 
 ?>
