@@ -71,6 +71,7 @@ function determineStep() {
     get_currentuserinfo();
     $displayName = $current_user->user_login;
     $email = $current_user->user_email;
+		$userId = addUser($displayName, $email, $db);
 	}
 	else {
 		global $loginUrl;
@@ -100,7 +101,7 @@ function determineStep() {
 			print "<p class=\"ss-error\">Error: You must <a href=\"$loginUrl\" title=\"Log In Page\">log in</a> to claim a blog.</p>\n";
 			return;
 		}
-		doLinkUserAndAuthor($displayName, $db);
+		doLinkUserAndAuthor($userId, $displayName, $db);
 	} else {
 		print "ERROR: Unknown step $step.";
 	}
@@ -131,8 +132,8 @@ function displayBlogForm ($errormsg, $db) {
 
 
 ?>
-<h2>Add a new source.</h2>
-<p>Submit a new source to be aggregated by our system. If you have a large number of blogs to add to the system, please <a href='/contact-us/'>contact us</a> to discuss a data upload.</p>
+<h2>Add a new site.</h2>
+<p>Submit a new site to be aggregated by our system. If you have a large number of blogs to add to the system, please <a href='/contact-us/'>contact us</a> to discuss a data upload.</p>
 <form method="POST">
 <input type="hidden" name="step" value="blogInfo" />
 <?php
@@ -145,7 +146,6 @@ function displayBlogForm ($errormsg, $db) {
   //
  $submitUri = $_REQUEST["blogUri"];
  if ($submitUri != NULL) {
-   //   $submitUri = "http://dogzombie.blogspot.com/2012/06/mobile-veterinary-practice-and-federal.html";
    $feed = getSimplePie($submitUri);
    $blogName; $blogUri; $blogDescription; $blogSyndicationUri;
 
@@ -156,6 +156,19 @@ function displayBlogForm ($errormsg, $db) {
      $blogUri = $feed->get_link();
      $blogDescription = $feed->get_description();
      $blogSyndicationUri = $feed->subscribe_url();
+
+     $blogId = getBlogByAltUri($blogUri, $db);
+     if ($blogId != null) {
+       print "<p class=\"ss-error\">This blog is already in the system.</p>\n";
+     } else {
+       $blogId = getBlogByAltSyndicationUri($blogSyndicationUri, $db);
+       if ($blogId != null) {
+         print "<p class=\"ss-error\">This feed is already in the system.</p>\n";
+       }
+     }
+
+// TODO: if blog/feed already found, take us to the profile page for the blog -- once we have one
+
    }
  }
 
@@ -202,37 +215,40 @@ function doAddBlog ($db) {
   get_currentuserinfo();
   $displayName = $current_user->user_login;
   $email = $current_user->user_email;
-  $errors = checkBlogData(NULL, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, NULL, $topic1, $topic2, $twitterHandle, $userId, $db);
-
-  if ($errors) {
-    print "<ul class=\"ss-error\">$errors</ul>";
-  }
-  else {
-    // If this is the first time this user has tried to interact with
-    // the SS system, create a USER entry for them
-    $userId = addUser($displayName, $email, $db);
-    $userPriv = getUserPrivilegeStatus($userId, $db);
-    $addBlog = addBlog($blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $db);
-    $blogId = $addBlog["id"];
-
-    addBlogSocialAccount (1, $twitterHandle, $blogId, $db);
-
-    if ($addBlog["errormsg"] === null) {
-      echo "<p>Successfully added blog to the system.</p>";
-      if ($userPriv == 0) {
-        echo "<p>This source will not be publicly displayed in the system until it has been approved by an editor.</p>";
-      }
-    } else {
-      // Blog is already in the system.
-      print "<p class=\"ss-error\">ERROR: " . $addBlog["errormsg"] . "</p>\n";
-      print "<p class=\"info\">This could be because it was pre-populated in our database, someone else submitted it, or because our editors rejected it.</p><p class=\"info\">If it was rejected, you should have received an email from us explaining why.</p><p class=\"info\">Otherwise, you can <a href=\"/claimblog/?blogId=$blogId\">claim the blog</a> to show that you are (one of) the author(s). See our <a href=\"/help\">help pages</a> for more information.</p>\n";
-      return;
-    }
-
-    if ($userIsAuthor === "on") {
-      doClaimBlog($blogId, $displayName, $email, $db);
-    }
-  }
+	
+	$errors = checkBlogData(NULL, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, NULL, $topic1, $topic2, $twitterHandle, $userId, $db);
+	
+	if ($errors) {
+		print "<ul class=\"ss-error\">$errors</ul>";
+	}
+	else {
+		// If this is the first time this user has tried to interact with
+		// the SS system, create a USER entry for them
+		$userId = addUser($displayName, $email, $db);
+		$userPriv = getUserPrivilegeStatus($userId, $db);
+		
+		$addBlog = addBlog($blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $db);
+	
+		$blogId = $addBlog["id"];
+		
+		addBlogSocialAccount (1, $twitterHandle, $blogId, $db);
+	
+		if ($addBlog["errormsg"] === null) {
+			echo "<p>Successfully added blog to the system.</p>";
+			if ($userPriv == 0) {
+				echo "<p>This source will not be publicly displayed in the system until it has been approved by an editor.</p>";
+			}
+		} else {
+			// Blog is already in the system.
+			print "<p class=\"ss-error\">ERROR: " . $addBlog["errormsg"] . "</p>\n";
+			print "<p class=\"info\">This could be because it was pre-populated in our database, someone else submitted it, or because our editors rejected it.</p><p class=\"info\">If it was rejected, you should have received an email from us explaining why.</p><p class=\"info\">Otherwise, you can <a href=\"/claimblog/?blogId=$blogId\">claim the blog</a> to show that you are (one of) the author(s). See our <a href=\"/help\">help pages</a> for more information.</p>\n";
+			return;
+		}
+		
+		if ($userIsAuthor === "on") {
+			doClaimBlog($blogId, $displayName, $email, $db);
+		}
+	}
 }
 
 ?>

@@ -1,9 +1,10 @@
 <?php
 include_once "ss-globals.php";
 include_once "ss-util.php";
-require_once "/home/sciseek/public_html/dev/wp-load.php";
+include_once $wpLoad;
 global $imagesUrl;
 
+// Only recommend if user is logged in.
 if (is_user_logged_in()) {
 	// Connect to database
 	$db = ssDbConnect();

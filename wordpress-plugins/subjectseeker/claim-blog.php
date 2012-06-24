@@ -95,7 +95,7 @@ function determineClaimStep() {
     } else if ($step === "verify") {
       doVerifyClaim($blogId, $displayName, $db);
     } else if ($step === "userAuthorLinkForm") {
-      doLinkUserAndAuthor($displayName, $db);
+      doLinkUserAndAuthor($userId, $displayName, $db);
     } else {
       print "ERROR: Unknown step $step.";
     }

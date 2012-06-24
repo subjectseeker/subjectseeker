@@ -143,13 +143,14 @@ $(document).ready(function() {
 		var commentButton = $(parent).find('.comment-button');
 		var insert = $(parent).find('.comments-list-wrapper');
 		var commentTextArea = $(parent).find('.text-area');
+		var tweetPreview = $(parent).find('.tweet-preview').text();
 		var commentNotification = commentTextArea.next('.comment-notification');
 		
 		if (parent.find('.tweet-note').is(":checked")) {
 			var tweetNote = 'true';
 		}
 		
-		var dataString = 'id='+ id + '&comment=' + comment + '&tweet=' + tweetNote + '&step=' + step;
+		var dataString = 'id='+ id + '&comment=' + comment + '&tweet=' + tweetNote + '&tweetContent=' + tweetPreview + '&step=' + step;
 		
 		insert.html(loadingGif).fadeIn('slow');
 		$.ajax({
@@ -205,7 +206,7 @@ $(document).ready(function() {
 		var recWrapper = $(this).closest('.recommendation-wrapper');
 		var commentTextArea = $(parent).find('.rec-comment');
 		
-		if (user.lenght == 0) {
+		if (! user) {
 			$('#notification-area').slideDown();
 			$('#notification-content').html('<p>You must register to be able to recommend posts.</p><a class="ss-button" href="/wp-login.php">Log In</a> <a class="ss-button" href="/wp-signup.php">Register</a>');
 		}
@@ -237,14 +238,40 @@ $(document).ready(function() {
 		return false;
 	});
 	
-	$('.textArea').keyup(function() {
+	$('.tweet-note').click(function() {
+		var tweet = $(this);
 		var parent = $(this).parents('.data-carrier');
-		var area = $(this);
-		var count = area.val().length
-		if(count > 104) {
-			area.val(area.val().substr(0, 104));
+		var comment = $(parent).find('textarea').val();
+		var id = $(parent).attr("id");
+		$.ajax({
+			type: 'POST',
+			url: '/subjectseeker/getTweetData.php',
+			data: 'id=' + id,
+			cache: false,
+			
+			success: function(data) {
+				parent.find('.tweet-extras').html(data);
+			} 
+		});
+		if (tweet.is(':checked')) {
+			parent.find('.tweet-preview-area').fadeIn();
 		}
-		parent.find('.charsLeft').html(104 - area.val().length);
+		else {
+			parent.find('.tweet-preview-area').fadeOut();
+		}
+	});
+	
+	$('.textArea').keyup(function() {
+		var area = $(this);
+		var parent = $(this).parents('.data-carrier');
+		var comment = $(parent).find('textarea').val();
+		var tweetPreview = comment;
+		var count = area.val().length
+		if(count > 102) {
+			area.val(area.val().substr(0, 102));
+		}
+		parent.find('.charsLeft').html(102 - area.val().length);
+		parent.find('.tweet-message').html(comment);
 	});
 	
 	$('.categories-wrapper').click(function() {

@@ -2,12 +2,12 @@
 
 <?php
 
-$fp = fopen("/home/sciseek/subjectseeker/live/scripts/lock.txt", "r+");
+include_once "ss-util.php";
+global $crawlerLock;
+
+$fp = fopen($crawlerLock, "r+");
 
 if (flock($fp, LOCK_EX|LOCK_NB)) { 
-
-	include_once "ss-globals.php";
-	include_once "ss-util.php";
 	
 	$limit = 200; // TODO put in ss-globals
 	

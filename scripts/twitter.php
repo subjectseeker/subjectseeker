@@ -1,7 +1,5 @@
 <? 
-require_once "/home/sciseek/public_html/dev/twitteroauth/twitteroauth/twitteroauth.php";
-require_once "ss-util.php";
-require_once "/home/sciseek/public_html/dev/wp-load.php";
+include_once "ss-util.php";
 
 global $homeUrl;
 global $sitename;
@@ -10,6 +8,10 @@ global $twitterConsumerSecret;
 global $twitterListId;
 global $twitterListToken;
 global $twitterListTokenSecret;
+global $wpLoad;
+global $twitterOAuth;
+
+include_once $wpLoad;
 
 $originalUrl = $_REQUEST["url"];
 
@@ -69,20 +71,6 @@ if (is_user_logged_in()){
 			removeUserSocialAccount(1, $userId, $db);
 		}
 	}
-	// If there is a note, post note
-	elseif ($_REQUEST['note']) {
-		$userSocialAccount = getUserSocialAccount(1, $userId, $db);
-		$connection = new TwitterOAuth($twitterConsumerKey, $twitterConsumerSecret, $userSocialAccount['OAUTH_TOKEN'], $userSocialAccount['OAUTH_SECRET_TOKEN']);
-		$tweetmsg = $_REQUEST['note'];
-		$result = $connection->post('statuses/update', array('status' => $tweetmsg));
-		$httpCode = $connection->http_code;
-		if ($httpCode == 200) {
-			$msg .= "<div class=\"message\">Tweet Posted: ".$tweetmsg."</div>";
-		}
-		else {
-			$msg .= "<div class=\"message\">Could not post Tweet. Error: ".$httpCode." Reason: ".$result->error."</div>";
-		}
-	}
 	else {
 		if ($userSocialAccount) {
 			$msg = "<div class=\"message\">Your Twitter account is already synced with our system, do you want to desync it?.</div>
@@ -127,14 +115,17 @@ html {
 body {
 	height: 100%;
 	width: 100%;
-background: url(/images/background/background.jpg) #5b5b5b;
+  background: url(/images/background/background.jpg) #5b5b5b;
 }
 #wrapper {
 	width: 100%;
 	min-height: 100%;
 }
 .message {
-	font-size: 1.4em; color: #B8B8B8; background: #1A1A1A; padding: 40px;
+	font-size: 1.4em;
+	color: #B8B8B8;
+	background: #1A1A1A;
+	padding: 40px 20%;
 }
 .button, a.button, a:visited.button {
 	padding: 10px 40px 10px 40px;

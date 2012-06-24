@@ -100,11 +100,11 @@ function doDisplayResources() {
 	}
 	
 	else {
-		print "<h2>Index of Active Scientific Sources</h2>
+		print "<h2>Index of Active Sites</h2>
 		<hr />";
 		foreach ($blogs as $item) {
 			if (! $item["description"]) {
-				$item["description"] = "No summary available for this blog.";
+				$item["description"] = "No summary available for this site.";
 			}
 			
 			print "<div class=\"ss-entry-wrapper\">

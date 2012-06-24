@@ -1,9 +1,19 @@
 <?php
+include_once "ss-globals.php";
 include_once "ss-util.php";
+global $wpLoad;
+include_once $wpLoad;
 // Connect to database
 $db = ssDbConnect();
 
-$personaId = $_REQUEST["personaId"];
+if (is_user_logged_in()){
+	global $current_user;
+	get_currentuserinfo();
+	$displayName = $current_user->user_login;
+	$email = $current_user->user_email;
+	$userId = addUser($displayName, $email, $db);
+	$userPriv = getUserPrivilegeStatus($userId, $db);
+}
 $postId = $_REQUEST["postId"];
 
 $imageName = $_REQUEST["imageName"];
@@ -36,7 +46,7 @@ imagejpeg($dst_r, "$imagedir/headers/$newImageName", 	100);
 
 $imgName = $image["name"];
 
-$sql = "UPDATE RECOMMENDATION SET REC_IMAGE = '$newImageName' WHERE BLOG_POST_ID = $postId AND PERSONA_ID = $personaId";
+$sql = "UPDATE RECOMMENDATION SET REC_IMAGE = '$newImageName' WHERE BLOG_POST_ID = '$postId' AND USER_ID = '$userId'";
 mysql_query($sql, $db);
 
 global $homeUrl;

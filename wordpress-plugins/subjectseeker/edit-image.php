@@ -70,7 +70,6 @@ function editImage() {
     $email = $current_user->user_email;
     $userId = addUser($displayName, $email, $db);
     $userPriv = getUserPrivilegeStatus($userId, $db);
-		$personaId = addPersona($userId, $displayName, $db);
 		
     print "<p>Hello, $displayName.</p>\n";	
 		if ($userPriv > 0) { // admin or editor
@@ -115,7 +114,6 @@ function editImage() {
 				<input type=\"hidden\" id=\"w\" name=\"w\">
 				<input type=\"hidden\" id=\"h\" name=\"h\">
 				<input type=\"hidden\" name=\"imageName\" value=\"$imageName\">
-				<input type=\"hidden\" name=\"personaId\" value=\"$personaId\">
 				<input type=\"hidden\" name=\"postId\" value=\"$postId\">
 				<input class=\"ss-button\" type=\"submit\" value=\"Crop Image\">
 				</form>

@@ -171,10 +171,9 @@ function displayFeed($query, $minimal) {
 					<div class=\"ss-div-2\">
 					<div class=\"text-area\">
 					<form method=\"POST\" enctype=\"multipart/form-data\">
-					<span class=\"subtle-text\">Leave a note!<span class=\"alignright\"><span style=\"color: #383838;\" class=\"charsLeft\">104</span> characters left.</span></span>
-					<div class=\"ss-div-2\">
-					<textarea class=\"textArea\" name=\"comment\" rows=\"3\" cols=\"59\"></textarea>
-					</div>
+					<div class=\"subtle-text margin-bottom-small\"><span class=\"ss-bold\">Leave a note!</span><span class=\"alignright\"><span style=\"color: #383838;\" class=\"charsLeft\">102</span> characters left.</span></div>
+					<textarea class=\"textArea margin-bottom\" name=\"comment\" rows=\"3\" cols=\"59\"></textarea>
+					<div style=\"display: none;\" class=\"tweet-preview-area margin-bottom\"><div class=\"subtle-text margin-bottom-small ss-bold\">Tweet Preview</div><div class=\"tweet-preview\"><span class=\"tweet-message\"></span><span class=\"tweet-extras\"></span></div></div>
 					<input id=\"submit-comment\" class=\"submit-comment ss-button\" type=\"button\" data-step=\"store\" value=\"Submit\" />";
 					if ($twitterStatus) {
 						print " <span class=\"subtle-text alignright\" title=\"The blog's twitter handle and post's url will be included in your tweet.\"><input class=\"tweet-note\" type=\"checkbox\" value=\"true\" /> Tweet this note.</span>";

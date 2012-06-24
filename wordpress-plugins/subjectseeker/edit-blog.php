@@ -87,13 +87,13 @@ function determineEditStep() {
 		
 		$blogIds = getBlogIdsByUserId($userId, $db);
 		if (sizeof($blogIds) == 0) {
-			print "<p class='msg'>$displayName has no blogs.</p>";
+			print "<p class='msg'>You have no active blogs.</p>";
 			return;
 		}
 	
 		$blogData = blogIdsToBlogData($blogIds, $db);
 		
-		print "<h2>Edit your active sites</h2>
+		print "<h2>Edit your sites</h2>
 		<hr />";
 		while ($row = mysql_fetch_array($blogData)) {
 			editBlogForm($row, $userPriv, "open", $db);
