@@ -23,7 +23,7 @@ if (!class_exists('ssAddBlog')) {
     function setupActivation() {
       function get_and_delete_option($setting) { $v = get_option($setting); delete_option($setting); return $v; }
     }
-	
+
     function setupWidget() {
       if (!function_exists('register_sidebar_widget')) return;
       function widget_ssAddBlog($args) {
@@ -77,24 +77,29 @@ function determineStep() {
 		global $loginUrl;
 		print "<p class=\"ss-warning\">You can claim your blog if you <a href=\"$loginUrl\" title=\"Log In Page\">log in</a>.</p>";
 	}
-	
+
 	$step = $_REQUEST["step"];
 	$blogId = $_REQUEST["blogId"];
+	$submitUrl = $_REQUEST["submitUrl"];
 
 	// Connect to DB.
 	$db  = ssDbConnect();
 
 	if ($step === null) {
-		displayBlogForm(null, $db);
+          if ($submitUrl == null) {
+            displayShortBlogForm(null, $db);
+          } else {
+            displayBlogForm(null, $db);
+          }
 	} else if ($step === "blogInfo") {
 		doAddBlog($db);
 	} else if ($step === "verify") {
-		if (! $displayName) {
-			global $loginUrl;
-			print "<p class=\"ss-error\">Error: You must <a href=\"$loginUrl\" title=\"Log In Page\">log in</a> to claim a blog.</p>\n";
-			return;
-		}
-		doVerifyClaim($blogId, $displayName, $db);
+          if (! $displayName) {
+            global $loginUrl;
+            print "<p class=\"ss-error\">Error: You must <a href=\"$loginUrl\" title=\"Log In Page\">log in</a> to claim a blog.</p>\n";
+            return;
+          }
+          doVerifyClaim($blogId, $displayName, $db);
 	} else if ($step === "userAuthorLinkForm") {
 		if (! $displayName) {
 			global $loginUrl;
@@ -103,8 +108,39 @@ function determineStep() {
 		}
 		doLinkUserAndAuthor($userId, $displayName, $db);
 	} else {
-		print "ERROR: Unknown step $step.";
+          print "ERROR: Unknown step $step.";
 	}
+}
+
+function displayShortBlogForm ($errormsg, $db) {
+  $submitUrl = $_REQUEST["submitUrl"];
+  $blogSyndicationUri = $_REQUEST["blogsyndicationuri"];
+  $userId;
+
+  if (is_user_logged_in()){
+    global $current_user;
+    get_currentuserinfo();
+    $displayName = $current_user->user_login;
+
+    // If this is the first time this user has tried to interact with
+    // the SS system, create a USER entry for them
+    $userId = addUser($displayName, $email, $db);
+  }
+
+?>
+<h2>Add a new blog.</h2>
+<p>Submit a new blog to be aggregated by our system. If you have a large number of blogs to add to the system, please <a href='/contact-us/'>contact us</a> to discuss a data upload.</p>
+<form method="POST">
+<?php
+
+   if ($errormsg !== null) {
+     print "<p class=\"ss-error\">Error: $errormsg</p>\n";
+   }
+
+  print "<h3>Blog Location</h3>
+	<p>Please enter either the URL of the blog or the URL of the blog's feed (RSS or Atom): <input type=\"text\" name=\"submitUrl\" size=\"40\" value=\"$submitUrl\" /><br /><span class=\"subtle-text\">(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</span></p>\n
+	<input class=\"ss-button\" type=\"submit\" value=\"Next step\" />
+	</form>";
 }
 
 function displayBlogForm ($errormsg, $db) {
@@ -113,23 +149,15 @@ function displayBlogForm ($errormsg, $db) {
   $blogSyndicationUri = $_REQUEST["blogsyndicationuri"];
   $blogDescription = $_REQUEST["blogdescription"];
 
-	if (is_user_logged_in()){
-		global $current_user;
-		get_currentuserinfo();
-		$displayName = $current_user->user_login;
-	
-		// If this is the first time this user has tried to interact with
-		// the SS system, create a USER entry for them
-		$userId = addUser($displayName, $email, $db);
-	}
+  if (is_user_logged_in()){
+    global $current_user;
+    get_currentuserinfo();
+    $displayName = $current_user->user_login;
 
-  // Only active users can claim blogs
-  $userStatus = getUserStatus($userId, $db);
-  if ($userStatus != 0) {
-    print "<p class=\"ss-error\">You cannot claim this blog as your account is not currently active. You may <a href='/contact-us/'>contact us</a> to ask for more information.</p>\n";
-    return;
+    // If this is the first time this user has tried to interact with
+    // the SS system, create a USER entry for them
+    $userId = addUser($displayName, $email, $db);
   }
-
 
 ?>
 <h2>Add a new site.</h2>
@@ -138,9 +166,9 @@ function displayBlogForm ($errormsg, $db) {
 <input type="hidden" name="step" value="blogInfo" />
 <?php
 
-	if ($errormsg !== null) {
-		print "<p class=\"ss-error\">Error: $errormsg</p>\n";
-	}
+   if ($errormsg !== null) {
+     print "<p class=\"ss-error\">Error: $errormsg</p>\n";
+   }
 
   // Attempt to prepopulate from URL if blogUri param set
   //
@@ -171,6 +199,16 @@ function displayBlogForm ($errormsg, $db) {
 
    }
  }
+
+    if ($feed->error()) {
+      print "<p class=\"ss-error\">Unable to find feed for $submitUrl.</p>\n";
+    } else {
+      $blogName = $feed->get_title();
+      $blogUri = $feed->get_link();
+      $blogDescription = $feed->get_description();
+      $blogSyndicationUri = $feed->subscribe_url();
+    }
+  }
 
   print "<h3>General Information</h3>
 	<p>Blog Name: <input type=\"text\" name=\"blogName\" size=\"40\" value=\"$blogName\"/></p>\n
@@ -210,6 +248,7 @@ function doAddBlog ($db) {
   $topic2 = $_REQUEST["topic2"];
   $twitterHandle = $_REQUEST["twitterHandle"];
   $userIsAuthor = $_REQUEST["userIsAuthor"];
+  $userId;
 
   global $current_user;
   get_currentuserinfo();
