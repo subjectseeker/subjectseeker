@@ -767,27 +767,6 @@ function removeParams () {
 	return $baseUrl;
 }
 
-// Update offset for pages.
-function updateHttpQuery () {
-	$pagesize = $_REQUEST["n"];
-	$offset = $_REQUEST["offset"];
-	$httpQuery = $_SERVER["QUERY_STRING"];
-	parse_str($httpQuery, $queryResults);
-	
-	if (! $pagesize) $pagesize = 30;
-	if (! $offset) $offset = 0;
-	$nextOffset = $offset + $pagesize;
-	$prevOffset = $offset - $pagesize;
-	
-	$queryResults["offset"] = $nextOffset;
-	$result["nextPage"] = http_build_query($queryResults);
-	
-	$queryResults["offset"] = $prevOffset;
-	$result["prevPage"] = http_build_query($queryResults);
-	
-	return $result;
-}
-
 // Input: URL
 // Return: true if URL starts with http:// or https://, otherwise false
 function hasProtocol ($url) {
@@ -1249,13 +1228,13 @@ function getAuthorList ($blogId, $db) {
     return;
   }
 	
-	// List all author names/ids from feed
-  $sql = "SELECT BLOG_SYNDICATION_URI, CRAWLED_DATE_TIME FROM BLOG WHERE BLOG_ID=$blogId";
+	// Get blog feed.
+  $sql = "SELECT BLOG_SYNDICATION_URI FROM BLOG WHERE BLOG_ID=$blogId";
   $results =  mysql_query($sql, $db);
   if ($results == null || mysql_num_rows($results) == 0) {
     // TODO error message to log
     // this should not have been empty
-    return $authorList;
+    return NULL;
   }
 	
 	$row = mysql_fetch_array($results);
@@ -1264,6 +1243,7 @@ function getAuthorList ($blogId, $db) {
   $feed = getSimplePie($uri);
   foreach ($feed->get_items() as $item) {
     $author = $item->get_author();
+		// Add all authors from the feed before generating the list.
     if ($author) {
       $authorName = $author->get_name();
       addBlogAuthor($authorName, $blogId, $db);
@@ -1672,6 +1652,8 @@ function linkTopicToPost($postId, $topicId, $source, $db) {
   }
 }
 
+// Input: Social Network ID, User ID, DB Handle
+// Output: User social name and tokens
 function getUserSocialAccount ($socialNetworkId, $userId, $db) {
 	$sql = "SELECT * FROM USER_SOCIAL_ACCOUNT WHERE SOCIAL_NETWORK_ID = '$socialNetworkId' AND USER_ID = '$userId'";
 	$result = mysql_query($sql, $db);
@@ -1681,6 +1663,8 @@ function getUserSocialAccount ($socialNetworkId, $userId, $db) {
 	return $row;
 }
 
+// Input: Social Network ID, User Social Name, OAuth Token, OAuth Secret Token, User ID, DB handle
+// Action: Add user social account
 function addUserSocialAccount ($socialNetworkId, $socialNetworkAccountName, $oauthToken, $oauthSecretToken, $userId, $db) {
 	$socialNetworkAccountName = mysql_real_escape_string($socialNetworkAccountName);
 	
@@ -1688,6 +1672,8 @@ function addUserSocialAccount ($socialNetworkId, $socialNetworkAccountName, $oau
 	$result = mysql_query($sql, $db);
 }
 
+// Input: Social Network ID, User ID, DB handle
+// Action: Remove user's social account
 function removeUserSocialAccount($socialNetworkId, $userId, $db) {
 	$sql = "DELETE FROM USER_SOCIAL_ACCOUNT WHERE SOCIAL_NETWORK_ID = '$socialNetworkId' AND USER_ID = '$userId'";
 	mysql_query($sql, $db);
@@ -1713,6 +1699,8 @@ function getBlogSocialAccount ($socialNetworkId, $blogId, $db) {
 	return $row;
 }
 
+// Input: Social Network ID, Blog ID, DB Handle
+// Action: Remove blog social account
 function removeBlogSocialAccount($socialNetworkId, $blogId, $db) {
 	$sql = "DELETE FROM BLOG_SOCIAL_ACCOUNT WHERE SOCIAL_NETWORK_ID = '$socialNetworkId' AND BLOG_ID = '$blogId'";
 	mysql_query($sql, $db);
@@ -2012,22 +2000,36 @@ function removeTopics($blogId, $db) {
  
 // Input: URL to update without parameters, Next page button text, previous page button text.
 // Output: HTML code for page buttons.
-function pageButtons ($baseUrl, $nextText = "Next Page »", $prevText = "« Previous Page") {
-	$httpQuery = updateHttpQuery();
+function pageButtons ($baseUrl, $pagesize, $nextText = "Next Page »", $prevText = "« Previous Page") {
 	
-	$pagesize = $_REQUEST["n"];
-	$offset = $_REQUEST["offset"];
 	if (! $pagesize) {
 		global $numResults;
 		$pagesize = $numResults;
 	}
-	if (! $offset) $offset = 0;
+	$offset = $_REQUEST["offset"];
+	if (! $offset) {
+		$offset = 0;
+	}
+	
+	$httpQuery = $_SERVER["QUERY_STRING"];
+	parse_str($httpQuery, $queryResults);
+	$nextOffset = $offset + $pagesize;
+	$prevOffset = $offset - $pagesize;
 	
 	print "<div id=\"nextprev\">";
 	
-	print "<div class=\"alignright\"><h4><a title=\"Next $pagesize results\" href=\"$baseUrl/?".$httpQuery["nextPage"]."\"><b>$nextText</b></a></h4></div>";
+	$queryResults["n"] = $pagesize;
+	$queryResults["offset"] = $nextOffset;
+	$nextPage = http_build_query($queryResults);
+	
+	print "<div class=\"alignright\"><h4><a title=\"Next $pagesize results\" href=\"$baseUrl/?$nextPage\"><b>$nextText</b></a></h4></div>";
 
-	if ($offset - $pagesize >= 0) print "<div class=\"alignleft\"><h4><a title=\"Previous $pagesize results\" href=\"$baseUrl/?".$httpQuery["prevPage"]."\"><b>$prevText</b></a></h4></div>";
+	if ($prevOffset >= 0) {
+		$queryResults["n"] = $pagesize;
+		$queryResults["offset"] = $prevOffset;
+		$prevPage = http_build_query($queryResults);
+		print "<div class=\"alignleft\"><h4><a title=\"Previous $pagesize results\" href=\"$baseUrl/?$prevPage\"><b>$prevText</b></a></h4></div>";
+	}
 	
 	print "</div>";
 }
@@ -2267,43 +2269,45 @@ function confirmEditBlog ($step, $userId, $userPriv, $db) {
 function checkBlogData($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogdescription, $blogStatusId, $topic1, $topic2, $twitterHandle, $userId, $db) {
 	
 	if ($blogId) {
-		// blog exists? need blog id!
+		// blog exists? need blog status!
 		$blogStatus = getBlogStatusId($blogId, $db);
 		if ($blogStatus == null) {
 			return $result .= "<p class=\"ss-error\">No such blog $blogId.</p>";
 		}
-	}
-	
-	$oldBlogName = getBlogName($blogId, $db);
-	
-	if ($userId) {
-		// if not logged in as an author or as admin, fail
-		if (! canEdit($userId, $blogId, $db)) {
-			$result .= "<p class=\"ss-error\">You don't have editing privileges for $oldBlogName.</p>";
-		}
 		
-		$userPriv = getUserPrivilegeStatus($userId, $db);
-		if ($userPriv == 0 && ($blogStatusId =! 0 || $blogStatusId =! 3)) {
-			$result .= "<p class=\"ss-error\">You don't have editing privileges for set this status.</p>";
+		$oldBlogName = getBlogName($blogId, $db);
+	
+		if ($userId) {
+			// if not logged in as an author or as admin, fail
+			if (! canEdit($userId, $blogId, $db)) {
+				$result .= "<p class=\"ss-error\">You don't have editing privileges for $oldBlogName.</p>";
+			}
+			
+			$userPriv = getUserPrivilegeStatus($userId, $db);
+			if ($userPriv == 0 && ($blogStatusId =! 0 || $blogStatusId =! 3)) {
+				$result .= "<p class=\"ss-error\">You don't have editing privileges for set this status.</p>";
+			}
 		}
 	}
   
-  // check that there is a name
+  // Check that there is a name
   if ($blogname == null) {
 	  $result .= "<p class=\"ss-error\">Name field is required.</p>";
   }
 	
+	// Check that there is a feed
 	if (! $blogsyndicationuri) {
 		$result .= "<p class=\"ss-error\">Syndication URL field is required.</p>";
 	}
 	else {
-		// check that syndication feed is parseable
+		// Check that syndication feed is parseable
 		$feed = getSimplePie($blogsyndicationuri);
 		if ($feed->get_type() == 0) {
 			$result .= "<p class=\"ss-error\">Unable to parse feed at $blogsyndicationuri. Are you sure it is Atom or RSS?</p>";
 		}
 	}
-
+	
+	// Check that there is a home page
 	if (! $blogurl) {
 		$result .= "<p class=\"ss-error\">URL field is required.</p>";
 	}
@@ -3191,14 +3195,14 @@ function doVerifyClaim($blogId, $displayName, $db) {
     $claimToken = getClaimToken($blogId, $userId, $db);
     $success = markClaimTokenVerified($blogId, $userId, $claimToken, $db);
     if (! $success) {
-      print "Error, failed to update db";
+      print "<p class=\"ss-error\">Failed to update database.</p>";
       return;
     }
     displayUserAuthorLinkForm($blogId, $userId, $displayName, $db);
 
   } else {
     $claimToken = getClaimToken($blogId, $userId, $db);
-    print "<p>Your claim token ($claimToken) was not found on your blog, in a post or in a meta tag.</p>\n";
+    print "<p class=\"ss-error\">Your claim token ($claimToken) was not found in your blog's feed.</p>\n";
     displayBlogClaimToken($claimToken, $blogId, $displayName, null, null, $db);
   }
 }
@@ -3212,7 +3216,10 @@ function verifyClaim($blogId, $userId, $blogUri, $blogSyndicationUri, $db) {
     return "no-claim";
   }
 	
-	$feed = getSimplePie($blogSyndicationUri);
+	$feed = new SimplePie();
+	$feed->set_feed_url($blogSyndicationUri);
+	$feed->set_cache_duration(0);
+	$feed->init();
 	if ($feed->error()) {
 		print "ERROR: $blogUri (ID $blogId): " . $feed->error() . "\n";
 	}
@@ -3223,26 +3230,6 @@ function verifyClaim($blogId, $userId, $blogUri, $blogSyndicationUri, $db) {
 			$pos = strpos($blogContent, $claimToken);
 			if (strcmp("", $pos) != 0 && $pos >= 0) {
 				return "verified";
-			}
-			// If not in this entry of the syndication feed, go to the post and check the HTML code
-			else {
-				$ch = curl_init();    // initialize curl handle
-				curl_setopt($ch, CURLOPT_URL, $item->get_permalink()); // set url to post to
-				curl_setopt($ch, CURLOPT_FAILONERROR, 1);
-				curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
-				curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
-				curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 4s
-				$result = curl_exec($ch);
-				$cerror = curl_error($ch);
-	
-				// Error fetching page -> unverified
-				if (($cerror != null & strlen($cerror) > 0) || strlen($result) == 0) {
-					return "unverified";
-				}
-				
-				if (strpos($result, $claimToken) == TRUE) {
-					return "verified";
-				}
 			}
 		}
 	}
@@ -3349,7 +3336,8 @@ function displayBlogClaimToken($claimToken, $blogId, $displayName, $db) {
 		$blogName = getBlogName($blogId, $db);
 	}
 
-  print "<p>To claim this blog ($blogName), we need to verify that you actually are an author of this blog. Please place the following HTML code in the <span class=\"ss-bold\">most recent</span> post on your blog. It will be invisible to readers, and you can remove it once your blog has been verified by our system.</p>\n
+  print "<h3>Add claim token to your site.</h3>
+	<p>To claim this blog ($blogName), we need to verify that you actually are an author of this blog. Please place the following HTML code in the <span class=\"ss-bold\">most recent</span> post on your blog. It will be invisible to readers, and you can remove it once your blog has been verified by our system.</p>\n
 	<p><span class=\"ss-bold\">Claim token:</span> $claimToken</p>\n
 	<p><span class=\"ss-bold\">HTML code to include:</span> &lt;p&gt;&lt;span style=\"display:none\"&gt;$claimToken&lt;/span&gt;&lt;/p&gt;\n
 	<p>Once the token is displayed in a post of your site, press the button below</p> 
@@ -3402,7 +3390,7 @@ function displayUserAuthorLinkForm($blogId, $userId, $displayName, $db) {
   }
 
   if (isBlogClaimable($blogId, $db) == true) {
-    print "<h2>Identify yourself as an author of $blogName</h2>\n";
+    print "<h3>Identify yourself as an author of $blogName</h3>\n";
 
     print "<form method=\"POST\">\n";
     print "<input type=\"hidden\" name=\"step\" value=\"userAuthorLinkForm\" />\n";
@@ -3428,7 +3416,7 @@ function displayUserAuthorLinkForm($blogId, $userId, $displayName, $db) {
       }
     }
 		else {
-			print "<p>We couldn't find any authors in your feed.</p>";
+			print "<p class=\"ss-error\">We couldn't find any authors in your feed.</p>";
 		}
 		
 		print "<input class=\"ss-button\" type=\"submit\" value=\"Submit\">";
@@ -3437,8 +3425,6 @@ function displayUserAuthorLinkForm($blogId, $userId, $displayName, $db) {
   } else {
     print "<p class=\"ss-error\">This blog has already been claimed. If you feel this is in error, please <a href='/contact-us/'>contact us</a>.</p>";
   }
-
-  print "<p><hr /></p>\n";
 
 }
 
@@ -3481,7 +3467,8 @@ function doLinkUserAndAuthor($userId, $displayName, $db) {
 
   if ($success) {
 		global $userBlogs;
-    print "Congratulations, $displayName, you've claimed your blog. Click on '<a href=\"$userBlogs\">Your Blogs</a>' to edit your blog settings.<br />\n";
+    print "<h3>Claim completed</h3>
+		Congratulations, $displayName, you've claimed your blog. Click on '<a href=\"$userBlogs\">Your Blogs</a>' to edit your blog settings.<br />\n";
   }
 
 }

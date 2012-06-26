@@ -69,11 +69,16 @@ function doDisplayResources() {
 	
 	$db = ssDbConnect();
 	
+	$pagesize = $_REQUEST["n"];
+	if (! $pagesize) {
+		$pagesize = 500;
+	}
+	
 	$queryList = httpParamsToSearchQuery($parsedQuery);
 	$settings = httpParamsToExtraQuery($parsedQuery);
 	$errormsgs = array();
 	$settings["type"] = "blog";
-	$settings["limit"] = "500";
+	$settings["limit"] = $pagesize;
 	$blogsData = generateSearchQuery ($queryList, $settings, 0, $errormsgs, $db);
 	
 	if (! empty($errormsgs)) {
@@ -100,8 +105,7 @@ function doDisplayResources() {
 	}
 	
 	else {
-		print "<h2>Index of Active Sites</h2>
-		<hr />";
+		print "<hr />";
 		foreach ($blogs as $item) {
 			if (! $item["description"]) {
 				$item["description"] = "No summary available for this site.";
@@ -121,7 +125,7 @@ function doDisplayResources() {
 	}
 	
 	global $blogList;
-	pageButtons ($blogList);
+	pageButtons ($blogList, $pagesize);
 
 }
 

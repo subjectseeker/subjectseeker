@@ -255,7 +255,7 @@ function displayFeed($query, $minimal) {
 	}
 	if ($minimal != TRUE) {
 		global $mainFeed;
-		pageButtons ($mainFeed, $nextText = "Older Entries »", $prevText = "« Newer Entries");
+		pageButtons ($mainFeed, $_REQUEST["n"], $nextText = "Older Entries »", $prevText = "« Newer Entries");
 	}
 }
 

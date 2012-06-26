@@ -86,7 +86,7 @@ function searchCitations() {
 	}
 	if ($step == "results") {
 		$title = $_REQUEST["title"];
-		print "<input class=\"ss-button\" type=\"button\" value=\"Go Back\" onClick=\"history.go(-1);return true;\"><br />
+		print "<div class=\"margin-bottom\"><input class=\"ss-button\" type=\"button\" value=\"Go Back\" onClick=\"history.go(-1);return true;\"></div>
 		<h3>Select citation.</h3>
 		<p>Please select a citation from the results below or modify your search to refine the results.</p>
 		<form class=\"center-text\" method=\"GET\">
@@ -119,7 +119,7 @@ function searchCitations() {
 		}
 	}
 	if ($step == "edit") {
-		print "<input class=\"ss-button\" type=\"button\" value=\"Go Back\" onClick=\"history.go(-1);return true;\"><br />
+		print "<div class=\"margin-bottom\"><input class=\"ss-button\" type=\"button\" value=\"Go Back\" onClick=\"history.go(-1);return true;\"></div>
 		<h3>Edit Citation</h3>
 		<form method=\"POST\">
 		<input type=\"hidden\" name=\"step\" value=\"end\" />";
@@ -220,7 +220,7 @@ function searchCitations() {
 		}
 		
 		global $homeUrl;
-		print "<input class=\"ss-button\" type=\"button\" value=\"Go Back\" onClick=\"history.go(-1);return true;\"> <a class=\"ss-button\" href=\"$homeUrl\">Homepage</a><br />
+		print "<div class=\"margin-bottom\"><input class=\"ss-button\" type=\"button\" value=\"Go Back\" onClick=\"history.go(-1);return true;\"> <a class=\"ss-button\" href=\"$homeUrl\">Homepage</a></div>
 		<h3>Result</h3>";
 		
 		$articleData["id_type"] = $_REQUEST["idType"];

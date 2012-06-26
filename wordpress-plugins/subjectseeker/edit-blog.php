@@ -93,8 +93,7 @@ function determineEditStep() {
 	
 		$blogData = blogIdsToBlogData($blogIds, $db);
 		
-		print "<h2>Edit your sites</h2>
-		<hr />";
+		print "<hr />";
 		while ($row = mysql_fetch_array($blogData)) {
 			editBlogForm($row, $userPriv, "open", $db);
 		}

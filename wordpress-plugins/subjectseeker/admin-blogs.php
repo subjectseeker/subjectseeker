@@ -151,7 +151,7 @@ function adminBlogs() {
 			}
 			global $adminBlogs;
 			// Buttons for pages
-			pageButtons ($adminBlogs);
+			pageButtons ($adminBlogs, $pagesize);
 		} else { // not moderator or admin
 			print "<p>You are not authorized to administrate blogs.</p>";
 		}
