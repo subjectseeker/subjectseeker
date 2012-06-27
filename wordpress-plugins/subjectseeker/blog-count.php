@@ -69,6 +69,6 @@ print "<p class=\"about\">ScienceSeeker collects science articles from sources a
 <p class=\"about\">Current blog count: $count</p>
 <br />
 <p class=\"about\">Are you a science blogger?</p>
-<p class=\"about\"><a href=\"http://scienceseeker.org/submit/\">Submit your blog today</a>.</p>";
+<p class=\"about\"><a href=\"http://dev.scienceseeker.org/how-to-use-the-bookmarklet-to-add-blogs-to-scienceseeker/\">Get the ScienceSeeker Bookmarklet</a>.</p>";
 }
 ?>

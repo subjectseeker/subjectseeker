@@ -93,9 +93,11 @@ function determineEditStep() {
 	
 		$blogData = blogIdsToBlogData($blogIds, $db);
 		
-		print "<hr />";
-		while ($row = mysql_fetch_array($blogData)) {
-			editBlogForm($row, $userPriv, "open", $db);
+		if ($step != "verify") {
+			print "<hr />";
+			while ($row = mysql_fetch_array($blogData)) {
+				editBlogForm($row, $userPriv, "open", $db);
+			}
 		}
 
   } else {

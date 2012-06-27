@@ -66,6 +66,9 @@ function get_ssAddBlog($settings = array()) {
  */
 
 function determineStep() {
+	// Connect to DB.
+	$db  = ssDbConnect();
+	
   if (is_user_logged_in()){
     global $current_user;
     get_currentuserinfo();
@@ -82,24 +85,21 @@ function determineStep() {
 	$blogId = $_REQUEST["blogId"];
 	$submitUrl = $_REQUEST["submitUrl"];
 
-	// Connect to DB.
-	$db  = ssDbConnect();
-
 	if ($step === null) {
-          if ($submitUrl == null) {
-            displayShortBlogForm(null, $db);
-          } else {
-            displayBlogForm(null, $db);
-          }
+		if ($submitUrl == null) {
+			displayShortBlogForm(null, $db);
+		} else {
+			displayBlogForm(null, $db);
+		}
 	} else if ($step === "blogInfo") {
 		doAddBlog($db);
 	} else if ($step === "verify") {
-          if (! $displayName) {
-            global $loginUrl;
-            print "<p class=\"ss-error\">Error: You must <a href=\"$loginUrl\" title=\"Log In Page\">log in</a> to claim a blog.</p>\n";
-            return;
-          }
-          doVerifyClaim($blogId, $displayName, $db);
+		if (! $displayName) {
+			global $loginUrl;
+			print "<p class=\"ss-error\">Error: You must <a href=\"$loginUrl\" title=\"Log In Page\">log in</a> to claim a blog.</p>\n";
+			return;
+		}
+		doVerifyClaim($blogId, $displayName, $db);
 	} else if ($step === "userAuthorLinkForm") {
 		if (! $displayName) {
 			global $loginUrl;
@@ -108,7 +108,7 @@ function determineStep() {
 		}
 		doLinkUserAndAuthor($userId, $displayName, $db);
 	} else {
-          print "ERROR: Unknown step $step.";
+		print "<p class=\"ss-error\">ERROR: Unknown step $step.</p>";
 	}
 }
 
@@ -128,18 +128,21 @@ function displayShortBlogForm ($errormsg, $db) {
   }
 
 ?>
-<h2>Add a new blog.</h2>
 <p>Submit a new blog to be aggregated by our system. If you have a large number of blogs to add to the system, please <a href='/contact-us/'>contact us</a> to discuss a data upload.</p>
 <form method="POST">
 <?php
 
    if ($errormsg !== null) {
-     print "<p class=\"ss-error\">Error: $errormsg</p>\n";
+     print "$errormsg\n";
    }
 
   print "<h3>Blog Location</h3>
-	<p>Please enter either the URL of the blog or the URL of the blog's feed (RSS or Atom): <input type=\"text\" name=\"submitUrl\" size=\"40\" value=\"$submitUrl\" /><br /><span class=\"subtle-text\">(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</span></p>\n
-	<input class=\"ss-button\" type=\"submit\" value=\"Next step\" />
+	<div class=\"center-text\">
+	<p class=\"margin-bottom-small\">Please enter either the URL of the blog or the URL of the blog's feed (RSS or Atom):</p>
+	<div class=\"margin-bottom-small\"><input class=\"big-input\" type=\"text\" name=\"submitUrl\" size=\"40\" value=\"$submitUrl\" /></div>
+	<p class=\"subtle-text\">(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>\n
+	<p><input class=\"big-button\" type=\"submit\" value=\"Next step\" /></p>
+	</div>
 	</form>";
 }
 
@@ -160,25 +163,22 @@ function displayBlogForm ($errormsg, $db) {
   }
 
 ?>
-<h2>Add a new site.</h2>
 <p>Submit a new site to be aggregated by our system. If you have a large number of blogs to add to the system, please <a href='/contact-us/'>contact us</a> to discuss a data upload.</p>
-<form method="POST">
-<input type="hidden" name="step" value="blogInfo" />
 <?php
 
-   if ($errormsg !== null) {
-     print "<p class=\"ss-error\">Error: $errormsg</p>\n";
-   }
+	// TODO: Looks like we are not using this error area, remove it?
+	if ($errormsg !== null) {
+		print "<p class=\"ss-error\">Error: $errormsg</p>\n";
+	}
 
-  // Attempt to prepopulate from URL if blogUri param set
-  //
- $submitUri = $_REQUEST["blogUri"];
- if ($submitUri != NULL) {
-   $feed = getSimplePie($submitUri);
-   $blogName; $blogUri; $blogDescription; $blogSyndicationUri;
+  // Attempt to prepopulate from URL if submitUrl param set
+	$submitUri = $_REQUEST["submitUrl"];
+	if ($submitUri != NULL) {
+		$feed = @getSimplePie($submitUri);
+		$blogName; $blogUri; $blogDescription; $blogSyndicationUri;
 
    if ($feed->error()) {
-     print "<p class=\"ss-error\">Unable to find feed for $submitUri.</p>\n";
+     print "<p class=\"ss-error\">Unable to find feed for $submitUri. You can enter the address manually below.</p>\n";
    } else {
      $blogName = $feed->get_title();
      $blogUri = $feed->get_link();
@@ -194,29 +194,24 @@ function displayBlogForm ($errormsg, $db) {
          print "<p class=\"ss-error\">This feed is already in the system.</p>\n";
        }
      }
-
-// TODO: if blog/feed already found, take us to the profile page for the blog -- once we have one
-
+		 // TODO: if blog/feed already found, take us to the profile page for the blog -- once we have one
    }
  }
+ 
+ submitBlogForm ($blogName, $blogUri, $blogDescription, $blogSyndicationUri, NULL, $userId, $db);
 
-    if ($feed->error()) {
-      print "<p class=\"ss-error\">Unable to find feed for $submitUrl.</p>\n";
-    } else {
-      $blogName = $feed->get_title();
-      $blogUri = $feed->get_link();
-      $blogDescription = $feed->get_description();
-      $blogSyndicationUri = $feed->subscribe_url();
-    }
-  }
+}
 
-  print "<h3>General Information</h3>
-	<p>Blog Name: <input type=\"text\" name=\"blogName\" size=\"40\" value=\"$blogName\"/></p>\n
-	<p>Blog URL: <input type=\"text\" name=\"blogUri\" size=\"40\" value=\"$blogUri\" /><br /><span class=\"subtle-text\">(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</span></p>\n
-	<p>Blog Syndication URL: <input type=\"text\" name=\"blogSyndicationUri\" size=\"40\" value=\"$blogSyndicationUri\" /><br /><span class=\"subtle-text\">(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</span></p>
-	<p>Blog Description <span class=\"subtle-text\">(Optional)</span>:<br /><textarea name=\"blogDescription\" rows=\"5\" cols=\"60\">$blogDescription</textarea></p>\n";
-  print "<p>Blog Topics: <select name='topic1'>\n";
-  print "<option value='-1'>None</option>\n";
+function submitBlogForm ($blogName, $blogUri, $blogDescription, $blogSyndicationUri, $twitterHandle, $userId, $db) {
+	print "<form method=\"POST\">
+<input type=\"hidden\" name=\"step\" value=\"blogInfo\" />
+	<h3>General Information</h3>
+	<p>Blog Name: <input type=\"text\" name=\"blogName\" size=\"40\" value=\"".htmlspecialchars($blogName, ENT_QUOTES)."\"/></p>\n
+	<p>Blog URL: <input type=\"text\" name=\"blogUri\" size=\"40\" value=\"".htmlspecialchars($blogUri, ENT_QUOTES)."\" /><br /><span class=\"subtle-text\">(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</span></p>\n
+	<p>Blog Syndication URL: <input type=\"text\" name=\"blogSyndicationUri\" size=\"40\" value=\"".htmlspecialchars($blogSyndicationUri, ENT_QUOTES)."\" /><br /><span class=\"subtle-text\">(RSS or Atom feed. Must start with \"http://\", e.g., <em>http://feeds.feedburner.com/blogname/</em>.)</span></p>
+	<p>Blog Description <span class=\"subtle-text\">(Optional)</span>:<br /><textarea name=\"blogDescription\" rows=\"5\" cols=\"60\">$blogDescription</textarea></p>\n
+	<p>Blog Topics: <select name='topic1'>\n
+	<option value='-1'>None</option>\n";
   $topicList = getTopicList(true, $db);
   while ($row = mysql_fetch_array($topicList)) {
     print "<option value='" . $row["TOPIC_ID"] . "'>" . $row["TOPIC_NAME"] . "</option>\n";
@@ -233,7 +228,7 @@ function displayBlogForm ($errormsg, $db) {
 	}
 	print "<hr class=\"ss-div-2\" />
 	<h3>Social Networks</h3>
-	<p>Blog Twitter Handle <span class=\"subtle-text\">(Optional)</span>: <input type=\"text\" name=\"twitterHandle\" size=\"40\" value=\"\"/></p>\n
+	<p>Blog Twitter Handle <span class=\"subtle-text\">(Optional)</span>: <input type=\"text\" name=\"twitterHandle\" size=\"40\" value=\"".htmlspecialchars($twitterHandle, ENT_QUOTES)."\"/></p>\n
 	<hr class=\"ss-div-2\" />
 	<input class=\"ss-button\" type=\"submit\" value=\"Add Blog\" />
 	</form>";
@@ -255,27 +250,39 @@ function doAddBlog ($db) {
   $displayName = $current_user->user_login;
   $email = $current_user->user_email;
 	
+	// Only get user info if logged in
+	if (is_user_logged_in()){
+		global $current_user;
+		get_currentuserinfo();
+		$displayName = $current_user->user_login;
+		$email = $current_user->user_email;
+		$userId = addUser($displayName, $email, $db);
+		$userPriv = getUserPrivilegeStatus($userId, $db);
+	}
+	
 	$errors = checkBlogData(NULL, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, NULL, $topic1, $topic2, $twitterHandle, $userId, $db);
 	
 	if ($errors) {
-		print "<ul class=\"ss-error\">$errors</ul>";
+		print "$errors";
+		submitBlogForm ($blogName, $blogUri, $blogDescription, $blogSyndicationUri, $twitterHandle, $userId, $db);
 	}
 	else {
-		// If this is the first time this user has tried to interact with
-		// the SS system, create a USER entry for them
-		$userId = addUser($displayName, $email, $db);
-		$userPriv = getUserPrivilegeStatus($userId, $db);
-		
 		$addBlog = addBlog($blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $userId, $db);
 	
 		$blogId = $addBlog["id"];
 		
-		addBlogSocialAccount (1, $twitterHandle, $blogId, $db);
+		if ($twitterHandle) {
+			addBlogSocialAccount($twitterHandle, 1, $blogId, $db);
+		}
 	
 		if ($addBlog["errormsg"] === null) {
-			echo "<p>Successfully added blog to the system.</p>";
+			echo "<p class=\"ss-successful\">Successfully added blog to the system.</p>";
 			if ($userPriv == 0) {
-				echo "<p>This source will not be publicly displayed in the system until it has been approved by an editor.</p>";
+				global $submitSite;
+				echo "<p>This site will not be publicly displayed in the system until it has been approved by an editor.</p>";
+			}
+			if (! $userIsAuthor) {
+				echo "<a class=\"ss-button\" href=\"/\">Go to Home Page</a> <a class=\"ss-button\" href=\"$submitSite\">Submit another site</a>";
 			}
 		} else {
 			// Blog is already in the system.

@@ -1194,7 +1194,7 @@ function getBlogIdsByUserId ($userId, $db) {
   // BLOG_AUTHOR has USER_ID
   // BLOG_AUTHOR has BLOG_ID and BLOG_AUTHOR_ACCOUNT_NAME
 
-  $sql = "select ba.BLOG_ID, user.DISPLAY_NAME from USER user, BLOG_AUTHOR ba, BLOG pa where user.USER_ID=$userId and ba.USER_ID=user.USER_ID and pa.BLOG_STATUS_ID=0 and pa.BLOG_ID=ba.BLOG_ID";
+  $sql = "select ba.BLOG_ID, user.DISPLAY_NAME from USER user, BLOG_AUTHOR ba, BLOG pa where user.USER_ID=$userId and ba.USER_ID=user.USER_ID and (pa.BLOG_STATUS_ID=0 or pa.BLOG_STATUS_ID=3) and pa.BLOG_ID=ba.BLOG_ID";
   $results = mysql_query($sql, $db);
   $blogIds = array();
   if ($results != null) {
@@ -2175,8 +2175,8 @@ function confirmEditBlog ($step, $userId, $userPriv, $db) {
 			print crawlBlogs($blog, $db);
 		}
 		elseif ($step == "confirmed" || ($errors == NULL && $step == "edit")) {
-			editBlog ($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $blogStatusId, $topic1, $topic2, $db);
-			
+			editBlog ($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $db);
+			editBlogStatus ($blogId, $blogStatusId, $db);
 			if ($twitterHandle) {
 				addBlogSocialAccount($twitterHandle, 1, $blogId, $db);
 			}
@@ -2193,6 +2193,7 @@ function confirmEditBlog ($step, $userId, $userPriv, $db) {
 			print "<p class=\"ss-successful\">$blogName (ID $blogId) has been updated.</p>"; 
 		}
 		elseif ($errors != NULL && $step == "edit") {
+			editBlogStatus ($blogId, $blogStatusId, $db);
 			print "<p>$oldBlogName (ID $blogId):</p>$errors";
 			if ($userPriv > 0) {
 				print "<form class=\"margin-bottom\" method=\"POST\">
@@ -2229,8 +2230,8 @@ function confirmEditBlog ($step, $userId, $userPriv, $db) {
 					return;
 				}
 				else {
-					editBlog ($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $blogStatusId, $topic1, $topic2, $db);
-					
+					editBlog ($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $db);
+					editBlogStatus ($blogId, $blogStatusId, $db);
 					if ($twitterHandle) {
 						addBlogSocialAccount($twitterHandle, 1, $blogId, $db);
 					}
@@ -2284,8 +2285,8 @@ function checkBlogData($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogd
 			}
 			
 			$userPriv = getUserPrivilegeStatus($userId, $db);
-			if ($userPriv == 0 && ($blogStatusId =! 0 || $blogStatusId =! 3)) {
-				$result .= "<p class=\"ss-error\">You don't have editing privileges for set this status.</p>";
+			if ($userPriv == 0 && $blogStatusId =! 0 && $blogStatusId =! 3) {
+				$result .= "<p class=\"ss-error\">You don't have editing privileges to set this status.</p>";
 			}
 		}
 	}
@@ -2301,7 +2302,7 @@ function checkBlogData($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogd
 	}
 	else {
 		// Check that syndication feed is parseable
-		$feed = getSimplePie($blogsyndicationuri);
+		$feed = @getSimplePie($blogsyndicationuri);
 		if ($feed->get_type() == 0) {
 			$result .= "<p class=\"ss-error\">Unable to parse feed at $blogsyndicationuri. Are you sure it is Atom or RSS?</p>";
 		}
@@ -2335,7 +2336,7 @@ function checkBlogData($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogd
 
 // Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, DB handle
 // Action: edit blog metadata
-function editBlog ($blogId, $blogName, $blogUrl, $blogSyndicationUrl, $blogDescription, $blogStatusId, $topic1, $topic2, $db) {
+function editBlog ($blogId, $blogName, $blogUrl, $blogSyndicationUrl, $blogDescription, $topic1, $topic2, $db) {
 	
 	// escape stuff
   $blogName = mysql_real_escape_string($blogName);
@@ -2344,7 +2345,7 @@ function editBlog ($blogId, $blogName, $blogUrl, $blogSyndicationUrl, $blogDescr
 	$blogSyndicationUrl = mysql_real_escape_string($blogSyndicationUrl);
 	
 	// update easy data
-	$sql = "UPDATE BLOG SET BLOG_NAME='$blogName', BLOG_URI='$blogUrl', BLOG_SYNDICATION_URI='$blogSyndicationUrl', BLOG_DESCRIPTION='$blogDescription', BLOG_STATUS_ID='$blogStatusId' WHERE BLOG_ID=$blogId";
+	$sql = "UPDATE BLOG SET BLOG_NAME='$blogName', BLOG_URI='$blogUrl', BLOG_SYNDICATION_URI='$blogSyndicationUrl', BLOG_DESCRIPTION='$blogDescription' WHERE BLOG_ID=$blogId";
 	mysql_query($sql, $db);
 	
   // remove all topics for this blog
@@ -2358,6 +2359,14 @@ function editBlog ($blogId, $blogName, $blogUrl, $blogSyndicationUrl, $blogDescr
   if ($topic2 != "-1") {
     associateTopic($topic2, $blogId, $db);
   }
+}
+
+// Input: blog ID, blog status ID, DB handle
+// Action: Edit blog status
+function editBlogStatus ($blogId, $blogStatusId, $db) {
+	// update easy data
+	$sql = "UPDATE BLOG SET BLOG_STATUS_ID='$blogStatusId' WHERE BLOG_ID=$blogId";
+	mysql_query($sql, $db);
 }
 
 // Input: post ID, post title, post summary, post URL, user ID, user display name, DB handle
@@ -3340,7 +3349,7 @@ function displayBlogClaimToken($claimToken, $blogId, $displayName, $db) {
 	<p>To claim this blog ($blogName), we need to verify that you actually are an author of this blog. Please place the following HTML code in the <span class=\"ss-bold\">most recent</span> post on your blog. It will be invisible to readers, and you can remove it once your blog has been verified by our system.</p>\n
 	<p><span class=\"ss-bold\">Claim token:</span> $claimToken</p>\n
 	<p><span class=\"ss-bold\">HTML code to include:</span> &lt;p&gt;&lt;span style=\"display:none\"&gt;$claimToken&lt;/span&gt;&lt;/p&gt;\n
-	<p>Once the token is displayed in a post of your site, press the button below</p> 
+	<p>Once the token is displayed in a post of your site, press the button below.</p> 
 	<form method='POST' name='doVerifyForm'>\n
 	<input type='hidden' name='step' value='verify' />\n
 	<input type=\"hidden\" name=\"blogId\" value=\"$blogId\" />
@@ -3353,7 +3362,7 @@ function displayBlogClaimToken($claimToken, $blogId, $displayName, $db) {
 	<input type=\"hidden\" name=\"topic2\" value=\"$topic2\" />
 	<input type=\"hidden\" name=\"blogStatus\" value=\"$blogStatusId\" />
 	<input type=\"hidden\" name=\"crawl\" value=\"$crawl\" />
-	<input class=\"ss-button\" name=\"submit\" type=\"submit\" value=\"Continue to the next step\" />
+	<p><input class=\"ss-button\" name=\"submit\" type=\"submit\" value=\"Continue to the next step\" /></p>
 	</form>";
 }
 

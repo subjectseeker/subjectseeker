@@ -112,11 +112,14 @@ function doDisplayResources() {
 			}
 			
 			print "<div class=\"ss-entry-wrapper\">
-			<a class=\"ss-postTitle\" href=\"".$item["uri"]."\">".$item["name"]."</a> [ <a href=\"".$item["syndication"]."\">Syndication</a> ] [ <a href=\"/claimblog/?blogId=".$item["id"]."\">Claim this blog</a> ]
+			<a class=\"ss-postTitle\" href=\"".$item["uri"]."\">".$item["name"]."</a>
 			<div class=\"ss-div-button\"><div class=\"arrow-down\" title=\"Show Extra Info\"></div></div>
 			<div class=\"ss-slide-wrapper\" style=\"display: none; \">
 				<div id=\"padding-content\">
-					".$item["description"]."
+				<div class=\"margin-bottom\">".$item["description"]."</div>
+				<div>
+				<a class=\"ss-button\" href=\"".$item["syndication"]."\">Site's feed</a> <a class=\"ss-button\" href=\"/claimblog/?blogId=".$item["id"]."\">Claim this blog</a>
+				</div>
 				</div>
 			</div>
 			</div>
