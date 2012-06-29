@@ -4,8 +4,8 @@
 /*==============================================================*/
 
 /*==============================================================*/
-/* Copyright © 2010–2011 Christopher R. Maden and Jessica Perry */
-/* Hekman.                                                      */
+/* Copyright © 2010–2011 Christopher R. Maden, Jessica Perry    */
+/* Hekman, Liminality.                                          */
 /*                                                              */
 /* Permission is hereby granted, free of charge, to any person  */
 /* obtaining a copy of this software and associated             */
@@ -29,6 +29,8 @@
 /* OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE    */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.       */
 /*==============================================================*/
+
+/* Last patch file incorporated: issue-130-patch.sql. */
 
 drop table if exists ADMINISTRATOR_NOTE;
 
@@ -54,11 +56,9 @@ drop table if exists BLOG_POST_STATUS;
 
 drop table if exists BLOG_STATUS;
 
+drop table if exists CITATION;
+
 drop table if exists LANGUAGE;
-
-drop table if exists PERSONA;
-
-drop table if exists PERSONA_ADMINISTRATOR_NOTE;
 
 drop table if exists POST_TOPIC;
 
@@ -92,6 +92,25 @@ drop table if exists CLAIM_BLOG;
 
 drop table if exists CLAIM_BLOG_STATUS;
 
+drop table if exists TOPIC_SOURCE;
+
+drop table if exists RECOMMENDATION;
+
+drop table if exists ARTICLE;
+
+drop table if exists ARTICLE_AUTHOR;
+
+drop table if exists ARTICLE_IDENTIFIER;
+
+drop table if exists ARTICLE_AUTHOR_LINK;
+
+drop table if exists SCAN_POST;
+
+drop table if exists BLOG_SOCIAL_ACCOUNT;
+
+drop table if exists USER_SOCIAL_ACCOUNT;
+
+
 /*==============================================================*/
 /* Table: ADMINISTRATOR_NOTE                                    */
 /*==============================================================*/
@@ -100,9 +119,7 @@ create table ADMINISTRATOR_NOTE
    ADMINISTRATOR_NOTE_ID int(15) not null auto_increment comment 'Machine-generated unique identifier for a note.',
    ADMINISTRATOR_NOTE_CONTENT text not null comment 'The free-text content of a note.',
    primary key (ADMINISTRATOR_NOTE_ID)
-);
-
-alter table ADMINISTRATOR_NOTE comment 'A system internal note associated with a particular system o';
+) comment 'A system internal note associated with a particular system o';
 
 /*==============================================================*/
 /* Table: BLOG                                                  */
@@ -118,9 +135,7 @@ create table BLOG
    ADDED_DATE_TIME      datetime not null comment 'The date and time when this blog was added to the aggregator.',
    CRAWLED_DATE_TIME    datetime comment 'The date and time on which this blog was last checked by the aggregator.',
    primary key (BLOG_ID)
-);
-
-alter table BLOG comment 'A Web log or feed therefrom intended for aggregation by the ';
+) comment 'A Web log or feed therefrom intended for aggregation by the ';
 
 /*==============================================================*/
 /* Table: BLOG_ADMINISTRATOR_NOTE                               */
@@ -130,9 +145,7 @@ create table BLOG_ADMINISTRATOR_NOTE
    ADMINISTRATOR_NOTE_ID int(15) not null comment 'Reference to a note associated with this blog.',
    BLOG_ID              int(15) not null comment 'Reference to a blog annotated by this note.',
    primary key (ADMINISTRATOR_NOTE_ID, BLOG_ID)
-);
-
-alter table BLOG_ADMINISTRATOR_NOTE comment 'Association of an administrator note with a particular blog.';
+) comment 'Association of an administrator note with a particular blog.';
 
 /*==============================================================*/
 /* Table: BLOG_AUTHOR                                           */
@@ -141,13 +154,11 @@ create table BLOG_AUTHOR
 (
    BLOG_AUTHOR_ID       int(15) not null auto_increment comment 'Machine-generated unique identifier for this blog author.',
    BLOG_ID              int(15) not null comment 'Reference to the blog with which this author is associated.',
-   PERSONA_ID           int(15) comment 'Reference to a persona which has claimed this blog.',
-   BLOG_AUTHOR_ACCOUNT_NAME varchar(255) not null comment 'The identifier used for this author on the blog to which they contribute: the user name or display name, as appropriate for the blog in question.',
+   USER_ID              int(15) NULL COMMENT 'Reference to an user associated with this author.',
+  BLOG_AUTHOR_ACCOUNT_NAME varchar(255) not null comment 'The identifier used for this author on the blog to which they contribute: the user name or display name, as appropriate for the blog in question.',
    primary key (BLOG_AUTHOR_ID),
    unique key AK_BLOG_AUTHOR_ACCOUNT (BLOG_ID, BLOG_AUTHOR_ACCOUNT_NAME)
-);
-
-alter table BLOG_AUTHOR comment 'A known contributor to a blog of interest, who may or may no';
+) comment 'A known contributor to a blog of interest, who may or may no';
 
 /*==============================================================*/
 /* Table: BLOG_GROUP                                            */
@@ -160,9 +171,7 @@ create table BLOG_GROUP
    BLOG_GROUP_SYNDICATION_URI varchar(2083) comment 'The URI via which a syndication feed for this blog group can be accessed.',
    BLOG_GROUP_DESCRIPTION text comment 'The free-text human-readable description of the nature and intent of the blog group.',
    primary key (BLOG_GROUP_ID)
-);
-
-alter table BLOG_GROUP comment 'A collection of blogs characterized by network affiliation, ';
+) comment 'A collection of blogs characterized by network affiliation, ';
 
 /*==============================================================*/
 /* Table: BLOG_GROUPING                                         */
@@ -172,9 +181,7 @@ create table BLOG_GROUPING
    BLOG_GROUP_ID        int(15) not null comment 'Reference to the group into which the blog is being grouped.',
    BLOG_ID              int(15) not null comment 'Reference to the blog being grouped.',
    primary key (BLOG_GROUP_ID, BLOG_ID)
-);
-
-alter table BLOG_GROUPING comment 'Association of blogs into groups.';
+) comment 'Association of blogs into groups.';
 
 /*==============================================================*/
 /* Table: BLOG_GROUP_ADMINISTRATOR_NOTE                         */
@@ -184,9 +191,7 @@ create table BLOG_GROUP_ADMINISTRATOR_NOTE
    ADMINISTRATOR_NOTE_ID int(15) not null comment 'Reference to a note associated with this blog group.',
    BLOG_GROUP_ID        int(15) not null comment 'Reference to a blog group annotated by this note.',
    primary key (ADMINISTRATOR_NOTE_ID, BLOG_GROUP_ID)
-);
-
-alter table BLOG_GROUP_ADMINISTRATOR_NOTE comment 'Association of an administrator note with a particular blog ';
+) comment 'Association of an administrator note with a particular blog ';
 
 /*==============================================================*/
 /* Table: BLOG_LANGUAGE                                         */
@@ -196,9 +201,7 @@ create table BLOG_LANGUAGE
    LANGUAGE_ID          int(15) not null comment 'Reference to the language in which a blog is written.',
    BLOG_ID              int(15) not null comment 'Reference to a blog written in this language.',
    primary key (LANGUAGE_ID, BLOG_ID)
-);
-
-alter table BLOG_LANGUAGE comment 'Languages used by blogs of interest.';
+) comment 'Languages used by blogs of interest.';
 
 /*==============================================================*/
 /* Table: BLOG_POST                                             */
@@ -217,9 +220,7 @@ create table BLOG_POST
    BLOG_POST_HAS_CITATION bool not null default FALSE comment 'Indicator whether this blog post has a research citation in its content.',
    BLOG_POST_TITLE      varchar(1023) comment 'The original title of the blog post.',
    primary key (BLOG_POST_ID)
-);
-
-alter table BLOG_POST comment 'A post to a blog of interest to the system.';
+) comment 'A post to a blog of interest to the system.';
 
 /*==============================================================*/
 /* Table: BLOG_POST_ADMINISTRATOR_NOTE                          */
@@ -229,9 +230,7 @@ create table BLOG_POST_ADMINISTRATOR_NOTE
    ADMINISTRATOR_NOTE_ID int(15) not null comment 'Reference to a note associated with this blog post.',
    BLOG_POST_ID         int(15) not null comment 'Reference to a blog post annotated by this note.',
    primary key (ADMINISTRATOR_NOTE_ID, BLOG_POST_ID)
-);
-
-alter table BLOG_POST_ADMINISTRATOR_NOTE comment 'Association of an administrator note with a particular blog ';
+) comment 'Association of an administrator note with a particular blog ';
 
 /*==============================================================*/
 /* Table: BLOG_POST_STATUS                                      */
@@ -242,9 +241,7 @@ create table BLOG_POST_STATUS
    BLOG_POST_STATUS_DESCRIPTION varchar(127) not null comment 'Human-readable description of a blog post status level.',
    primary key (BLOG_POST_STATUS_ID),
    unique key AK_BLOG_POST_STATUS_DESCRIPTION (BLOG_POST_STATUS_DESCRIPTION)
-);
-
-alter table BLOG_POST_STATUS comment 'Approval status of a blog post, e.g., active, under review.';
+) comment 'Approval status of a blog post, e.g., active, under review.';
 
 /*==============================================================*/
 /* Table: BLOG_STATUS                                           */
@@ -255,9 +252,7 @@ create table BLOG_STATUS
    BLOG_STATUS_DESCRIPTION varchar(127) not null comment 'Human-readable description of a blog status level.',
    primary key (BLOG_STATUS_ID),
    unique key AK_BLOG_STATUS_DESCRIPTION (BLOG_STATUS_DESCRIPTION)
-);
-
-alter table BLOG_STATUS comment 'The approval status of a blog, e.g., submitted, under review';
+) comment 'The approval status of a blog, e.g., submitted, under review';
 
 /*==============================================================*/
 /* Table: CITATION                                              */
@@ -266,8 +261,9 @@ create table CITATION
 (
    CITATION_ID          int(15) not null auto_increment comment 'A machine-generated unique identifier for a citation.',
    CITATION_TEXT        text not null comment 'The HTML text of this citation',
-   primary key (CITATION_ID)
-);
+   primary key (CITATION_ID),
+   ARTICLE_ID            int(15) NOT NULL COMMENT 'Reference to an article with this citation.'
+) comment 'Information about a citation of peer-reviewed content';
 
 /*==============================================================*/
 /* Table: LANGUAGE                                              */
@@ -281,36 +277,7 @@ create table LANGUAGE
    LANGUAGE_LOCAL_NAME  varchar(255) comment 'Human-readable name of an IETF locale or language, in the language and script so described.',
    primary key (LANGUAGE_ID),
    unique key AK_LANGUAGE_IETF_CODE (LANGUAGE_IETF_CODE)
-);
-
-alter table LANGUAGE comment 'A human language (actually a locale), as defined in IETF BCP';
-
-/*==============================================================*/
-/* Table: PERSONA                                               */
-/*==============================================================*/
-create table PERSONA
-(
-   PERSONA_ID           int(15) not null auto_increment comment 'Machine-generated unique identifier for this persona.',
-   USER_ID              int(15) comment 'Reference to the user account which owns this persona.',
-   DISPLAY_NAME         varchar(255) not null comment 'The human-readable name associated with the persona.',
-   BIOGRAPHY            text comment 'Arbitrarily long free text describing a public persona.',
-   BLOG_AUTHOR_AVATAR_LOCATOR varchar(255) comment 'The system identifier for a graphical image associated with a persona on the aggregation system.',
-   primary key (PERSONA_ID)
-);
-
-alter table PERSONA comment 'A public identity of an aggregation system user and/or of on';
-
-/*==============================================================*/
-/* Table: PERSONA_ADMINISTRATOR_NOTE                            */
-/*==============================================================*/
-create table PERSONA_ADMINISTRATOR_NOTE
-(
-   ADMINISTRATOR_NOTE_ID int(15) not null comment 'Reference to a note associated with this persona.',
-   PERSONA_ID           int(15) not null comment 'Reference to a person annotated by this note.',
-   primary key (PERSONA_ID, ADMINISTRATOR_NOTE_ID)
-);
-
-alter table PERSONA_ADMINISTRATOR_NOTE comment 'Association of an administrator note with a particular perso';
+) comment 'A human language (actually a locale), as defined in IETF BCP';
 
 /*==============================================================*/
 /* Table: POST_TOPIC                                            */
@@ -321,9 +288,7 @@ create table POST_TOPIC
    BLOG_POST_ID         int(15) not null comment 'Reference to a post covering a topic.',
    TOPIC_SOURCE		int(15) not null comment 'Reference to the source of this topic',
    primary key (TOPIC_ID, BLOG_POST_ID)
-);
-
-alter table POST_TOPIC comment 'Subjects of a particular post on a blog of interest.';
+) comment 'Subjects of a particular post on a blog of interest.';
 
 /*==============================================================*/
 /* Table: POST_CITATION                                         */
@@ -333,9 +298,7 @@ create table POST_CITATION
    CITATION_ID             int(15) not null comment 'Reference to a citation included in a post.',
    BLOG_POST_ID         int(15) not null comment 'Reference to a post including a citation.',
    primary key (CITATION_ID, BLOG_POST_ID)
-);
-
-alter table POST_CITATION comment 'Blog posts containing citations.';
+) comment 'Blog posts containing citations.';
 
 /*==============================================================*/
 /* Table: PRIMARY_BLOG_TOPIC                                    */
@@ -345,9 +308,7 @@ create table PRIMARY_BLOG_TOPIC
    TOPIC_ID             int(15) not null comment 'Reference to a topic primarily covered by a blog.',
    BLOG_ID              int(15) not null comment 'Reference to a blog primarily covering a topic.',
    primary key (TOPIC_ID, BLOG_ID)
-);
-
-alter table PRIMARY_BLOG_TOPIC comment 'The main subjects of a blog of interest.';
+) comment 'The main subjects of a blog of interest.';
 
 /*==============================================================*/
 /* Table: SECONDARY_BLOG_TOPIC                                  */
@@ -357,9 +318,7 @@ create table SECONDARY_BLOG_TOPIC
    TOPIC_ID             int(15) not null comment 'Reference to a topic secondarily covered by a blog.',
    BLOG_ID              int(15) not null comment 'Reference to a blog secondarily covering a topic.',
    primary key (TOPIC_ID, BLOG_ID)
-);
-
-alter table SECONDARY_BLOG_TOPIC comment 'Subjects of a blog of interest, other than the primary topic';
+) comment 'Subjects of a blog of interest, other than the primary topic';
 
 /*==============================================================*/
 /* Table: SOCIAL_NETWORK                                        */
@@ -370,24 +329,7 @@ create table SOCIAL_NETWORK
    SOCIAL_NETWORK_NAME  varchar(127) not null comment 'Human-readable name of a social network.',
    primary key (SOCIAL_NETWORK_ID),
    unique key AK_SOCIAL_NETWORK_NAME (SOCIAL_NETWORK_NAME)
-);
-
-alter table SOCIAL_NETWORK comment 'A social network system with well-defined unique user IDs, t';
-
-/*==============================================================*/
-/* Table: SOCIAL_NETWORKING_ACCOUNT                             */
-/*==============================================================*/
-create table SOCIAL_NETWORKING_ACCOUNT
-(
-   SOCIAL_NETWORKING_ACCOUNT_ID int(15) not null auto_increment comment 'Machine-generated unique identifier for a social networking account.',
-   PERSONA_ID           int(15) not null comment 'Reference to a persona associated with this account.',
-   SOCIAL_NETWORK_ID    int(15) not null comment 'Reference to the social network on which this account is hosted.',
-   SOCIAL_NETWORKING_ACCOUNT_NAME varchar(127) not null comment 'The account identifier a persona uses on a particular social network.',
-   primary key (SOCIAL_NETWORKING_ACCOUNT_ID),
-   unique key AK_SOCIAL_NETWORK_USER_LOCATOR (SOCIAL_NETWORK_ID, SOCIAL_NETWORKING_ACCOUNT_NAME)
-);
-
-alter table SOCIAL_NETWORKING_ACCOUNT comment 'An social networking account known to be associated with a p';
+) comment 'A social network system with well-defined unique user IDs, t';
 
 /*==============================================================*/
 /* Table: TOPIC                                                 */
@@ -399,9 +341,7 @@ create table TOPIC
    TOPIC_TOP_LEVEL_INDICATOR bool not null comment 'Indicator whether this topic should be presented as a root for interactive topic navigation, independent of whether or not its more general topics are known.',
    primary key (TOPIC_ID),
    unique key AK_TOPIC_NAME (TOPIC_NAME)
-);
-
-alter table TOPIC comment 'A string or tag representing a subject of interest to aggreg';
+) comment 'A string or tag representing a subject of interest to aggreg';
 
 /*==============================================================*/
 /* Table: TOPIC_ADMINISTRATOR_NOTE                              */
@@ -411,9 +351,7 @@ create table TOPIC_ADMINISTRATOR_NOTE
    TOPIC_ID             int(15) not null comment 'Reference to a topic annotated by this note.',
    ADMINISTRATOR_NOTE_ID int(15) not null comment 'Reference to a note associated with this topic.',
    primary key (TOPIC_ID, ADMINISTRATOR_NOTE_ID)
-);
-
-alter table TOPIC_ADMINISTRATOR_NOTE comment 'Association of an administrator note with a particular topic';
+) comment 'Association of an administrator note with a particular topic';
 
 /*==============================================================*/
 /* Table: TOPIC_SIMILARITY                                      */
@@ -423,9 +361,7 @@ create table TOPIC_SIMILARITY
    TOPIC_ID_1           int(15) not null comment 'Reference to the first half of a similarity assertion.',
    TOPIC_ID_2           int(15) not null comment 'Reference to the second half of a similarity assertion.',
    primary key (TOPIC_ID_1, TOPIC_ID_2)
-);
-
-alter table TOPIC_SIMILARITY comment 'Assertion of equivalence between topics.';
+) comment 'Assertion of equivalence between topics.';
 
 /*==============================================================*/
 /* Table: TOPIC_SPECIFICITY                                     */
@@ -435,9 +371,7 @@ create table TOPIC_SPECIFICITY
    SPECIFIC_TOPIC_ID    int(15) not null comment 'Reference to the more specific topic being generalized.',
    GENERAL_TOPIC_ID     int(15) not null comment 'Reference to the more general topic being specialized.',
    primary key (SPECIFIC_TOPIC_ID, GENERAL_TOPIC_ID)
-);
-
-alter table TOPIC_SPECIFICITY comment 'Assertion of more or less specific subject coverage of topic';
+) comment 'Assertion of more or less specific subject coverage of topic';
 
 /*==============================================================*/
 /* Table: USER                                                  */
@@ -450,11 +384,12 @@ create table USER
    USER_NAME            varchar(255) not null comment 'The unique login name associated with the user account.',
    PASSWORD             varchar(255) not null comment 'The encrypted password used to log in with the account.',
    EMAIL_ADDRESS        varchar(127) not null comment 'E-mail address associated with a user account.',
+   DISPLAY_NAME         varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'Human-readable name associated with this user.',
+   BIOGRAPHY            text collate utf8_unicode_ci NULL COMMENT 'Arbitrarily long free text describing a user.',
+   USER_AVATAR_LOCATOR  varchar(255) collate utf8_unicode_ci default NULL COMMENT 'The system identifier for a graphical image associated with a user.',
    primary key (USER_ID),
    unique key AK_USER_NAME (USER_NAME)
-);
-
-alter table USER comment 'A user of the aggregation system, equating to a single login';
+) comment 'A user of the aggregation system, equating to a single login';
 
 /*==============================================================*/
 /* Table: USER_ADMINISTRATOR_NOTE                               */
@@ -464,9 +399,7 @@ create table USER_ADMINISTRATOR_NOTE
    USER_ID              int(15) not null comment 'Reference to a user account annotated by this note.',
    ADMINISTRATOR_NOTE_ID int(15) not null comment 'Reference to a note associated with this user account.',
    primary key (ADMINISTRATOR_NOTE_ID, USER_ID)
-);
-
-alter table USER_ADMINISTRATOR_NOTE comment 'Association of an administrator note with a particular user ';
+) comment 'Association of an administrator note with a particular user ';
 
 /*==============================================================*/
 /* Table: USER_PRIVILEGE                                        */
@@ -477,9 +410,7 @@ create table USER_PRIVILEGE
    USER_PRIVILEGE_DESCRIPTION varchar(127) not null comment 'Human-readable description of a user privilege level.',
    primary key (USER_PRIVILEGE_ID),
    unique key AK_USER_PRIVILEGE_DESCRIPTION (USER_PRIVILEGE_DESCRIPTION)
-);
-
-alter table USER_PRIVILEGE comment 'Privilege status for a user of the aggregation system, e.g. ';
+) comment 'Privilege status for a user of the aggregation system, e.g. ';
 
 /*==============================================================*/
 /* Table: USER_STATUS                                           */
@@ -490,8 +421,7 @@ create table USER_STATUS
    USER_STATUS_DESCRIPTION varchar(127) not null comment 'Human-readable description of a user status level.',
    primary key (USER_STATUS_ID),
    unique key AK_USER_STATUS_DESCRIPTION (USER_STATUS_DESCRIPTION)
-);
-alter table USER_STATUS comment 'The approval status of a user account, e.g., active';
+) comment 'The approval status of a user account, e.g., active';
 
 
 create table CLAIM_BLOG
@@ -503,7 +433,7 @@ create table CLAIM_BLOG
    CLAIM_STATUS_ID      int(15) not null comment 'ID of status of this claim',
    CLAIM_DATE_TIME datetime not null comment 'The date and time at which this claim request was made.',
    primary key (CLAIM_ID)
-);
+) comment 'Information necessary to allow user to claim a blog using a token inserted into feed';
 
 create table CLAIM_BLOG_STATUS
 (
@@ -517,130 +447,126 @@ create table TOPIC_SOURCE
    TOPIC_SOURCE_ID              int(15) not null comment 'Numeric ID of a topic source',
    TOPIC_SOURCE_NAME            varchar(255) not null comment 'Textual description of a source.',
    primary key (TOPIC_SOURCE_ID)
-);
-alter table TOPIC_SOURCE comment 'The source of a topic, e.g., Post (the post itself) or ScienceSeeker (specified on ScienceSeeker site)';
+) comment 'The source of a topic, e.g., Post (the post itself) or ScienceSeeker (specified on ScienceSeeker site)';
 
-alter table BLOG add constraint FK_BLOG_STATUS foreign key (BLOG_STATUS_ID)
-      references BLOG_STATUS (BLOG_STATUS_ID) on delete restrict on update restrict;
+/*==============================================================*/
+/* Table: RECOMMENDATION                                        */
+/*==============================================================*/
+create table RECOMMENDATION
+(
+   USER_ID              int(15) not null comment 'Reference to the user who recommended this post.',
+   BLOG_POST_ID         int(15) not null comment 'Reference to a post recommended by this user.',
+   REC_DATE_TIME datetime not null comment 'The date and time at which this recommendation was made.',
+   REC_COMMENT text not null comment 'Comment from the user, associated with this recommendation.',
+   REC_IMAGE varchar(255) comment 'The system identifier for a graphical image associated with a recommendation.',
+   primary key (USER_ID, BLOG_POST_ID)
+) COMMENT 'Recommendations of particular posts.';
 
-alter table BLOG_ADMINISTRATOR_NOTE add constraint FK_BLOG_NOTES foreign key (BLOG_ID)
-      references BLOG (BLOG_ID) on delete restrict on update restrict;
 
-alter table BLOG_ADMINISTRATOR_NOTE add constraint FK_NOTE_BLOGS foreign key (ADMINISTRATOR_NOTE_ID)
-      references ADMINISTRATOR_NOTE (ADMINISTRATOR_NOTE_ID) on delete restrict on update restrict;
+/*==============================================================*/
+/* Table: ARTICLE                                               */
+/*==============================================================*/
 
-alter table BLOG_AUTHOR add constraint FK_BLOG_CONTRIBUTOR foreign key (BLOG_ID)
-      references BLOG (BLOG_ID) on delete restrict on update restrict;
+CREATE TABLE IF NOT EXISTS ARTICLE (
+  ARTICLE_ID int(15) NOT NULL auto_increment COMMENT 'Machine-generated unique identifier for an article.',
+  ARTICLE_TITLE varchar(900) collate utf8_unicode_ci default NULL COMMENT 'Title of an article.',
+  ARTICLE_JOURNAL_TITLE varchar(255) collate utf8_unicode_ci default NULL COMMENT 'Name of a journal where the article has been published.',
+  ARTICLE_JOURNAL_ISSUE varchar(100) collate utf8_unicode_ci default NULL COMMENT 'Issue of the journal where an article was published.',
+  ARTICLE_JOURNAL_VOLUME varchar(100) collate utf8_unicode_ci default NULL COMMENT 'Volume of the journal where an article was published.',
+  ARTICLE_ISSN varchar(30) collate utf8_unicode_ci default NULL COMMENT 'ISSN code associated with an article.',
+  ARTICLE_NUMBER varchar(2083) collate utf8_unicode_ci default NULL COMMENT 'Identifier associated with an article in the journal.',
+  ARTICLE_PUBLICATION_DATE varchar(255) default NULL COMMENT 'Year of publication of an article.',
+  ARTICLE_START_PAGE varchar(30) default NULL COMMENT 'Start page of an article in the journal.',
+  ARTICLE_END_PAGE varchar(30) default NULL COMMENT 'End page of an article in the journal.',
+  ARTICLE_FROM_ORIGINAL_SOURCE tinyint(1) NOT NULL default '0' COMMENT 'Indicator whether this article data is based on the original source.',
+  PRIMARY KEY  (ARTICLE_ID)
+) COMMENT 'Peer-reviewed articles.';
 
-alter table BLOG_AUTHOR add constraint FK_CLAIMED_AUTHORS foreign key (PERSONA_ID)
-      references PERSONA (PERSONA_ID) on delete restrict on update restrict;
+/*==============================================================*/
+/* Table: ARTICLE_AUTHOR                                        */
+/*==============================================================*/
 
-alter table BLOG_GROUPING add constraint FK_BLOG_GROUPS foreign key (BLOG_ID)
-      references BLOG (BLOG_ID) on delete restrict on update restrict;
+CREATE TABLE IF NOT EXISTS ARTICLE_AUTHOR (
+  ARTICLE_AUTHOR_ID int(15) NOT NULL auto_increment COMMENT 'Machine-generated unique identifier for this article author.',
+  ARTICLE_AUTHOR_FIRST_NAME varchar(125) collate utf8_unicode_ci default NULL COMMENT 'First name of the article author.',
+  ARTICLE_AUTHOR_LAST_NAME varchar(125) collate utf8_unicode_ci default NULL COMMENT 'Last name of the article''s author.',
+  ARTICLE_AUTHOR_FULL_NAME varchar(250) collate utf8_unicode_ci default NULL COMMENT 'Full name of the article author',
+  PRIMARY KEY  (ARTICLE_AUTHOR_ID)
+) COMMENT 'Authors of peer-reviewed articles.';
 
-alter table BLOG_GROUPING add constraint FK_GROUP_BLOGS foreign key (BLOG_GROUP_ID)
-      references BLOG_GROUP (BLOG_GROUP_ID) on delete restrict on update restrict;
 
-alter table BLOG_GROUP_ADMINISTRATOR_NOTE add constraint FK_BLOG_GROUP_NOTES foreign key (BLOG_GROUP_ID)
-      references BLOG_GROUP (BLOG_GROUP_ID) on delete restrict on update restrict;
+/*==============================================================*/
+/* Table: ARTICLE_IDENTIFIER                                    */
+/*==============================================================*/
 
-alter table BLOG_GROUP_ADMINISTRATOR_NOTE add constraint FK_NOTE_BLOG_GROUPS foreign key (ADMINISTRATOR_NOTE_ID)
-      references ADMINISTRATOR_NOTE (ADMINISTRATOR_NOTE_ID) on delete restrict on update restrict;
+CREATE TABLE IF NOT EXISTS ARTICLE_IDENTIFIER (
+  ARTICLE_IDENTIFIER_ID int(15) NOT NULL auto_increment COMMENT 'Machine-generated unique identifier for an article identifier.',
+  ARTICLE_IDENTIFIER_TYPE varchar(20) collate utf8_unicode_ci NOT NULL COMMENT 'Type of identifier associated with an article (DOI, PMID, arXiv...)',
+  ARTICLE_IDENTIFIER_TEXT varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'Identifier associated with an article.',
+  ARTICLE_ID int(15) NOT NULL COMMENT 'Reference to an article with this ID.',
+  PRIMARY KEY  (ARTICLE_IDENTIFIER_ID),
+  UNIQUE KEY FK_ARTICLE_IDENTIFIER (ARTICLE_IDENTIFIER_TEXT,ARTICLE_IDENTIFIER_TYPE,ARTICLE_ID)
+) COMMENT 'Unique article identifiers.';
 
-alter table BLOG_LANGUAGE add constraint FK_BLOG_LANGUAGES foreign key (BLOG_ID)
-      references BLOG (BLOG_ID) on delete restrict on update restrict;
+/*==============================================================*/
+/* Table: ARTICLE_AUTHOR_LINK                                   */
+/*==============================================================*/
 
-alter table BLOG_LANGUAGE add constraint FK_LANGUAGE_BLOGS foreign key (LANGUAGE_ID)
-      references LANGUAGE (LANGUAGE_ID) on delete restrict on update restrict;
+CREATE TABLE IF NOT EXISTS ARTICLE_AUTHOR_LINK (
+  ARTICLE_ID int(15) NOT NULL COMMENT 'Reference to an article created by an author.',
+  ARTICLE_AUTHOR_ID int(15) NOT NULL COMMENT 'Reference to an author of an article.',
+  UNIQUE KEY FK_AUTHOR_TO_ARTICLE (ARTICLE_ID,ARTICLE_AUTHOR_ID)
+) COMMENT 'Articles containing these authors.';
 
-alter table BLOG_POST add constraint FK_BLOG_POSTS foreign key (BLOG_ID)
-      references BLOG (BLOG_ID) on delete restrict on update restrict;
+/*==============================================================*/
+/* Table: SCAN_POST                                             */
+/*==============================================================*/
 
-alter table BLOG_POST add constraint FK_BLOG_POST_LANGUAGE foreign key (LANGUAGE_ID)
-      references LANGUAGE (LANGUAGE_ID) on delete restrict on update restrict;
+CREATE TABLE IF NOT EXISTS SCAN_POST (
+  BLOG_ID int(15) NOT NULL COMMENT 'Reference to a blog that must be scanned.',
+  MARKER_DATE_TIME timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP COMMENT 'Date of creation of a marker',
+  MARKER_TYPE_ID int(15) NOT NULL COMMENT 'Reference to the type of marker.',
+  UNIQUE KEY FK_MARKER (BLOG_ID,MARKER_TYPE_ID)
+) COMMENT='Blogs with markers for the crawler.';
 
-alter table BLOG_POST add constraint FK_BLOG_POST_STATUS foreign key (BLOG_POST_STATUS_ID)
-      references BLOG_POST_STATUS (BLOG_POST_STATUS_ID) on delete restrict on update restrict;
 
-alter table BLOG_POST add constraint FK_POST_AUTHOR foreign key (BLOG_AUTHOR_ID)
-      references BLOG_AUTHOR (BLOG_AUTHOR_ID) on delete restrict on update restrict;
+/*==============================================================*/
+/* Table: BLOG_SOCIAL_ACCOUNT                                   */
+/*==============================================================*/
 
-alter table BLOG_POST_ADMINISTRATOR_NOTE add constraint FK_BLOG_POST_NOTES foreign key (BLOG_POST_ID)
-      references BLOG_POST (BLOG_POST_ID) on delete restrict on update restrict;
+CREATE TABLE IF NOT EXISTS BLOG_SOCIAL_ACCOUNT (
+  SOCIAL_NETWORKING_ACCOUNT_ID int(10) unsigned NOT NULL auto_increment COMMENT 'Machine-generated unique identifier for a social networking account.',
+  SOCIAL_NETWORK_ID int(15) NOT NULL COMMENT 'Reference to the social network on which this account is hosted.',
+  SOCIAL_NETWORKING_ACCOUNT_NAME varchar(127) collate utf8_unicode_ci NOT NULL COMMENT 'The account identifier a user uses on a particular social network.',
+  BLOG_ID int(10) unsigned default NULL COMMENT 'The ID of a blog associated with this account.',
+  OAUTH_TOKEN varchar(255) collate utf8_unicode_ci default NULL COMMENT 'OAuth token for the social network API.',
+  OAUTH_SECRET_TOKEN varchar(255) collate utf8_unicode_ci default NULL COMMENT 'OAuth secret token for the social network API.',
+  PRIMARY KEY  (SOCIAL_NETWORKING_ACCOUNT_ID),
+  UNIQUE KEY AK_SOCIAL_NETWORK_USER_LOCATOR (SOCIAL_NETWORK_ID,SOCIAL_NETWORKING_ACCOUNT_NAME),
+  UNIQUE KEY FK_BLOG_ID (BLOG_ID, SOCIAL_NETWORK_ID)
+) COMMENT 'Social account to be associated with a blog';
 
-alter table BLOG_POST_ADMINISTRATOR_NOTE add constraint FK_NOTE_BLOG_POSTS foreign key (ADMINISTRATOR_NOTE_ID)
-      references ADMINISTRATOR_NOTE (ADMINISTRATOR_NOTE_ID) on delete restrict on update restrict;
+/*==============================================================*/
+/* Table: USER_SOCIAL_ACCOUNT                                   */
+/*==============================================================*/
 
-alter table PERSONA add constraint FK_USER_PERSONAE foreign key (USER_ID)
-      references USER (USER_ID) on delete restrict on update restrict;
+CREATE TABLE IF NOT EXISTS USER_SOCIAL_ACCOUNT (
+  SOCIAL_NETWORKING_ACCOUNT_ID int(10) unsigned NOT NULL auto_increment COMMENT 'Machine-generated unique identifier for a social networking account.',
+  SOCIAL_NETWORK_ID int(15) NOT NULL COMMENT 'Reference to the social network on which this account is hosted.',
+  SOCIAL_NETWORKING_ACCOUNT_NAME varchar(127) collate utf8_unicode_ci NOT NULL COMMENT 'The account identifier a user uses on a particular social network.',
+  USER_ID int(10) unsigned default NULL COMMENT 'The ID of a user associated with this account.',
+  OAUTH_TOKEN varchar(255) collate utf8_unicode_ci default NULL COMMENT 'OAuth token for the social network API.',
+  OAUTH_SECRET_TOKEN varchar(255) collate utf8_unicode_ci default NULL COMMENT 'OAuth secret token for the social network API.',
+  PRIMARY KEY  (SOCIAL_NETWORKING_ACCOUNT_ID),
+  UNIQUE KEY AK_SOCIAL_NETWORK_USER_LOCATOR (SOCIAL_NETWORK_ID,SOCIAL_NETWORKING_ACCOUNT_NAME),
+  UNIQUE KEY FK_USER_ID (USER_ID, SOCIAL_NETWORK_ID)
+) COMMENT 'Social account to be associated with a user';
 
-alter table PERSONA_ADMINISTRATOR_NOTE add constraint FK_NOTE_PERSONAE foreign key (ADMINISTRATOR_NOTE_ID)
-      references ADMINISTRATOR_NOTE (ADMINISTRATOR_NOTE_ID) on delete restrict on update restrict;
 
-alter table PERSONA_ADMINISTRATOR_NOTE add constraint FK_PERSONA_NOTES foreign key (PERSONA_ID)
-      references PERSONA (PERSONA_ID) on delete restrict on update restrict;
 
-alter table POST_TOPIC add constraint FK_POST_TOPICS foreign key (BLOG_POST_ID)
-      references BLOG_POST (BLOG_POST_ID) on delete restrict on update restrict;
-
-alter table POST_TOPIC add constraint FK_TOPIC_POSTS foreign key (TOPIC_ID)
-      references TOPIC (TOPIC_ID) on delete restrict on update restrict;
-
-alter table POST_CITATION add constraint FK_POST_CITATIONS foreign key (BLOG_POST_ID)
-      references BLOG_POST (BLOG_POST_ID) on delete restrict on update restrict;
-
-alter table POST_CITATION add constraint FK_CITATION_POSTS foreign key (CITATION_ID)
-      references CITATION (CITATION_ID) on delete restrict on update restrict;
-
-alter table PRIMARY_BLOG_TOPIC add constraint FK_BLOG_PRIMARY_TOPICS foreign key (BLOG_ID)
-      references BLOG (BLOG_ID) on delete restrict on update restrict;
-
-alter table PRIMARY_BLOG_TOPIC add constraint FK_TOPIC_PRIMARY_BLOGS foreign key (TOPIC_ID)
-      references TOPIC (TOPIC_ID) on delete restrict on update restrict;
-
-alter table SECONDARY_BLOG_TOPIC add constraint FK_BLOG_SECONDARY_TOPICS foreign key (BLOG_ID)
-      references BLOG (BLOG_ID) on delete restrict on update restrict;
-
-alter table SECONDARY_BLOG_TOPIC add constraint FK_TOPIC_SECONDARY_BLOGS foreign key (TOPIC_ID)
-      references TOPIC (TOPIC_ID) on delete restrict on update restrict;
-
-alter table SOCIAL_NETWORKING_ACCOUNT add constraint FK_ACCOUNT_SOCIAL_NETWORK foreign key (SOCIAL_NETWORK_ID)
-      references SOCIAL_NETWORK (SOCIAL_NETWORK_ID) on delete restrict on update restrict;
-
-alter table SOCIAL_NETWORKING_ACCOUNT add constraint FK_SOCIAL_USER foreign key (PERSONA_ID)
-      references PERSONA (PERSONA_ID) on delete restrict on update restrict;
-
-alter table TOPIC_ADMINISTRATOR_NOTE add constraint FK_NOTE_TOPICS foreign key (ADMINISTRATOR_NOTE_ID)
-      references ADMINISTRATOR_NOTE (ADMINISTRATOR_NOTE_ID) on delete restrict on update restrict;
-
-alter table TOPIC_ADMINISTRATOR_NOTE add constraint FK_TOPIC_NOTES foreign key (TOPIC_ID)
-      references TOPIC (TOPIC_ID) on delete restrict on update restrict;
-
-alter table TOPIC_SIMILARITY add constraint FK_TOPIC_SIMILARITY_1 foreign key (TOPIC_ID_1)
-      references TOPIC (TOPIC_ID) on delete restrict on update restrict;
-
-alter table TOPIC_SIMILARITY add constraint FK_TOPIC_SIMILARITY_2 foreign key (TOPIC_ID_2)
-      references TOPIC (TOPIC_ID) on delete restrict on update restrict;
-
-alter table TOPIC_SPECIFICITY add constraint FK_TOPIC_GENERALIZATION foreign key (SPECIFIC_TOPIC_ID)
-      references TOPIC (TOPIC_ID) on delete restrict on update restrict;
-
-alter table TOPIC_SPECIFICITY add constraint FK_TOPIC_SPECIALIZATION foreign key (GENERAL_TOPIC_ID)
-      references TOPIC (TOPIC_ID) on delete restrict on update restrict;
-
-alter table USER add constraint FK_USER_PRIVILEGE_LEVEL foreign key (USER_PRIVILEGE_ID)
-      references USER_PRIVILEGE (USER_PRIVILEGE_ID) on delete restrict on update restrict;
-
-alter table USER add constraint FK_USER_STATUS foreign key (USER_STATUS_ID)
-      references USER_STATUS (USER_STATUS_ID) on delete restrict on update restrict;
-
-alter table USER_ADMINISTRATOR_NOTE add constraint FK_NOTE_USERS foreign key (ADMINISTRATOR_NOTE_ID)
-      references ADMINISTRATOR_NOTE (ADMINISTRATOR_NOTE_ID) on delete restrict on update restrict;
-
-alter table USER_ADMINISTRATOR_NOTE add constraint FK_USER_NOTES foreign key (USER_ID)
-      references USER (USER_ID) on delete restrict on update restrict;
-
-alter table CLAIM_BLOG add constraint FK_CLAIM_STATUS_ID foreign key (CLAIM_STATUS_ID)
-      references CLAIM_BLOG_STATUS (CLAIM_BLOG_STATUS_ID) on delete restrict on update restrict;
+/*==============================================================*/
+/* Indexes                                                      */
+/*==============================================================*/
 
 create index topLevelTopics on TOPIC  (TOPIC_ID, TOPIC_NAME, TOPIC_TOP_LEVEL_INDICATOR);
+create INDEX FK_CLAIMED_AUTHORS on BLOG_AUTHOR (USER_ID);
