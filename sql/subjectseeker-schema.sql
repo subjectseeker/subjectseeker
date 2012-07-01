@@ -126,16 +126,16 @@ create table ADMINISTRATOR_NOTE
 /*==============================================================*/
 create table BLOG
 (
-   BLOG_ID              int(15) not null auto_increment comment 'Machine-generated unique identifier for this blog.',
-   BLOG_STATUS_ID       int(15) not null comment 'Reference to the moderation status associated with this blog.',
-   BLOG_NAME            varchar(255) not null comment 'Human-readable display name of this blog.',
-   BLOG_URI             varchar(2083) not null comment 'The URI intended for visiting this blog in normal usage.',
-   BLOG_SYNDICATION_URI varchar(2083) not null comment 'The URI via which a syndication feed for this blog can be accessed.',
-   BLOG_DESCRIPTION     text comment 'The free-text human-readable description of the nature and intent of the blog.',
-   ADDED_DATE_TIME      datetime not null comment 'The date and time when this blog was added to the aggregator.',
-   CRAWLED_DATE_TIME    datetime comment 'The date and time on which this blog was last checked by the aggregator.',
-   primary key (BLOG_ID)
-) comment 'A Web log or feed therefrom intended for aggregation by the ';
+   BLOG_ID              INTEGER NOT NULL AUTO_INCREMENT COMMENT 'Machine-generated unique identifier for this blog.',
+   BLOG_STATUS_ID       TINYINT UNSIGNED NOT NULL DEFAULT '0' COMMENT 'Reference to the moderation status associated with this blog.',
+   BLOG_NAME            VARCHAR(255) NOT NULL COMMENT 'Human-readable display name of this blog.',
+   BLOG_URI             TEXT NOT NULL COMMENT 'The URI intended for visiting this blog in normal usage.',
+   BLOG_SYNDICATION_URI TEXT NOT NULL COMMENT 'The URI via which a syndication feed for this blog can be accessed.',
+   BLOG_DESCRIPTION     TEXT COMMENT 'The free-text human-readable description of the nature and intent of the blog.',
+   ADDED_DATE_TIME      DATETIME NOT NULL COMMENT 'The date and time when this blog was added to the aggregator.',
+   CRAWLED_DATE_TIME    DATETIME COMMENT 'The date and time on which this blog was last checked by the aggregator.',
+   PRIMARY KEY (BLOG_ID)
+) DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci COMMENT 'A Web log or feed therefrom intended for aggregation by the system';
 
 /*==============================================================*/
 /* Table: BLOG_ADMINISTRATOR_NOTE                               */
@@ -329,19 +329,19 @@ create table SOCIAL_NETWORK
    SOCIAL_NETWORK_NAME  varchar(127) not null comment 'Human-readable name of a social network.',
    primary key (SOCIAL_NETWORK_ID),
    unique key AK_SOCIAL_NETWORK_NAME (SOCIAL_NETWORK_NAME)
-) comment 'A social network system with well-defined unique user IDs, t';
+) comment 'A social network system with well-defined unique user IDs';
 
 /*==============================================================*/
 /* Table: TOPIC                                                 */
 /*==============================================================*/
 create table TOPIC
 (
-   TOPIC_ID             int(15) not null auto_increment comment 'Machine-generated unique identifier for this topic.',
-   TOPIC_NAME           varchar(255) not null comment 'The human-readable but language-independent string that carries the entire meaning of this topic.',
-   TOPIC_TOP_LEVEL_INDICATOR bool not null comment 'Indicator whether this topic should be presented as a root for interactive topic navigation, independent of whether or not its more general topics are known.',
-   primary key (TOPIC_ID),
-   unique key AK_TOPIC_NAME (TOPIC_NAME)
-) comment 'A string or tag representing a subject of interest to aggreg';
+   TOPIC_ID             INTEGER UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Machine-generated unique identifier for this topic.',
+   TOPIC_NAME           VARCHAR(255) NOT NULL COMMENT 'The human-readable but language-independent string that carries the entire meaning of this topic.',
+   TOPIC_TOP_LEVEL_INDICATOR BOOL NOT NULL DEFAULT '0' comment 'Indicator whether this topic should be presented as a root for interactive topic navigation, independent of whether or not its more general topics are known.',
+   PRIMARY KEY (TOPIC_ID),
+   UNIQUE KEY AK_TOPIC_NAME (TOPIC_NAME)
+) DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci COMMENT 'A string or tag representing a subject of interest to aggregate';
 
 /*==============================================================*/
 /* Table: TOPIC_ADMINISTRATOR_NOTE                              */
