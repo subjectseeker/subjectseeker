@@ -1378,13 +1378,14 @@ function getBlogIds ($db) {
 // Return: array of blog IDs, for blogs with primary/secondary topics corresponding to the specified IDs
 function topicIdsToBlogIds ($topicIds, $db) {
 
-  $firstTopic = array_shift ($topicIds);
+  $topicIdString = join(',', $topicIds);
 
-  $sql = "SELECT b.BLOG_ID FROM PRIMARY_BLOG_TOPIC t1, BLOG b WHERE (t1.TOPIC_ID = $firstTopic";
-  foreach ($topicIds as $topicId) {
-    $sql .= " OR t1.TOPIC_ID = $topicId";
-  }
-  $sql .= ") AND b.BLOG_ID=t1.BLOG_ID and b.BLOG_STATUS_ID=0";
+  $sql  = "SELECT b.BLOG_ID ";
+  $sql .= "FROM PRIMARY_BLOG_TOPIC AS t1 ";
+  $sql .= "INNER JOIN BLOG AS b ";
+  $sql .= "ON t1.BLOG_ID = b.BLOG_ID ";
+  $sql .= "WHERE t1.TOPIC_ID IN (" . $topicIdString . ") ";
+  $sql .= "AND b.BLOG_STATUS_ID = 0 ";
 
   $results =  mysql_query($sql, $db);
 
@@ -1399,7 +1400,6 @@ function topicIdsToBlogIds ($topicIds, $db) {
   }
 
   return array_unique ($blogIds);
-
 }
 
 // Input: Citation Text, DB handle
@@ -1419,7 +1419,7 @@ function citationTextToCitationId ($citation, $db) {
 function postIdToCitation ($postId, $db) {
   $sql = "SELECT c.* FROM CITATION c, POST_CITATION pc WHERE pc.BLOG_POST_ID = $postId AND c.CITATION_ID = pc.CITATION_ID";
   $results = mysql_query($sql, $db);
-	
+
   $citations = array();
 	while($row = mysql_fetch_array($results)) {
 		$citation["id"] = $row["CITATION_ID"];
