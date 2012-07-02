@@ -74,8 +74,8 @@ function doDisplayResources() {
 		$pagesize = 500;
 	}
 	
-	$queryList = httpParamsToSearchQuery($parsedQuery);
-	$settings = httpParamsToExtraQuery($parsedQuery);
+	$queryList = httpParamsToSearchQuery();
+	$settings = httpParamsToExtraQuery();
 	$errormsgs = array();
 	$settings["type"] = "blog";
 	$settings["limit"] = $pagesize;

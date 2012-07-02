@@ -170,7 +170,7 @@ function generateSearchQuery ($queryList, $settings, $userPriv, &$errormsgs, $db
 		$group = "GROUP BY blog.BLOG_ID";
     $fromList = generateBlogFrom($queryList, $userPriv);
     $whereList = generateBlogWhere($queryList, $userPriv, $errormsgs);
-		$order = generateBlogSort ($settings, $whereList, $fromList, $userPriv, $errormsgs);
+		$order = generateBlogSort ($settings, $whereList, $fromList, $errormsgs);
 		
 		if ($settings["show-all"] == "true" && $userPriv > 0) {
 			unset($whereList["blogStatusId"]);
@@ -675,6 +675,7 @@ function paramArrayToString($params) {
 /*
  * HTTP request functions
  */
+
 // Return: map of parameters (name -> array)
 // deprecated (TODO: delete this function)
 function parseHttpParams() {
@@ -697,8 +698,9 @@ function parseHttpParams() {
 
 // Input: Optional http query.
 // Output: list of SSFilter objects representing search query
-function httpParamsToSearchQuery($parsedQuery = NULL) {
-	if (! $parsedQuery) $parsedQuery = $_REQUEST;
+function httpParamsToSearchQuery($query = NULL) {
+	parse_str($query, $parsedQuery);
+	$parsedQuery = array_merge($parsedQuery, $_REQUEST);
 	
   $i = 0;
   // TODO JPH use this list
@@ -726,8 +728,9 @@ function httpParamsToSearchQuery($parsedQuery = NULL) {
 
 // Input: Optional http query.
 // Output: array of additional data for the search
-function httpParamsToExtraQuery($parsedQuery = NULL) {
-	if (! $parsedQuery) $parsedQuery = $_REQUEST;
+function httpParamsToExtraQuery($query = NULL) {
+	parse_str($query, $parsedQuery);
+	$parsedQuery = array_merge($parsedQuery, $_REQUEST);
 	
 	$results["limit"] = $parsedQuery["n"];
 	$results["offset"] = $parsedQuery["offset"];
@@ -807,6 +810,16 @@ function insanitize( $htmlString ) {
                       $htmlString );
 }
 
+/*
+ * General useful functions
+ */
+ 
+function sendMail($userEmail, $subject, $message) {
+	$headers = "Mime-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nFrom: ScienceSeeker <contact@scienceseeker.org>\r\nReply-To: ScienceSeeker <contact@scienceseeker.org>\r\nX-Mailer: PHP/" . phpversion();
+	if (! mail($userEmail, $subject, $message, $headers)) {
+		// TODO: Log this.
+	}
+}
 
 /*
  * DB query functions
@@ -1073,16 +1086,10 @@ function getEditorsPicks($type, $db) {
 // Input: blog ID, DB handle
 // Return: array of email addresses of people associated with this blog
 function getBlogContacts($blogId, $db) {
-  $contacts = array();
-  $sql = "select u.EMAIL_ADDRESS from BLOG_AUTHOR ba, USER u where ba.BLOG_ID=$blogId and u.USER_ID=ba.USER_ID";
+  $sql = "select u.EMAIL_ADDRESS, u.USER_NAME from BLOG_AUTHOR ba, USER u where ba.BLOG_ID=$blogId and u.USER_ID=ba.USER_ID";
   $results = mysql_query($sql, $db);
-  if ($results == null || mysql_num_rows($results) == 0) {
-    return $contacts;
-  }
-  while ($row = mysql_fetch_array($results)) {
-    array_push ($contacts, $row["EMAIL_ADDRESS"]);
-  }
-  return $contacts;
+	
+  return $results;
 }
 
 // Input: blogId, DB handle
@@ -1400,6 +1407,7 @@ function topicIdsToBlogIds ($topicIds, $db) {
   }
 
   return array_unique ($blogIds);
+
 }
 
 // Input: Citation Text, DB handle
@@ -1419,7 +1427,7 @@ function citationTextToCitationId ($citation, $db) {
 function postIdToCitation ($postId, $db) {
   $sql = "SELECT c.* FROM CITATION c, POST_CITATION pc WHERE pc.BLOG_POST_ID = $postId AND c.CITATION_ID = pc.CITATION_ID";
   $results = mysql_query($sql, $db);
-
+	
   $citations = array();
 	while($row = mysql_fetch_array($results)) {
 		$citation["id"] = $row["CITATION_ID"];
@@ -2034,7 +2042,7 @@ function pageButtons ($baseUrl, $pagesize, $nextText = "Next Page »", $prevText
 	print "</div>";
 }
 
-// Input: Array of blog data, user privilege ID, DB handle
+// Input: Array of blog data, user privilege, Slider "open" or closed, DB handle
 // Output: HTML Edit blog form.
 function editBlogForm ($blogData, $userPriv, $sliderSetting, $db) {
 	$blogId = $blogData["BLOG_ID"];
@@ -2109,7 +2117,15 @@ function editBlogForm ($blogData, $userPriv, $sliderSetting, $db) {
 					}
 		print ">" . ucwords($row["BLOG_STATUS_DESCRIPTION"]) . "</option>\n";
 	}
-	print "</select></p>\n";
+	print "</select>";
+	if ($userPriv > 0) {
+		print " <input type=\"checkbox\" name=\"mailAuthor\" value=\"1\"";
+		if ($sliderSetting == "open") {
+			print " checked=\"checked\"";
+		}
+		print " /> <span class=\"subtle-text\">Notify Author via E-mail</span>\n";
+	}
+	print "</p>\n";
 	if ($userPriv > 0) {
 		$authorList = getAuthorList ($blogId, $db);
 		if (mysql_num_rows($authorList) != 0) {
@@ -2145,10 +2161,11 @@ function confirmEditBlog ($step, $userId, $userPriv, $db) {
 		$blogDescription = $_REQUEST["blogDescription"];
 		$topic1 = $_REQUEST["topic1"];
 		$topic2 = $_REQUEST["topic2"];
-		$authorId = $_REQUEST["authorId"];
-		$authorUserId = $_REQUEST["authorUserId"];
+		$authorsId = $_REQUEST["authorId"];
+		$authorsUserId = $_REQUEST["authorUserId"];
 		$blogStatusId = $_REQUEST["blogStatus"];
 		$twitterHandle = $_REQUEST["twitterHandle"];
+		$mailAuthor = $_REQUEST["mailAuthor"];
 		$oldBlogName = getBlogName($blogId, $db);
 		$errors = checkBlogData($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $blogStatusId, $topic1, $topic2, $twitterHandle, $userId, $db);
 		
@@ -2176,7 +2193,7 @@ function confirmEditBlog ($step, $userId, $userPriv, $db) {
 		}
 		elseif ($step == "confirmed" || ($errors == NULL && $step == "edit")) {
 			editBlog ($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $db);
-			editBlogStatus ($blogId, $blogStatusId, $db);
+			editBlogStatus ($blogId, $blogStatusId, $mailAuthor, $db);
 			if ($twitterHandle) {
 				addBlogSocialAccount($twitterHandle, 1, $blogId, $db);
 			}
@@ -2184,16 +2201,16 @@ function confirmEditBlog ($step, $userId, $userPriv, $db) {
 				removeBlogSocialAccount(1, $blogId, $db);
 			}
 			
-			if ($authorId) {
-				foreach ($authorId as $key => $authorId) {
-					$authorUserId = $authorUserId[$key];
+			if ($authorsId) {
+				foreach ($authorsId as $key => $authorId) {
+					$authorUserId = $authorsUserId[$key];
 					editAuthor ($authorId, $authorUserId, $db);
 				}
 			}
 			print "<p class=\"ss-successful\">$blogName (ID $blogId) has been updated.</p>"; 
 		}
 		elseif ($errors != NULL && $step == "edit") {
-			editBlogStatus ($blogId, $blogStatusId, $db);
+			editBlogStatus ($blogId, $blogStatusId, $mailAuthor, $db);
 			print "<p>$oldBlogName (ID $blogId):</p>$errors";
 			if ($userPriv > 0) {
 				print "<form class=\"margin-bottom\" method=\"POST\">
@@ -2203,10 +2220,15 @@ function confirmEditBlog ($step, $userId, $userPriv, $db) {
 				<input type=\"hidden\" name=\"blogUri\" value=\"".htmlspecialchars($blogUri, ENT_QUOTES)."\" />
 				<input type=\"hidden\" name=\"blogSyndicationUri\" value=\"".htmlspecialchars($blogSyndicationUri, ENT_QUOTES)."\" />
 				<input type=\"hidden\" name=\"blogDescription\" value=\"".htmlspecialchars($blogDescription, ENT_QUOTES)."\" />
-				<input type=\"hidden\" name=\"twitterHandle\" value=\"".htmlspecialchars($twitterHandle, ENT_QUOTES)."\" />
-				<input type=\"hidden\" name=\"authorId\" value=\"$authorId\" />
-				<input type=\"hidden\" name=\"authorUserId\" value=\"$authorUserId\" />
-				<input type=\"hidden\" name=\"topic1\" value=\"$topic1\" />
+				<input type=\"hidden\" name=\"twitterHandle\" value=\"".htmlspecialchars($twitterHandle, ENT_QUOTES)."\" />";
+				if ($authorId) {
+					foreach ($authorId as $key => $authorId) {
+						$authorUserId = $authorsUserId[$key];
+						print "<input type=\"hidden\" name=\"authorId[]\" value=\"$authorId\" />
+						<input type=\"hidden\" name=\"authorUserId[]\" value=\"$authorUserId\" />";
+					}
+				}
+				print "<input type=\"hidden\" name=\"topic1\" value=\"$topic1\" />
 				<input type=\"hidden\" name=\"topic2\" value=\"$topic2\" />
 				<input type=\"hidden\" name=\"blogStatus\" value=\"$blogStatusId\" />
 				<input type=\"hidden\" name=\"crawl\" value=\"$crawl\" />
@@ -2231,7 +2253,7 @@ function confirmEditBlog ($step, $userId, $userPriv, $db) {
 				}
 				else {
 					editBlog ($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $db);
-					editBlogStatus ($blogId, $blogStatusId, $db);
+					editBlogStatus ($blogId, $blogStatusId, $mailAuthor, $db);
 					if ($twitterHandle) {
 						addBlogSocialAccount($twitterHandle, 1, $blogId, $db);
 					}
@@ -2363,7 +2385,49 @@ function editBlog ($blogId, $blogName, $blogUrl, $blogSyndicationUrl, $blogDescr
 
 // Input: blog ID, blog status ID, DB handle
 // Action: Edit blog status
-function editBlogStatus ($blogId, $blogStatusId, $db) {
+function editBlogStatus ($blogId, $blogStatusId, $mailAuthor, $db) {
+	if ($mailAuthor == 1) {
+		global $sitename;
+		global $contactEmail;
+		$authorsList = getBlogContacts($blogId, $db);
+		while ($row = mysql_fetch_array($authorsList)) {
+			$userEmail = $row["EMAIL_ADDRESS"];
+			$userName = $row["USER_NAME"];
+			$blogName = getBlogName($blogId, $db);
+			if ($blogStatusId == 0) {
+				global $userBlogs;
+				$subject = "Site Submission Status: Approved";
+				$message = "Hello, ".$userName."!
+	
+".$blogName." has been approved by our editors and is now active at ".$sitename."
+	
+To manage your sites, go to: ".$userBlogs."
+	
+If you have any questions, feel free to contact us at: ".$contactEmail."
+						
+The ".$sitename." Team.";
+			}
+			if ($blogStatusId == 2) {
+				$subject = "Site Submission Status: Rejected";
+				$message = "Hello, ".$userName.".
+	
+Unfortunately, ".$blogName." does not meet our requirements to be approved in ".$sitename.", the reasons for this might include:
+	
+	1. The site must have enough science content, we are flexible for what qualifies as a science site, but science must be one of the main topics.
+	
+	2. The site must produce enough original content that does not aggregate or plagiarize the content of other sites.
+	
+	3. Claims without scientific evidence that fall within the realm of pseudoscience and misinformation are not allowed.
+	
+If you have any questions, feel free to contact us at: ".$contactEmail."
+						
+The ".$sitename." Team.";
+			}
+			sendMail($userEmail, $subject, $message);
+		}
+	}
+	
+	
 	// update easy data
 	$sql = "UPDATE BLOG SET BLOG_STATUS_ID='$blogStatusId' WHERE BLOG_ID=$blogId";
 	mysql_query($sql, $db);

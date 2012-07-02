@@ -11,8 +11,8 @@ include_once "ss-util.php";
 global $dbName;
 
 $db = ssDbConnect();
-$queryList = httpParamsToSearchQuery($parsedQuery);
-$settings = httpParamsToExtraQuery($parsedQuery);
+$queryList = httpParamsToSearchQuery();
+$settings = httpParamsToExtraQuery();
 // TODO: parse an XML input file as well
 // $params = parseSearchParams(file_get_contents('php://input'));
 

@@ -244,11 +244,6 @@ function doAddBlog ($db) {
   $twitterHandle = $_REQUEST["twitterHandle"];
   $userIsAuthor = $_REQUEST["userIsAuthor"];
   $userId;
-
-  global $current_user;
-  get_currentuserinfo();
-  $displayName = $current_user->user_login;
-  $email = $current_user->user_email;
 	
 	// Only get user info if logged in
 	if (is_user_logged_in()){
@@ -281,8 +276,23 @@ function doAddBlog ($db) {
 				global $submitSite;
 				echo "<p>This site will not be publicly displayed in the system until it has been approved by an editor.</p>";
 			}
-			if (! $userIsAuthor) {
-				echo "<a class=\"ss-button\" href=\"/\">Go to Home Page</a> <a class=\"ss-button\" href=\"$submitSite\">Submit another site</a>";
+			if ($userIsAuthor && $email) {
+				global $sitename;
+				global $contactEmail;
+				$subject = "Site Submission Status: Pending";
+				$message = "Hello, ".$displayName."!
+
+Thanks for submitting ".$blogName." to ".$sitename.".
+					
+Before this site appears in the system, it must be approved by one of our editors. We will notify you when this happens if you have claimed your site.
+					
+If you have any questions, feel free to contact us at ".$contactEmail."
+					
+The ".$sitename." Team.";
+				sendMail($email, $subject, $message);
+			}
+			else {
+				echo "<p><a class=\"ss-button\" href=\"/\">Go to Home Page</a> <a class=\"ss-button\" href=\"$submitSite\">Submit another site</a></p>";
 			}
 		} else {
 			// Blog is already in the system.

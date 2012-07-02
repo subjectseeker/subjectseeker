@@ -77,8 +77,8 @@ function doUserPanel() {
 		print "<ul class=\"user-panel\">
 		<li class=\"panel-button\"><a href=\"$userProfile\">User Profile</a></li>
 		<li class=\"panel-button\">".wp_loginout( $before = '', $after = '', $echo = true)." </li>
-		<li class=\"panel-button\"><a href=\"$userBlogs\">Your blogs</a></li>
-		<li class=\"panel-button\"><a href=\"$userPosts\">Your posts</a></li>
+		<li class=\"panel-button\"><a href=\"$userBlogs\">Your Blogs</a></li>
+		<li class=\"panel-button\"><a href=\"$userPosts\">Your Posts</a></li>
 		<li class=\"panel-button\"><a href=\"$userPosts/?step=scan&scanNow=1&addPosts=1&n=10\">Scan your recent posts for citations</a></li>";
 		if ($userPriv > 0){
 			global $approveUrl;

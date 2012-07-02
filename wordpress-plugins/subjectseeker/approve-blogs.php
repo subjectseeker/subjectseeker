@@ -74,7 +74,7 @@ function doApproveBlogs() {
 	
     if ($userPriv > 0) { // moderator or admin
 			if ($step == null) {		
-				print "<h2>List of Pending Blogs</h2>";
+				print "<h2>List of Pending Sites</h2>";
 			} 
 			else {
 				print "<h2>Administrative action</h2>";
@@ -82,9 +82,8 @@ function doApproveBlogs() {
 			}
 			print "<form method=\"POST\">\n
 			<input type=\"hidden\" name=\"step\" value=\"edit\" />";
-			parse_str("type=blog&filter0=status&value0=1&sort=added-date&order=desc", $parsedQuery);
-			$queryList = httpParamsToSearchQuery($parsedQuery);
-			$settings = httpParamsToExtraQuery($parsedQuery);
+			$queryList = httpParamsToSearchQuery("type=blog&filter0=status&value0=1&sort=added-date&order=desc");
+			$settings = httpParamsToExtraQuery("type=blog&filter0=status&value0=1&sort=added-date&order=desc");
 			$settings["type"] = "blog";
 			$blogData = generateSearchQuery ($queryList, $settings, $userPriv, $errormsgs, $db);
 			
@@ -95,10 +94,10 @@ function doApproveBlogs() {
 				}
 			}
 			else {
-				print "<div id=\"padding-content\">There are no sources pending approval.</div>";
+				print "<div id=\"padding-content\">There are no sites pending approval.</div>";
 			}
     } else { # not moderator or admin
-      print "You are not authorized to view the list of blogs for approval.<br />";
+      print "<p class=\"ss-warning\">You are not authorized to view the list of blogs for approval.</p>";
     }
   } else {
     print "Please log in.";

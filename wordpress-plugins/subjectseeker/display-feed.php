@@ -67,9 +67,8 @@ function get_ssDisplayFeed($query = NULL, $minimal = FALSE) {
 function displayFeed($query, $minimal) {
 	
 	$db = ssDbConnect();
-	if ($query) parse_str($query, $parsedQuery);
-	$queryList = httpParamsToSearchQuery($parsedQuery);
-	$settings = httpParamsToExtraQuery($parsedQuery);
+	$queryList = httpParamsToSearchQuery($query);
+	$settings = httpParamsToExtraQuery($query);
 	$errormsgs = array();
 	$settings["type"] = "post";
 	$postsData = generateSearchQuery ($queryList, $settings, 0, $errormsgs, $db);
@@ -114,8 +113,7 @@ function displayFeed($query, $minimal) {
 				
 				// Check if this post should be grouped with other posts of the same day.
 				if ($previousDay != $formatDay && !$minimal) {
-					print "<div class=\"ss-div-2\">
-					<h3>$formatDay</h3>";
+					print "<h3>$formatDay</h3>";
 				}
 				
 				// If post doesn't have a title, use the url instead.
@@ -242,9 +240,6 @@ function displayFeed($query, $minimal) {
 				}
 				print "</div>
 				</div>";
-				if ($previousDay != $formatDay && !$minimal) {
-					print "</div>";
-				}
 				
 				$previousDay = $formatDay;
 			}

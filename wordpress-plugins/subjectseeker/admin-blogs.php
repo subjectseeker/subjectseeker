@@ -136,6 +136,7 @@ function adminBlogs() {
 			}
 			$queryList = httpParamsToSearchQuery();
 			$settings = httpParamsToExtraQuery();
+			$errormsgs = array();
 			$settings["show-all"] = "true";
 			$settings["type"] = "blog";
 			$blogData = generateSearchQuery ($queryList, $settings, 1, $errormsgs, $db);

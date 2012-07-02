@@ -23,6 +23,7 @@ global $twitterListToken;
 global $twitterListTokenSecret;
 global $wpLoad;
 global $twitterOAuth;
+global $syncPage;
 
 include_once $wpLoad;
 
@@ -91,7 +92,7 @@ if (is_user_logged_in()){
 		}
 		else {
 			$connection = new TwitterOAuth($twitterConsumerKey, $twitterConsumerSecret);
-			$request_token = $connection->getRequestToken("http://dev.scienceseeker.org/sync/twitter/?url=$originalUrl");
+			$request_token = $connection->getRequestToken("$syncPage/?url=$originalUrl");
 			$_SESSION['oauth_token'] = $request_token['oauth_token'];
 			$_SESSION['oauth_token_secret'] = $request_token['oauth_token_secret'];
 			
