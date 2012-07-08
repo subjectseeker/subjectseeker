@@ -224,7 +224,7 @@ function AdminPosts() {
 					<div class=\"post-header\">
 					$postId | <a href=\"$postUrl\" target=\"_blank\">$postTitle</a> | $blogName | $postStatus
 					</div>
-					<div class=\"ss-div-button\">
+					<div class=\"ss-div-button alignright\">
           <div class=\"arrow-down\" title=\"Show Info\"></div>
         	</div>
 					<div class=\"ss-slide-wrapper\">

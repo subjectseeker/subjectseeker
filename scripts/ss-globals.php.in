@@ -3,6 +3,7 @@
 $sitename = "SubjectSeeker";
 $siteadminemail = "admin@example.com";
 $siteApprovalEmail = "admin@example.com";
+$contactEmail = "admin@example.com";
 $dbName = "databaseName";
 $dbUser = "databaseUser";
 $dbPass = "password";
@@ -10,13 +11,17 @@ $host = "localhost";
 
 // URLs
 $homeUrl = "http://example.com";
+$submitSite = $homeUrl . "/submit";
 $imagesUrl = $homeUrl . "/images";
-$searchUrl = $homeUrl . "/subjectseeker/ss-search.php";
-$serializerUrl = $homeUrl . "/feed/posts";
+$searchUrl = $homeUrl . "/search/default/";
+$serializerUrl = $homeUrl . "/feed/posts/";
+$loginUrl = $homeUrl . "/wp-login.php";
 $registerUrl = $homeUrl . "/wp-login.php?action=register";
 $userProfile = $homeUrl . "/wp-admin/profile.php";
 $mainFeed = $homeUrl . "/displayfeed";
 $blogList = $homeUrl . "/blogs";
+$apiUrl = $homeUrl . "/api";
+$citationUrl = $homeUrl . "/generate-citations";
 $userBlogs = $homeUrl . "/your-blogs";
 $userPosts = $homeUrl . "/your-posts";
 $adminPanel = $homeUrl . "/administration-panel";
@@ -24,6 +29,8 @@ $adminBlogs = $homeUrl . "/administer-blogs";
 $adminPosts = $homeUrl . "/administer-posts";
 $adminUsers = $homeUrl . "/administer-users";
 $approveUrl = $homeUrl . "/approve-blog";
+$widgetPage = $homeUrl . "/widget";
+$syncPage = $homeUrl . "/sync/twitter";
 $jslibrary = $homeUrl . "/subjectseeker/js/ss-library.js";
 
 // Files and directories
@@ -38,6 +45,18 @@ $metadata2coins = "$basedir/subjectseeker/xsl/metadata2coins.xsl";
 // CitationSeeker URLs
 $rfrId = "example.com";
 $crossRefUrl = "http://api.labs.crossref.org/search?q=";
+
+// Social Network Integration
+$twitterConsumerKey = "****"; // Twitter Consumer Key
+$twitterConsumerSecret = "****"; // Twitter Consumer Secret Key
+$twitterListId = "****"; // Twitter ID of Member List
+$twitterListToken = "****"; // Twitter Token for account that owns the member list
+$twitterListTokenSecret = "****"; // Twitter Secret Token for account that owns the member list
+$twitterNotesToken = "****"; // Twitter Token of Twitter account that tweets all notes
+$twitterNotesTokenSecret = "****"; // Twitter Secret Token of Twitter account that tweets all notes
+$bitlyUser = "****"; // bitly user
+$bitlyKey = "****"; // bitly API key
+$bitlyApiUrl = "http://api.bit.ly/v3/shorten?login="; // bitly API url
 
 // Parameters
 $numResults = 30;

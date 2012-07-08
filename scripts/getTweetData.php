@@ -22,9 +22,8 @@ $postId = $_REQUEST["id"];
 	
 // Use Search API to find Blog ID and Post URL
 $errormsgs = array();
-parse_str("type=post&filter0=identifier&value0=$postId", $parsedQuery);
-$queryList = httpParamsToSearchQuery($parsedQuery);
-$settings = httpParamsToExtraQuery($parsedQuery);
+$queryList = httpParamsToSearchQuery("type=post&filter0=identifier&value0=$postId");
+$settings = httpParamsToExtraQuery("type=post&filter0=identifier&value0=$postId");
 $postData = generateSearchQuery ($queryList, $settings, 0, $errormsgs, $db);
 $row = mysql_fetch_array($postData);
 $postUri = $row["BLOG_POST_URI"];

@@ -37,6 +37,7 @@ function dbPublicSearch($queryList, $settings, $db) {
 	
 	$errormsgs = array();
 	$searchResults = generateSearchQuery($queryList, $settings, 0, $errormsgs, $db);
+	
 	if ($searchResults == NULL) {
 		$searchResults = array();
 	}
@@ -59,18 +60,22 @@ function dbPublicSearch($queryList, $settings, $db) {
   if (strcasecmp($type, "topic") == 0) {
 
     $xml .=  "  <topics>\n";
-    while ($row = mysql_fetch_array($searchResults)) {
-      $xml .= formatTopic($row);
-    }
-    $xml .=  " </topics>\n";
+		if (! empty($searchResults)) {
+			while ($row = mysql_fetch_array($searchResults)) {
+				$xml .= formatTopic($row);
+			}
+		}
+    $xml .=  "  </topics>\n";
   }
 
   if (strcasecmp($type, "blog") == 0) {
 
     $xml .=  "  <blogs>\n";
-    while ($row = mysql_fetch_array($searchResults)) {
-      $xml .= formatBlog($row);
-    }
+		if (! empty($searchResults)) {
+			while ($row = mysql_fetch_array($searchResults)) {
+				$xml .= formatBlog($row);
+			}
+		}
     $xml .=  " </blogs>\n";
 
     // Here we might eventually want to return more things. Remember, right

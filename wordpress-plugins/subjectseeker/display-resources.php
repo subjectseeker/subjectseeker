@@ -113,7 +113,7 @@ function doDisplayResources() {
 			
 			print "<div class=\"ss-entry-wrapper\">
 			<a class=\"ss-postTitle\" href=\"".$item["uri"]."\">".$item["name"]."</a>
-			<div class=\"ss-div-button\"><div class=\"arrow-down\" title=\"Show Extra Info\"></div></div>
+			<div class=\"ss-div-button alignright\"><div class=\"arrow-down\" title=\"Show Extra Info\"></div></div>
 			<div class=\"ss-slide-wrapper\" style=\"display: none; \">
 				<div id=\"padding-content\">
 				<div class=\"margin-bottom\">".$item["description"]."</div>

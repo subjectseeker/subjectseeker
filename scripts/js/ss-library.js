@@ -277,6 +277,7 @@ $(document).ready(function() {
 	$('.categories-wrapper').click(function() {
 		var wrapper = $(this);
 		var posts = $(wrapper).attr('data-posts');
+		var widget = $(wrapper).attr('data-widget');
 		var blogs = $(wrapper).attr('data-blogs');
 		var serializer = $(wrapper).attr('data-rss');
 		
@@ -302,6 +303,7 @@ $(document).ready(function() {
 		});
 		wrapper.find('#filter-rss').attr('href', serializer + '?type=post' + encodeURI(postsString));
 		wrapper.find('#filter-posts').attr('href', posts + '?type=post' + encodeURI(postsString));
+		wrapper.find('#filter-widget').attr('href', widget + '?type=post' + encodeURI(postsString));
 		wrapper.find('#filter-blogs').attr('href', blogs + '?type=blog' + encodeURI(blogsString));
 	});
 	

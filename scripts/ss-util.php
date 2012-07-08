@@ -286,7 +286,7 @@ function generateTopicWhere ($queryList, &$errormsgs) {
 			elseif ($searchValue == "true" || $searchValue == NULL) $toplevel = "1";
 			else array_push ($errormsgs, "Unrecognized value: $searchValue");
 			
-			array_push($whereList, array("topic.TOPIC_TOP_LEVEL_INDICATOR ="=>"$toplevel"));
+			array_push($whereList, "topic.TOPIC_TOP_LEVEL_INDICATOR = $toplevel");
 			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
     } else {
@@ -570,7 +570,7 @@ function generatePostWhere ($queryList, $userPriv, &$groupCheck, &$minimumRec, &
 			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
 		} else if ($query->name === "recommended-by") {
-			array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID","user.DISPLAY_NAME = '$searchValue'","rec.USER_ID = user.USER_ID");
+			array_push ($whereList, "post.BLOG_POST_ID = rec.BLOG_POST_ID","user.USER_NAME = '$searchValue'","rec.USER_ID = user.USER_ID");
 			if ($searchType) { array_push ($errormsgs, "Unrecognized modifier: $searchType");}
 			
 		} else if ($query->name == "title") {
@@ -2059,7 +2059,7 @@ function editBlogForm ($blogData, $userPriv, $sliderSetting, $db) {
 	
 	print "<div class=\"ss-entry-wrapper\">
 	<div class=\"post-header\">$blogId | <a class=\"red-title\" href=\"$blogUri\" target=\"_blank\">$blogName</a> | $blogStatus | $blogAddedDate</div>
-	<div class=\"ss-div-button\">";
+	<div class=\"ss-div-button alignright\">";
 	if ($sliderSetting == "open") {
 		print "<div class=\"arrow-up\" title=\"Show Info\"></div>
 		</div>

@@ -16,6 +16,7 @@ function widget_topLevelTopicsList($args) {
 	global $mainFeed;
 	global $serializerUrl;
 	global $blogList;
+	global $widgetPage;
 	extract($args);
 	$params = httpParamsToSearchQuery();
 	$db = ssDbConnect();
@@ -39,7 +40,7 @@ function widget_topLevelTopicsList($args) {
 		}
 	}
 	
-	print "<div class=\"categories-wrapper\" data-posts=\"$mainFeed\" data-blogs=\"$blogList\" data-rss=\"$serializerUrl\">
+	print "<div class=\"categories-wrapper\" data-posts=\"$mainFeed\" data-blogs=\"$blogList\" data-rss=\"$serializerUrl\" data-widget=\"$widgetPage\">
 	<div id=\"filter-buttons\" class=\"ss-div-2 center-text\" style=\"display: none;\"><a id=\"filter-posts\" class=\"button-small-red\" href=\"$mainFeed\">Posts</a><a id=\"filter-blogs\" class=\"button-small-red\" href=\"$blogList\">Blogs</a><a id=\"filter-rss\" class=\"button-small-yellow\" href=\"$serializerUrl\" target=\"_blank\">RSS</a></div>
 	<ul>
 	<li><input id=\"filter\" class=\"categories\" type=\"checkbox\" name=\"category\" value=\"has-citation\"";
@@ -59,7 +60,7 @@ function widget_topLevelTopicsList($args) {
 	}
 	
 	print "</ul>
-	<div id=\"filter-buttons\" class=\"ss-div-2 center-text\" style=\"display: none;\"><a id=\"filter-posts\" class=\"button-small-red\" href=\"$mainFeed\">Posts</a><a id=\"filter-blogs\" class=\"button-small-red\" href=\"$blogList\">Blogs</a><a id=\"filter-rss\" class=\"button-small-yellow\" href=\"$serializerUrl\" target=\"_blank\">RSS</a></div>
+	<div id=\"filter-buttons\" class=\"ss-div-2 center-text\" style=\"display: none;\"><a id=\"filter-posts\" class=\"button-small-red\" href=\"$mainFeed\">Posts</a><a id=\"filter-blogs\" class=\"button-small-red\" href=\"$blogList\">Blogs</a><a id=\"filter-rss\" class=\"button-small-yellow\" href=\"$serializerUrl\" target=\"_blank\">RSS</a><br /><br /><a id=\"filter-widget\" class=\"button-small-red\" style=\"width: 90px;\" href=\"/get-widget\">Get Widget</a></div>
 	</div>";
 	echo $after_widget;
 }

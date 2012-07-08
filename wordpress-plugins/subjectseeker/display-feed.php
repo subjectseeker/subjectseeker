@@ -113,7 +113,8 @@ function displayFeed($query, $minimal) {
 				
 				// Check if this post should be grouped with other posts of the same day.
 				if ($previousDay != $formatDay && !$minimal) {
-					print "<h3>$formatDay</h3>";
+					print "<br />
+					<h3>$formatDay</h3>";
 				}
 				
 				// If post doesn't have a title, use the url instead.
@@ -151,7 +152,7 @@ function displayFeed($query, $minimal) {
 				print "$recCount</div></div>
 				<div class=\"post-wrapper\">
 				<div class=\"post-header\">$formatHour | <a class=\"red-title ss-postTitle\" href=\"$postUri\" target=\"_blank\" rel=\"bookmark\" title=\"Permanent link to $postTitle\">$postTitle</a></div>
-				<div class=\"ss-div-button\"><div class=\"arrow-down\" title=\"Show Extra Info\"></div></div>
+				<div class=\"ss-div-button alignright\"><div class=\"arrow-down\" title=\"Show Extra Info\"></div></div>
 				<div id=\"post-info\" class=\"ss-slide-wrapper\" style=\"display: none; \">
 				<div id=\"padding-content\"><div title=\"Summary\">$postSummary</div>";
 				// Add citations to summary if available

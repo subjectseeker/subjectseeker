@@ -185,7 +185,7 @@ function doAdminUsers() {
 					$userPrivilege = ucwords(userPrivilegeIdToName ($userPrivilegeId, $db));
 					print "<div class=\"ss-entry-wrapper\">
 					$userID | $userName | $userStatus | $userPrivilege
-					<div class=\"ss-div-button\">
+					<div class=\"ss-div-button alignright\">
           <div class=\"arrow-down\" title=\"Show Info\"></div>
         	</div>
 					<div class=\"ss-slide-wrapper\">

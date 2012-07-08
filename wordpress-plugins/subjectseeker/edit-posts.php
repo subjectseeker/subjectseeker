@@ -252,7 +252,7 @@ function scanPosts() {
 						$postTitle = $postUri;
 					}
 					print "<div class=\"ss-entry-wrapper\"><input type=\"checkbox\" class=\"checkbox\" name=\"check-$postId\" value=\"1\" /> <span class=\"ss-postTitle\"><a href=\"$postUri\" target=\"_blank\">$postTitle</a></span>";
-					print "<div class=\"ss-div-button\">
+					print "<div class=\"ss-div-button alignright\">
 					<div class=\"arrow-down\"></div>
 					</div>
 					<div class=\"ss-slide-wrapper\">
