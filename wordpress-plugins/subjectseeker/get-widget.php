@@ -67,7 +67,7 @@ function getWidget() {
 	global $apiUrl;
 	global $citationUrl;
 
-	print "<p>We have created a widget using our <a href=\"$apiUrl\" title=\"Go to API page\">API</a> that you can put on your site to share some of the great science posts found around the web. It shows the latest publications by default (or whatever filters you have selected on the sidebar), but using the API filters you can set it up to show things like posts with <a href=\"$citationUrl\" title=\"Go to the citation generator\">citations</a> from your site or posts recommended by a specific user.</p>
+	print "<p>Share some of the great science posts found around the web with the ScienceSeeker widget, it shows the latest publications by default (or whatever filters you have selected on the sidebar), but using the <a href=\"$apiUrl\" title=\"Go to API documentation page\">API</a> filters you can set it up to show things like posts with <a href=\"$citationUrl\" title=\"Go to the citation generator\">citations</a> from your site or posts recommended by a specific user. The widget was built using the <a href=\"$apiUrl\" title=\"Go to API documentation page\">ScienceSeeker API</a>, which provides open access to the ScienceSeeker database for use in applications.</p>
 
 <div class=\"margin-bottom\" style=\"overflow: auto;\">
 <iframe style=\"border: #BDBDBD solid 1px; float: left;\" src=\"$widgetPage/default/?".$_SERVER['QUERY_STRING']."\" frameborder=\"0\" scrolling=\"no\" height=\"400px\" width=\"150px\"></iframe>

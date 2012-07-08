@@ -54,43 +54,14 @@ function displayWidget() {
 				$postId = $row["BLOG_POST_ID"];
 				$blogName = $row["BLOG_NAME"];
 				$blogUri = $row[ "BLOG_URI"];
-				$postDate = strtotime($row["BLOG_POST_DATE_TIME"]);
-				$formatHour = date("g:i A", $postDate);
-				$postSummary = strip_tags($row[ "BLOG_POST_SUMMARY"], '<br>');
 				$postTitle = $row[ "BLOG_POST_TITLE"];
 				$postUri = $row[ "BLOG_POST_URI"];
-				$postProfile = $myHost . "/post/" . $postId;
-				$postHasCitation = $row["BLOG_POST_HAS_CITATION"];
-				$formatDay = date("F d, Y", $postDate);
 				
 				// If post doesn't have a title, use the url instead.
 				if (! $postTitle) $postTitle = $postUri;
 				
-				// The blog category may not be present.
-				$blogCatSQL = "SELECT T.TOPIC_NAME FROM TOPIC AS T, PRIMARY_BLOG_TOPIC AS BT, BLOG_POST AS P WHERE P.BLOG_POST_ID = $postId AND BT.BLOG_ID = P.BLOG_ID AND T.TOPIC_ID = BT.TOPIC_ID;";
-				$result = mysql_query( $blogCatSQL, $db);
-				
-				$categories = array();
-				while ( $row = mysql_fetch_array( $result ) ) {
-					array_push($categories, $row["TOPIC_NAME"]);
-				}
-				
-				// Get citations
-				if ($postHasCitation) $postCitations = postIdToCitation($postId, $db);
-				
-				// Check if user has recommended this post
-				if ($userId) $userRecStatus = getRecommendationsCount($postId, NULL, $userId, NULL, $db);
-				
-				$editorsPicksStatus = getRecommendationsCount($postId, NULL, NULL, 1, $db);
-				
-				// Get number of recommendations for this post
-				$recCount = getRecommendationsCount($postId, NULL, NULL, NULL, $db);
-				
-				// Get number of comments for this post
-				$commentCount = getRecommendationsCount($postId, "comments", NULL, NULL, $db);
-				
 				print "<div class=\"ss-entry-wrapper\">
-				<a class=\"postTitle\" href=\"$postUri\" target=\"_blank\" rel=\"bookmark\" title=\"Permanent link to $postTitle\">$postTitle</a><br /><a class=\"blogTitle\" title=\"Go to $blogName home page\" href=\"$blogUri\">$blogName</a>
+				<a class=\"postTitle\" href=\"$postUri\" target=\"_blank\" rel=\"bookmark\" title=\"Permanent link to $postTitle\">$postTitle</a><br /><a target=\"_blank\" class=\"blogTitle\" title=\"Go to $blogName home page\" href=\"$blogUri\">$blogName</a>
 				</div>";
 			}
 		}
