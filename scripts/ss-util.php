@@ -138,7 +138,7 @@ function getDownloadCurl($uri) {
  */
 
 // Input: type of object to search for (blog/post/topic); list of query parameters; DB handle
-// Output: XML document containing search results
+// Output: SQL query result
 // For more information on query parameters, see search API documentation in wiki
 function generateSearchQuery ($queryList, $settings, $userPriv, &$errormsgs, $db) {
 
