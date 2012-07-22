@@ -67,7 +67,9 @@ function getWidget() {
 	global $apiUrl;
 	global $citationUrl;
 
-	print "<p>Share some of the great science posts found around the web with the ScienceSeeker widget, it shows the latest publications by default (or whatever filters you have selected on the sidebar), but using the <a href=\"$apiUrl\" title=\"Go to API documentation page\">API</a> filters you can set it up to show things like posts with <a href=\"$citationUrl\" title=\"Go to the citation generator\">citations</a> from your site or posts recommended by a specific user. The widget was built using the <a href=\"$apiUrl\" title=\"Go to API documentation page\">ScienceSeeker API</a>, which provides open access to the ScienceSeeker database for use in applications.</p>
+	print "<p>Share some of the great science posts found around the web with the ScienceSeeker widget. By default, it shows the latest publications, filtered by your filter choices on the sidebar. You may also configure it to filter posts in other ways -- for example, posts with <a href=\"$citationUrl\" title=\"Go to the citation generator\">citations</a> from your site, or posts recommended by a specific ScienceSeeker user.</p>
+	
+<p>The widget was built using the <a href=\"$apiUrl\" title=\"Go to API documentation page\">ScienceSeeker API</a>, which provides open access to the ScienceSeeker database for use in applications.</p>
 
 <div class=\"margin-bottom\" style=\"overflow: auto;\">
 <iframe style=\"border: #BDBDBD solid 1px; float: left;\" src=\"$widgetPage/default/?".$_SERVER['QUERY_STRING']."\" frameborder=\"0\" scrolling=\"no\" height=\"400px\" width=\"150px\"></iframe>
@@ -114,7 +116,7 @@ function getWidget() {
 <p><span class=\"ss-bold\">4.</span> Write the title you wish your widget to have, copy the HTML code we give you on this page to the content area and click on the <span class=\"ss-bold\">Save</span> button.</p>
 <p><img class=\"aligncenter\" width=\"500\" height=\"auto\" src=\"/images/misc/Wordpress-Tutorial-4.jpg\" /></p>
 
-<p><span class=\"ss-bold\">5.</span> Done! The ScienceSeeker Widget should be now in your sidebar.</p>
+<p><span class=\"ss-bold\">5.</span> Done! The ScienceSeeker widget should be now in your sidebar.</p>
 </div>
 <hr class=\"margin-bottom\" />";
 }
