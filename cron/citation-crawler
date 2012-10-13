@@ -1,0 +1,4 @@
+#!/bin/sh
+
+date >> /home/sciseek/public_html/logs/citation-crawler.log
+/home/sciseek/public_html/cron/citation-crawler.php >> /home/sciseek/public_html/logs/citation-crawler.log

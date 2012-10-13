@@ -1,56 +1,33 @@
 <?php
-/*
-Plugin Name: SubjectSeeker Display Feed
-Plugin URI: http://scienceseeker.org/
-Description: Display feed, filtered as requested
-Author: Liminality
-Version: 1.0
-Author URI: http://scienceseeker.org
-*/
 
-/*
- * PHP widget methods
- */
-
-include_once "ss-globals.php";
-include_once "ss-util.php";
-require_once "/home/sciseek/public_html/dev/wp-load.php";
+include_once "initialize.php";
 
 function displayWidget() {
+	global $homeUrl;
+	global $pages;
 	
 	$db = ssDbConnect();
 	$queryList = httpParamsToSearchQuery();
 	$settings = httpParamsToExtraQuery();
-	$errormsgs = array();
 	$settings["type"] = "post";
 	$settings["limit"] = "6";
-	$postsData = generateSearchQuery ($queryList, $settings, 1, $errormsgs, $db);
+	$postsData = generateSearchQuery ($queryList, $settings, 1, $db);
 	
-	if (! empty($errormsgs)) {
-		print "<div id=\"padding-content\">";
-		foreach ($errormsgs as $error) {
-			print "<p>Error: $error</p>";
+	if (! empty($postsData["errors"])) {
+		foreach ($postsData["errors"] as $error) {
+			print "<p class=\"ss-error\">$error</p>";
 		}
-		print "</div>";
 	}
 	
 	else {
-		global $mainFeed;
-		if (is_user_logged_in()){
-			global $current_user;
-			$db = ssDbConnect();
-			get_currentuserinfo();
-			$displayName = $current_user->user_login;
-			$email = $current_user->user_email;
-			$userId = addUser($displayName, $email, $db);
-			$userPriv = getUserPrivilegeStatus($userId, $db);
-		}
-		
-		print "<div class=\"widget-title\">Now on ScienceSeeker</div>
+		global $sitename;
+		print "<div class=\"widget-title\"><a title=\"Go to $sitename\" href=\"$homeUrl\">Now on<br />
+		<div style=\"width: 100%; text-align:center; color: black; font-size: 0.8em;\">
+		<div class=\"logo-wrapper\"><img style=\"max-width: 90%;\" src=\"$homeUrl/images/logos/SSLogoSmall.png\" /></div></div></a></div>
 		<div id=\"posts-wrapper\">";
 		
-		if ($postsData) {
-			while ($row = mysql_fetch_array($postsData)) {
+		if (isset($postsData["result"])) {
+			while ($row = mysql_fetch_array($postsData["result"])) {
 				$postId = $row["BLOG_POST_ID"];
 				$blogName = $row["BLOG_NAME"];
 				$blogUri = $row[ "BLOG_URI"];
@@ -66,22 +43,18 @@ function displayWidget() {
 			}
 		}
 		else {
-			print "<div id=\"padding-content\">No results found for your search parameters.</div>";
+			print "<div class=\"padding-content\">No results found for your search parameters.</div>";
 		}
 		
 		print "</div>";
 	}
-	global $sitename;
-	global $homeUrl;
-	print "<div style=\"position: fixed; bottom: 0px; width: 100%; text-align:center; color: black; font-size: 0.8em;\">
-	<div class=\"footer-wrapper\"><a title=\"Go to $sitename\" href=\"$homeUrl\"><img style=\"max-width: 90%;\" src=\"/images/logos/ScienceSeekerLogoSmall.png\"></a></div></div>";
 }
 
 print "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">
 <html xmlns=\"http://www.w3.org/1999/xhtml\">
 <head>
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />
-<title>Widget | ScienceSeeker: Science News Aggregator</title>
+<title>Widget | $sitename</title>
 <link rel=\"shortcut icon\" href=\"http://dev.scienceseeker.org/wp-content/themes/eximius/images/favicon.ico\" type=\"image/x-icon\">
 <link rel=\"stylesheet\" type=\"text/css\" href=\"http://dev.scienceseeker.org/wp-content/themes/eximius/style.css\" media=\"all\">
 <style type=\"text/css\">
@@ -102,21 +75,21 @@ a, a:visited {
 }
 #posts-wrapper {
 	overflow: auto;
-	max-height: 336px;
+	height: 338px;
 }
-.widget-title {
+.widget-title, .widget-title a:visited, .widget-title a, .widget-title:hover {
 	color: #525252;
 	font-weight: bold;
-	font-size: 0.8em;
-	padding: 5px;
+	font-size: 0.85em;
+	padding: 5px 5px 0px 5px;
 	text-align: center;
 }
 #wrapper {
 	width: 100%;
 	min-height: 100%;
 }
-.footer-wrapper {
-	margin: 5px 5px 10px 5px;
+.logo-wrapper {
+	margin-top: 5px;
 	color: #8D4444;
 	font-weight: bold;
 }

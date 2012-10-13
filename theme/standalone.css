@@ -1,0 +1,126 @@
+* {
+	padding: 0;
+	margin: 0;
+}
+html {
+	height: 100%;
+}
+body {
+	height: 100%;
+	width: 100%;
+  background: url(/images/background/background.jpg) black;
+}
+.box-title {
+	font-size: 2em;
+	text-align: left;
+	color: #333;
+	margin-bottom: 15px;
+	font-family: Helvetica, Arial, "Lucida Grande", "Lucida Sans Unicode", Sans-Serif;
+	font-weight: bold;
+	border-bottom: 1px solid #C9C9C9;
+	padding-bottom: 10px;
+}
+#content-box {
+	background-color: #EFEFEF;
+  padding: 2%;
+	width: 90%;
+	max-width: 670px;
+	margin: 0px auto;
+	overflow: hidden;
+}
+.half-box {
+	width: 46%;
+	margin-bottom: 15px;
+	float: left;
+}
+#wrapper {
+	width: 100%;
+	min-height: 100%;
+}
+.message {
+	font-size: 1.4em;
+	color: #B8B8B8;
+	background: #1A1A1A;
+	padding: 40px 20%;
+}
+.button, a.button, a:visited.button {
+	padding: 10px 40px 10px 40px;
+	background: #5E5E5E;
+	color: white;
+	font-size: 1.2em;
+	position: relative;
+	top: 11px;
+}
+a.button:hover {
+	background: #939393;
+}
+a.button:active {
+	background: #303030;
+}
+.white-button, a.white-button {
+	-moz-box-shadow:inset 0px 1px 0px 0px #ffffff;
+	-webkit-box-shadow:inset 0px 1px 0px 0px #ffffff;
+	box-shadow:inset 0px 1px 0px 0px #ffffff;
+	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #ededed), color-stop(1, #dfdfdf) );
+	background:-moz-linear-gradient( center top, #ededed 5%, #dfdfdf 100% );
+	background-color: #ECECEC;
+	border:1px solid silver;
+	display:inline-block;
+	color:#777777;
+	font-family:arial;
+	font-size:15px;
+	font-weight:bold;
+	padding:6px 10px;
+	text-decoration:none;
+	text-shadow:1px 1px 0px #ffffff;
+	cursor: pointer;
+}
+.white-button:hover, a.white-button:hover {
+	background: -webkit-gradient( linear, left top, left bottom, color-stop(0.05, #EEE), color-stop(1, #E7E7E7) );
+	background: -moz-linear-gradient( center top, #EEE 5%, #E7E7E7 100% );
+	background-color: #F1F1F1;
+	color:#666666;
+}
+.white-button:active, a.white-button:active {
+	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #dfdfdf), color-stop(1, #ededed) );
+	background:-moz-linear-gradient( center top, #dfdfdf 5%, #ededed 100% );
+	background-color:#dfdfdf;
+	color:#666666;
+}
+a.twitter-button {
+	-moz-box-shadow:inset 0px 1px 0px 0px #cae3fc;
+	-webkit-box-shadow:inset 0px 1px 0px 0px #cae3fc;
+	box-shadow:inset 0px 1px 0px 0px #cae3fc;
+	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #69d0ff), color-stop(1, #45c9ed) );
+	background:-moz-linear-gradient( center top, #69d0ff 5%, #45c9ed 100% );
+	background-color:#69d0ff;
+	border:1px solid #469df5;
+	display:inline-block;
+	color: #F7F7F7;
+	font-family:arial;
+	font-size:15px;
+	font-weight:bold;
+	padding:6px 0px;
+	text-decoration:none;
+	text-shadow:1px 1px 0px #287ace;
+	cursor: pointer;
+	width: 100%;
+}
+a.twitter-button:hover {
+	background: -webkit-gradient( linear, left top, left bottom, color-stop(0.05, #82D7FD), color-stop(1, #4DCFF3) );
+	background: -moz-linear-gradient( center top, #69D0FF 5%, #45C9ED 100% );
+	background-color: #73D3FF;
+	color: white;
+}
+a.twitter-button:active {
+	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #45c9ed), color-stop(1, #69d0ff) );
+	background:-moz-linear-gradient( center top, #45c9ed 5%, #69d0ff 100% );
+	background-color:#45c9ed;
+	color: white;
+}
+
+@media screen and (max-width:460px) {
+	.half-box {
+		width: 100%;
+	}
+}
