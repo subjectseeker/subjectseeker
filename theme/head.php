@@ -19,7 +19,7 @@ else {
 
 ?></title>
 <link rel="shortcut icon" href="<?php echo $imagesUrl ?>/misc/favicon.ico" type="image/x-icon" />
-<link rel="stylesheet" type="text/css" href="<?php echo $themeUrl . "/stylesheet.css?v=" . filemtime($basedir.'/theme/style.css') ?>" media="all" />
+<link rel="stylesheet" type="text/css" href="<?php echo $themeUrl . "/style.css?v=" . filemtime($basedir.'/theme/style.css') ?>" media="all" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
