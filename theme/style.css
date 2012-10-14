@@ -1459,11 +1459,11 @@ input.search-input {
 }
 
 .header-search {
-	width: 28%;
-	margin: 23px 0px 0px 0px;
+	width: 27%;
+	margin: 23px 0px 0px 10px;
 	display: inline-block;
 	text-align: center;
-	float:left;
+	float: left;
 	height: 33px;
 }
 

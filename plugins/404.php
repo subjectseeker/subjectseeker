@@ -14,11 +14,12 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 function displayNotFound() {
 	global $homeUrl;
+	global $imagesUrl;
 	global $pages;
 	?>
   <div class="center-text">
   <div class="error-title">404</div>
-	<p><img src="/images/icons/ErrorIcon.png" /></p>
+	<p><img src="<?php echo $imagesUrl ?>/images/misc/Error.png" /></p>
   <p><a class="ss-button" href="<?php echo $homeUrl ?>">Go to Home Page</a> <a class="ss-button" href="<?php echo $pages["contact"]->getAddress(); ?>">Contact Us</a></p>
   </div>
   <?php

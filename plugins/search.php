@@ -23,7 +23,6 @@ function searchForm() {
 }
 
 function searchPage($text = NULL, $minimal = FALSE, $open = FALSE) {
-	include_once("posts.php");
 	$db = ssDbConnect();
 	
 	global $numResults;
@@ -39,6 +38,8 @@ function searchPage($text = NULL, $minimal = FALSE, $open = FALSE) {
 		$offset = $_REQUEST["offset"];
 	}
 	
+	// Use optimal query for best results
+	// TO DO: Use API for this
 	$searchValue = mysql_real_escape_string(preg_replace("/[^A-Za-z0-9\s]/", "%", $text));
 	$sql = "SELECT SQL_CALC_FOUND_ROWS * FROM (SELECT post.BLOG_POST_ID, post.BLOG_POST_URI, post.BLOG_POST_DATE_TIME, post.BLOG_POST_SUMMARY, post.BLOG_POST_TITLE, post.BLOG_POST_HAS_CITATION, blog.BLOG_ID, blog.BLOG_NAME, blog.BLOG_URI FROM BLOG_POST post INNER JOIN BLOG blog ON blog.BLOG_ID = post.BLOG_ID INNER JOIN BLOG_AUTHOR author ON blog.BLOG_ID = author.BLOG_ID AND post.BLOG_AUTHOR_ID = author.BLOG_AUTHOR_ID WHERE BLOG_POST_STATUS_ID = 0 AND BLOG_STATUS_ID = 0 AND ( (BLOG_POST_TITLE LIKE '%".$searchValue."%') OR (BLOG_POST_SUMMARY LIKE '%".$searchValue."%') OR (BLOG_AUTHOR_ACCOUNT_NAME LIKE '%".$searchValue."%') OR (BLOG_NAME LIKE '%".$searchValue."%') ) 
 UNION

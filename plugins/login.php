@@ -10,6 +10,7 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 */
 
 function displayLogin() {
+	global $sitename;
 	global $pages;
 	global $hashFile;
 	include_once $hashFile;
@@ -20,13 +21,14 @@ function displayLogin() {
 		$step = $_GET["step"];
 	}
 	
-	// Get original URL for redirection;
+	// Get original URL for redirection
 	global $homeUrl;
 	$originalUrl = $homeUrl;
 	if (isset($_GET["url"])) {
 		$originalUrl = $_GET["url"];	
 	}
 	
+	// If user is logged in, log out or ask.
 	if (isLoggedIn()) {
 		if ($_REQUEST["logout"] == "true") {
 			$authUser = new auth();
@@ -51,8 +53,8 @@ function displayLogin() {
 			$twitterCredentials = $twitterConnection->getAccessToken();
 			$userId = socialAccountToUserId(1, $twitterCredentials["screen_name"], $db);
 			
-			$authUser = new auth();
 			// Log in and create cookie if successful
+			$authUser = new auth();
 			if ($userId == TRUE && $authUser->validateUser($userId, $db) == TRUE) {
 				createCookie($userId, $db);
 				header("Location: ".$originalUrl);
@@ -84,92 +86,104 @@ function displayLogin() {
 		}
 		elseif ($step == "recover-account") {
 			$content = "<div class=\"box-title\">Recover Account</div>";
-			if (isset($_POST["recover"])) {
-				$userRecoveryData = $_POST["recover"];
-			}
-			if (filter_var($userRecoveryData, FILTER_VALIDATE_EMAIL) && $userId = emailToUserId($userRecoveryData, $db)) {
-				$userName = getUserName($userId, $db);
-				$userDisplayName = getDisplayName($userId, $db);
-				$recoveryCode = createSecretCode ($userId, 2, $db);
-				sendRecoveryEmail($recoveryCode, $userRecoveryData, $userName, $userDisplayName);
+			if (isset($_POST["verification-data"])) {
+				$userRecoveryData = $_POST["verification-data"];
 				
-				$content .= "<p class=\"ss-successful\">Email found.</p>";
+				// Determine if user submitted an email or a user name
+				if ((filter_var($userRecoveryData, FILTER_VALIDATE_EMAIL) && $userId = emailToUserId($userRecoveryData, $db)) || ((preg_match("/^[A-Za-z][A-Za-z0-9_]*$/", $userRecoveryData) && strlen($userRecoveryData) < 31) && $userId = getUserId($userRecoveryData, $db))) {
+					$userName = getUserName($userId, $db);
+					$userEmail = getUserEmail($userId, $db);
+					$userDisplayName = getDisplayName($userId, $db);
+					$userStatusId = getUserStatus($userId, $db);
+					
+					if (!empty($userStatusId)) {
+						$recoveryCode = createSecretCode ($userId, 3, $db);
+						sendRecoveryEmail($recoveryCode, $userEmail, $userName, $userDisplayName);
+					}
+				}
+				else {
+					$content .= "<p class=\"ss-error\">The submitted email or user was not found in our database.</p>";
+					return $content;
+				}
 			}
-			elseif ((preg_match("/^[A-Za-z][A-Za-z0-9_]*$/", $userRecoveryData) && strlen($userRecoveryData) < 31) && $userId = getUserId($userRecoveryData, $db)) {
-				$userEmail = getUserEmail($userId, $db);
-				$userDisplayName = getDisplayName($userId, $db);
-				$recoveryCode = createSecretCode ($userId, 2, $db);
-				sendRecoveryEmail($recoveryCode, $userEmail, $userRecoveryData, $userDisplayName);
-				
-				$content .= "<p class=\"ss-successful\">User Name found.</p>";
-			}
-			else {
-				$content .= "<p class=\"ss-error\">The submitted email or user name was not found in our database.</p>";
-			}
+			
+			$content .= "<p class=\"ss-successful\">An email has been sent to you address to recover your account.</p>
+			<form action=\"".$pages["login"]->getAddress()."/?step=verify-recovery\" name=\"login\" method=\"post\">
+			<p class=\"margin-bottom-small\">Please enter your recovery code below or follow the link sent with the email.</p>
+			<p><input type=\"text\" name=\"recovery-code\" /></p>
+			<p><input class=\"white-button\" type=\"submit\" value=\"Submit\" /></p>
+			</form>";
 		}
 		elseif ($step == "verify-recovery") {
 			$content = "<div class=\"box-title\">Recover Account</div>";
 			
 			if (isset($_REQUEST["recovery-code"])) {
 				$recoveryCode = $_REQUEST["recovery-code"];
-			}
-			$recoveryStatus = secretCodeToUserId($recoveryCode, 2, $db);
-			
-			// Check if code has expired
-			if (isset($recoveryStatus["expired"]) && $recoveryStatus["expired"] == TRUE) {
-				$content .= "<p class=\"ss-error\">Your recovery code has expired.</p>";
-				$userId = $recoveryStatus["userId"];
-				removeRecoveryCode($userId, $db);
-			}
-			// Check if it's time to reset the password
-			elseif ($recoveryStatus["userId"] && $_POST["new-pass"]) {
-				if (isset($_POST["new-pass"])) {
-					$newUserPass1 = $_POST["new-pass"];
-				}
-				if (isset($_POST["new-pass2"])) {
-					$newUserPass2 = $_POST["new-pass2"];
-				}
+				$recoveryStatus = secretCodeToUserId($recoveryCode, 2, $db);
 				
-				$errors = checkUserData(NULL, NULL, NULL, NULL, NULL, NULL, $newUserPass1, $newUserPass2, $db);
-				
-				if (!$newUserPass1 || !$newUserPass2) {
-					$errors .= "<p class=\"ss-error\">Missing value, please submit your new password and confirmation password.</p>";
+				// Check if code has expired
+				if (isset($recoveryStatus["expired"]) && $recoveryStatus["expired"] == TRUE) {
+					$content .= "<p class=\"ss-error\">Your recovery code has expired.</p>";
+					$userId = $recoveryStatus["userId"];
+					removeRecoveryCode($userId, $db);
 				}
-				
-				if (isset($errors)) {
-					$content .= "$errors";
-				}
-				else {
-					if ($newUserPass1 == $newUserPass2) {
-						$userId = $recoveryStatus["userId"];
-						editUserPass($userId, $newUserPass1, $db);
-						removeRecoveryCode($userId, $db);
-						
-						$content .= "<p class=\"ss-successful\">Password has been changed.</p>";
+				// Check if it's time to reset the password
+				elseif ($recoveryStatus["userId"] && $_POST["new-pass"]) {
+					$newUserPass1 = NULL;
+					$newUserPass2 = NULL;
+					if (isset($_POST["new-pass"])) {
+						$newUserPass1 = $_POST["new-pass"];
+					}
+					if (isset($_POST["new-pass2"])) {
+						$newUserPass2 = $_POST["new-pass2"];
+					}
+					
+					$errors = checkUserData(NULL, NULL, NULL, NULL, NULL, NULL, $newUserPass1, $newUserPass2, $db);
+					if (empty($newUserPass1) || empty($newUserPass2)) {
+						$errors .= "<p class=\"ss-error\">Missing value, please submit your new password and confirmation password.</p>";
+					}
+					
+					if (isset($errors)) {
+						$content .= "$errors";
+					}
+					else {
+						if ($newUserPass1 == $newUserPass2) {
+							$userId = $recoveryStatus["userId"];
+							editUserPass($userId, $newUserPass1, $db);
+							removeRecoveryCode($userId, $db);
+							
+							$content .= "<p class=\"ss-successful\">Password has been changed.</p>
+							<a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
+						}
 					}
 				}
-			}
-			// Check if recovery code is valid.
-			elseif (isset($recoveryStatus["userId"])) {
-				$content .= "<p class=\"ss-successful\">Code verified, you can reset your password below.</p>
-				<form method=\"post\">
-				<p>New Password<br />
-				<input name=\"new-pass\" type=\"password\" /></p>
-				<p>Re-type Password<br />
-				<input name=\"new-pass2\" type=\"password\" /></p>
-				<br />
-				<p class=\"margin-bottom-small\"><input class=\"white-button\" type=\"submit\" value=\"Change Password\" /></p>
-				</form>";
+				// Check if recovery code is valid.
+				elseif (isset($recoveryStatus["userId"])) {
+					$content .= "<p class=\"ss-successful\">Code verified, you can reset your password below.</p>
+					<form method=\"post\">
+					<p>New Password<br />
+					<input name=\"new-pass\" type=\"password\" /></p>
+					<p>Re-type Password<br />
+					<input name=\"new-pass2\" type=\"password\" /></p>
+					<br />
+					<p class=\"margin-bottom-small\"><input class=\"white-button\" type=\"submit\" value=\"Change Password\" /></p>
+					</form>";
+				}
+				else {
+					$content .= "<p class=\"ss-error\">Recovery code not found.</p>
+					<a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
+				}
 			}
 			else {
-				$content .= "<p class=\"ss-error\">Recovery code not found.</p>";
+				$content .= "<p class=\"ss-error\">You must submit a recovery code.</p>
+				<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=recover-account\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
 			}
 		}
 		
 		/* Verify Email */
 		
 		elseif ($step == "send-verification") {
-			$content =  "<div class=\"box-title\">Verify Email</div>
+			$content =  "<div class=\"box-title\">Verify Account</div>
 			<form action=\"".$pages["login"]->getAddress()."/?step=confirm-verification\" method=\"post\">
 			<p class=\"margin-bottom-small\">Please enter your user name or email to send your email verification code.</p>
 			<p><input type=\"text\" name=\"verification-data\"  /></p>
@@ -177,10 +191,11 @@ function displayLogin() {
 			</form>";
 		}
 		elseif ($step == "confirm-verification") {
-			$content = "<div class=\"box-title\">Recover Account</div>";
+			$content = "<div class=\"box-title\">Verify Account</div>";
 			if (isset($_POST["verification-data"])) {
 				$userVerificationData = $_POST["verification-data"];
 				
+				// Determine if user submitted an email or a user name
 				if ((filter_var($userVerificationData, FILTER_VALIDATE_EMAIL) && $userId = emailToUserId($userVerificationData, $db)) || ((preg_match("/^[A-Za-z][A-Za-z0-9_]*$/", $userVerificationData) && strlen($userVerificationData) < 31) && $userId = getUserId($userVerificationData, $db))) {
 					$userName = getUserName($userId, $db);
 					$userEmail = getUserEmail($userId, $db);
@@ -210,7 +225,7 @@ function displayLogin() {
 			</form>";
 		}
 		elseif ($step == "verify-email") {
-			$content =  "<div class=\"box-title\">Verify Email</div>";
+			$content =  "<div class=\"box-title\">Verify Account</div>";
 			
 			if (isset($_REQUEST["verification-code"])) {
 				$verificationCode = $_REQUEST["verification-code"];
@@ -272,7 +287,7 @@ function displayLogin() {
 					}
 					elseif ($authUser->error == 2) {
 						$content .= "<p class=\"ss-error\">User email is unverified.</p>
-						<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=send-verification\">Verify Account</a> <a class=\"white-button\" href=\"$originalUrl\">Back to homepage</a></p>";
+						<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=send-verification\">Verify Account</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 					}
 					elseif ($authUser->error == 3) {
 						$content .= "<p class=\"ss-error\">User doesn't exist.</p>";
@@ -284,8 +299,10 @@ function displayLogin() {
 				}
 			}
 			
+			// Get Twitter Auth URL
 			$twitterUrl = getTwitterAuthURL ($pages["login"]->getAddress()."/?url=".$originalUrl, TRUE);
 			
+			// Display log in form.
 			$content .=  "<div class=\"half-box\">
 			<form name=\"login\" method=\"post\">
 			<p>User<br />

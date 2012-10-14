@@ -26,6 +26,7 @@ function userSettings() {
 		if (isset($_REQUEST["step"])) {
 			$step = $_REQUEST["step"];
 		}
+		// Read name on URL
 		preg_match('/(?<=\/user\/)[A-Za-z][A-Za-z0-9_]+/', $_SERVER["REQUEST_URI"], $matchResult);
 		$userName = $matchResult[0];
 		$userId = getUserId($userName, $db);
@@ -34,7 +35,7 @@ function userSettings() {
 			print "<p class=\"ss-error\">User not found.</p>";
 		}
 		elseif ($userId == $authUserId || $userPriv > 1) { // Check if user or admin
-		
+			// Check which of the forms have been submitted, if any
 			if (isset($_POST["form"]) && $_POST["form"] == "personal") {
 				$newDisplayName = NULL;
 				$newUrl = NULL;
@@ -61,16 +62,14 @@ function userSettings() {
 				$errors .= checkUserData($authUserId, $userId, NULL, $newDisplayName, NULL, NULL, NULL, NULL, $db);
 				if (!empty($errors)) {
 					print "$errors";
-				}
-				else {
+				} else {
 					if (empty($newDisplayName)) {
 						$newDisplayName = $userName;
 					}
 					editUserPreferences($userId, $newUrl, $newBio, $emailEdPicks, $emailAnnouncements, $db);
 					editDisplayName ($userId, $newDisplayName, $db);
 				}
-			}
-			elseif (isset($_POST["form"]) && $_POST["form"] == "email") {
+			} elseif (isset($_POST["form"]) && $_POST["form"] == "email") {
 				$newEmail = NULL;
 				$userPass = NULL;
 				if (isset($_POST["email"])) {
@@ -85,18 +84,13 @@ function userSettings() {
 				if (empty($userPass) || empty($newEmail)) {
 					$errors .= "<p class=\"ss-error\">Missing value, please submit your current password and your desired new email.</p>";
 				}
-				if (emailToUserId($newEmail, $db)) {
-					$errors .= "<p class=\"ss-error\">Submitted email already exists in our system.</p>";
-				}
 				
 				if (!empty($errors)) {
 					print "$errors";
-				}
-				else {
+				} else {
 					editEmail($userId, $newEmail, $db);
 				}
-			}
-			elseif (isset($_POST["form"]) && $_POST["form"] == "password") {
+			} elseif (isset($_POST["form"]) && $_POST["form"] == "password") {
 				$userPass = NULL;
 				$newUserPass1 = NULL;
 				$newUserPass2 = NULL;
@@ -118,14 +112,14 @@ function userSettings() {
 				
 				if (!empty($errors)) {
 					print "$errors";
-				}
-				else {
+				} else {
 					if ($newUserPass1 == $newUserPass2) {
 						editUserPass($userId, $newUserPass1);
 					}
 				}
 			}
 			
+			// Get user info
 			$userPriv = getUserPrivilegeStatus($userId, $db);
 			$userEmail = getUserEmail($userId, $db);
 			$userDisplayName = getDisplayName($userId, $db);
@@ -133,11 +127,11 @@ function userSettings() {
 			$userPreferences = getUserPreferences($userId, $db);
 			$userTwitter = getUserSocialAccount(1, $userId, $db);
 			
+			// Create avatar URL
 			global $imagesUrl;
 			if (!empty($userAvatar)) {
 				$avatarSrc = $imagesUrl."/users/$userId/avatars/$userAvatar";
-			}
-			else {
+			} else {
 				$avatarSrc = $imagesUrl."/icons/default-avatar.jpg";
 			}
 			
@@ -171,8 +165,7 @@ function userSettings() {
 			if ($userTwitter == TRUE) {
 				$currentUrl = getURL();
 				print "<div class=\"sync-link\"><a title=\"Go to Twitter profile\" href=\"https://twitter.com/#!/".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"]."\"><div class=\"twitter-icon\"></div> ".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"]."</a> | <a title=\"Go to synchronization page\" href=\"".$pages["twitter"]->getAddress()."/?url=$currentUrl&amp;remove=true\">Remove</a></div>";
-			}
-			else {
+			} else {
 				print "<div class=\"sync-link\"><a title=\"Go to synchronization page\" href=\"".$pages["twitter"]->getAddress()."\"><div class=\"twitter-icon\"></div> Sync Twitter</a></div>";
 			}
 			
@@ -213,8 +206,7 @@ function userSettings() {
 			<p><input class=\"ss-button\" type=\"submit\" value=\"Change Password\" /></p>
 			</div>
 			</form>";
-		}
-		else {
+		} else {
 			print "<p class=\"ss-error\">You don't have permission to access this page</p>";
 		}
 	} else { // not logged in

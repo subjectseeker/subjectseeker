@@ -1,21 +1,25 @@
 <?php
 
 function displayRegistration() {
-	
+	global $homeUrl;
 	global $pages;
 	$db = ssDbConnect();
 	
+	$originalUrl = $homeUrl;
+	if (isset($_GET["url"])) {
+		$originalUrl = $_GET["url"];	
+	}
+	
+	// If logged in, send to log in page to deal with this.
 	if (isLoggedIn()) {
-		$content = "<div class=\"box-title\">Log In</div>
-		<p>You are logged in</p>
-		<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?logout=true\">Log Out</a></p>";
+		header("Location: ".$pages["login"]->getAddress()."/?url=$originalUrl");
 	}
 	else {
 		$content = "<div class=\"box-title\">Create Account</div>";
 		include_once('../third-party/recaptcha/recaptchalib.php');
 		
 		$userName = NULL;
-		
+		// Check if user has submitted information
 		if (isset($_POST['user-name'])) {
 			$userName = mysql_escape_string($_POST['user-name']);
 			$userEmail = mysql_escape_string($_POST['email']);
@@ -52,6 +56,7 @@ function displayRegistration() {
 				$userId = addUser($userName, $userEmail, $hashedPass, $db);
 				editUserStatus ($userId, 3, $db);
 				
+				// Check if Twitter details have been imported
 				if (isset($_SESSION["oauth_token"], $_SESSION["oauth_token_secret"]) && $_SESSION["regStep"] == "two") {
 					addToTwitterList($_SESSION['user_id']);
 					addUserSocialAccount (1, $_SESSION['screen_name'], $_SESSION['oauth_token'], $_SESSION['oauth_token_secret'], $userId, $db);
@@ -71,16 +76,12 @@ function displayRegistration() {
 			}
 		}
 		
+		// Check if user is coming from Twitter
 		if (isset($_SESSION["regStep"]) && $_SESSION["regStep"] == "one") {
 			$userName = $_SESSION["screen_name"];
 		
 			$content .= "<p class=\"ss-successful\">You settings have been imported.</p>
 			<p>To complete your registration, please fill this form:</p>";
-		}
-		
-		$originalUrl = $pages["home"]->getAddress();
-		if (isset($_GET["url"])) {
-			$originalUrl = $_GET["url"];	
 		}
 		
 		global $recaptchaPublicKey;

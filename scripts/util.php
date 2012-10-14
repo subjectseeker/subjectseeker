@@ -104,7 +104,7 @@ function validateCookie($userId, $cookieCode, $db) {
 	$userId = mysql_real_escape_string($userId);
 	$cookieCode = mysql_real_escape_string($cookieCode);
 	
-	$sql = "SELECT USER_ID FROM SECRET_CODE WHERE USER_ID = '$userId' AND SECRET_CODE_TEXT = '$cookieCode'";
+	$sql = "SELECT USER_ID FROM USER_SECRET_CODE WHERE USER_ID = '$userId' AND USER_SECRET_CODE_TEXT = '$cookieCode'";
 	$result = mysql_query($sql, $db);
 	
 	// Remove used cookie
@@ -124,7 +124,7 @@ function createCookie($userId, $db) {
 	$cookieCode = md5(uniqid());
 	setcookie("ss-login", "$userId/$cookieCode", strtotime("+90 day"), "/");
 	
-	$sql = "REPLACE INTO SECRET_CODE (USER_ID, SECRET_CODE_TEXT, SECRET_CODE_DATE_TIME, SECRET_CODE_SOURCE_ID) VALUES ('$userId', '$cookieCode', NOW(), '1')";
+	$sql = "REPLACE INTO USER_SECRET_CODE (USER_ID, USER_SECRET_CODE_TEXT, USER_SECRET_CODE_DATE_TIME, USER_SECRET_CODE_SOURCE_ID) VALUES ('$userId', '$cookieCode', NOW(), '1')";
 	mysql_query($sql, $db);
 }
 
@@ -134,8 +134,8 @@ function removeCookie($userId, $cookieCode, $db) {
 	$userId = mysql_real_escape_string($userId);
 	$cookieCode = mysql_real_escape_string($cookieCode);
 	
-	$sql = "DELETE FROM SECRET_CODE WHERE USER_ID = '$userId' AND SECRET_CODE_TEXT = '$cookieCode' AND SECRET_CODE_SOURCE_ID = '1';
-	DELETE FROM SECRET_CODE WHERE SECRET_CODE_SOURCE_ID = '1' AND DATE_ADD(SECRET_CODE_DATE_TIME, INTERVAL 3 MONTH) < NOW();";
+	$sql = "DELETE FROM USER_SECRET_CODE WHERE USER_ID = '$userId' AND USER_SECRET_CODE_TEXT = '$cookieCode' AND USER_SECRET_CODE_SOURCE_ID = '1';
+	DELETE FROM USER_SECRET_CODE WHERE USER_SECRET_CODE_SOURCE_ID = '1' AND DATE_ADD(USER_SECRET_CODE_DATE_TIME, INTERVAL 3 MONTH) < NOW();";
 	mysql_query($sql, $db);
 }
 
@@ -144,7 +144,7 @@ function removeCookie($userId, $cookieCode, $db) {
 function createSecretCode ($userId, $codeSourceId, $db) {
 	$recoveryCode = md5(uniqid());
 	
-	$sql = "REPLACE INTO SECRET_CODE (USER_ID, SECRET_CODE_TEXT, SECRET_CODE_DATE_TIME, SECRET_CODE_SOURCE_ID) VALUES ('$userId', '$recoveryCode', NOW(), '$codeSourceId')";
+	$sql = "REPLACE INTO USER_SECRET_CODE (USER_ID, USER_SECRET_CODE_TEXT, USER_SECRET_CODE_DATE_TIME, USER_SECRET_CODE_SOURCE_ID) VALUES ('$userId', '$recoveryCode', NOW(), '$codeSourceId')";
 	mysql_query($sql, $db);
 	
 	return $recoveryCode;
@@ -155,14 +155,14 @@ function createSecretCode ($userId, $codeSourceId, $db) {
 function secretCodeToUserId($codeText, $codeSourceId, $db) {
 	$recoveryCode = mysql_real_escape_string($codeText);
 	
-	$sql = "SELECT USER_ID, SECRET_CODE_DATE_TIME FROM SECRET_CODE WHERE SECRET_CODE_TEXT='$codeText' AND SECRET_CODE_SOURCE_ID = '$codeSourceId'";
+	$sql = "SELECT USER_ID, USER_SECRET_CODE_DATE_TIME FROM USER_SECRET_CODE WHERE USER_SECRET_CODE_TEXT='$codeText' AND USER_SECRET_CODE_SOURCE_ID = '$codeSourceId'";
 	$result = mysql_query($sql, $db);
   if ($result == null || mysql_num_rows($result) == 0) {
     return null;
   }
   $row = mysql_fetch_array($result);
 	
-	$codeDate = strtotime($row["SECRET_CODE_DATE_TIME"]);
+	$codeDate = strtotime($row["USER_SECRET_CODE_DATE_TIME"]);
 	$expirationDate = strtotime("-1 day");
 	
 	$codeStatus = array();
@@ -180,7 +180,7 @@ function secretCodeToUserId($codeText, $codeSourceId, $db) {
 // Input: User ID, Secret Code Source ID, DB Handle
 // Action: Remove secret code from database
 function removeSecretCode($userId, $codeSourceId, $db) {
-	$sql = "DELETE FROM SECRET_CODE WHERE USER_ID = '$userId' AND SECRET_CODE_SOURCE_ID = '$codeSourceId'";
+	$sql = "DELETE FROM USER_SECRET_CODE WHERE USER_ID = '$userId' AND USER_SECRET_CODE_SOURCE_ID = '$codeSourceId'";
 	mysql_query($sql, $db);
 }
 
