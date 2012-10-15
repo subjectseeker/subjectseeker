@@ -16,7 +16,7 @@ function displayRegistration() {
 	}
 	else {
 		$content = "<div class=\"box-title\">Create Account</div>";
-		include_once('../third-party/recaptcha/recaptchalib.php');
+		include_once(dirname(__FILE__)."/../third-party/recaptcha/recaptchalib.php");
 		
 		$userName = NULL;
 		// Check if user has submitted information
@@ -54,6 +54,7 @@ function displayRegistration() {
 			else {
 				$hashedPass = hashPassword($userPass1);
 				$userId = addUser($userName, $userEmail, $hashedPass, $db);
+				editUserPreferences($userId, $twitterUserDetails->url, $twitterUserDetails->description, 1, 1, $db);
 				editUserStatus ($userId, 3, $db);
 				
 				// Check if Twitter details have been imported
@@ -61,7 +62,7 @@ function displayRegistration() {
 					addToTwitterList($_SESSION['user_id']);
 					addUserSocialAccount (1, $_SESSION['screen_name'], $_SESSION['oauth_token'], $_SESSION['oauth_token_secret'], $userId, $db);
 					$twitterUserDetails = getTwitterUserDetails($_SESSION['user_id']);
-					editUserPreferences($userId, $twitterUserDetails->url, $twitterUserDetails->description, 0, 0, $db);
+					editUserPreferences($userId, $twitterUserDetails->url, $twitterUserDetails->description, 1, 1, $db);
 					$userDisplayName = $twitterUserDetails->name;
 					if (empty($userDisplayName)) {
 						$userDisplayName = $userName;

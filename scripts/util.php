@@ -193,11 +193,13 @@ function sendRecoveryEmail ($recoveryCode, $userEmail, $userName, $userDisplayNa
 	$subject = $sitename. " Account Recovery";
 	$message = "Hello, ".$userDisplayName.".
 
-A request was made to recover your ".$sitename." account information, if you didn't make this request, please ignore this email.
+A request was made to recover your ".$sitename." account, if you didn't make this request, please ignore this email.
 
 User name: ".$userName."
 
-To reset your password, go to the following link: ".$pages["login"]->getAddress()."/?step=verify-recovery&recovery-code=".$recoveryCode."
+To reset your password, use the following code in the recovery page: ".$recoveryCode."
+
+Or visit this link: ".$pages["login"]->getAddress()."/?step=verify-recovery&recovery-code=".$recoveryCode."
 
 The ".$sitename." Team.";
 	sendMail($userEmail, $subject, $message);
@@ -1053,35 +1055,6 @@ function getUsers ($arrange, $order, $pagesize, $offset, $db) {
   $results = mysql_query($sql, $db);
 	
   return $results;
-}
-
-// Input: Arrange type, order, number of posts, offset, DB handle
-// Return: Posts data
-function getPosts ($arrange, $order, $pagesize, $offset, $db) {
-	global $hashData;
-	$column = $hashData["$arrange"];
-	$direction = $hashData["$order"];
-	
-	$sql = "SELECT * from BLOG_POST ORDER BY $column $direction LIMIT $pagesize OFFSET $offset";
-	
-	$posts = array();
-	$results =  mysql_query($sql, $db);	
-	while ($row = mysql_fetch_array($results)) {
-  // Build post object to return
-		$post["postId"] = $row["BLOG_POST_ID"];
-		$post["blogId"] = $row["BLOG_ID"];
-		$post["title"] = $row["BLOG_POST_TITLE"];
-		$post["content"] = $row["BLOG_POST_SUMMARY"];
-		$post["authorId"] = $row["BLOG_AUTHOR_ID"];
-		$post["postDate"] = $row["BLOG_POST_DATE_TIME"];
-		$post["addedDate"] = $row["BLOG_POST_INGEST_DATE_TIME"];
-		$post["uri"] = $row["BLOG_POST_URI"];
-		$post["language"] = $row["LANGUAGE_ID"];
-		$post["status"] = $row["BLOG_POST_STATUS_ID"];
-		$post["hasCitation"] = $row["BLOG_POST_HAS_CITATION"];
-		array_push($posts, $post);
-	}
-	return $posts;
 }
 
 // Input: Username, DB handle
@@ -1960,13 +1933,10 @@ function addTopic ($topic, $db) {
   return mysql_insert_id();
 }
 
-// Input: uri of post to search for, DB handle
-// Return: corresponding post object, or null
-function getPost ($arrange, $value, $db) {
-	global $hashData;
-	$column = $hashData["$arrange"];
-	
-  $sql = "SELECT * from BLOG_POST where $column = '$value'";
+// Input: Post ID, DB Handle
+// Return: Post Data
+function getPost ($postId, $db) {
+	$sql = "SELECT * from BLOG_POST where BLOG_POST_ID = '$postId'";
   $results =  mysql_query($sql, $db);
   if (! $results || mysql_num_rows($results) == 0) {
     return null;
@@ -3181,8 +3151,7 @@ function checkUserData($loggedUserId, $userId, $userName, $userDisplayName, $use
 // Input: user ID, password, DB handle
 // Action: check if password matches the current user password.
 function checkUserPassword($userId, $userPass, $db) {
-	global $hashFile;
-	include_once $hashFile;
+	include_once (dirname(__FILE__)."/../third-party/hasher/class-phpass.php");
 	
 	$sql = "SELECT PASSWORD FROM USER WHERE USER_ID = '$userId'";
 	$result = mysql_query($sql, $db);
@@ -3215,6 +3184,8 @@ function editUser ($userId, $userName, $userDisplayName, $userStatus, $userEmail
 	}
 }
 
+// Input: user ID, user status ID, DB handle
+// Action: edit user status
 function editUserStatus ($userId, $userStatusId, $db) {
 	$userStatusId = mysql_real_escape_string($userStatusId);
 	
@@ -3222,6 +3193,8 @@ function editUserStatus ($userId, $userStatusId, $db) {
 	mysql_query($sql, $db);
 }
 
+// Input: user ID, user display name, DB handle
+// Action: edit user display name
 function editDisplayName ($userId, $userDisplayName, $db) {
 	$userDisplayName = mysql_real_escape_string($userDisplayName);
 	
@@ -3229,26 +3202,28 @@ function editDisplayName ($userId, $userDisplayName, $db) {
 	mysql_query($sql, $db);
 }
 
+// Input: user ID, user password, DB handle
+// Action: Hash password and insert it
 function editUserPass($userId, $userPass, $db) {
-	if (isset($userPass)) {
-		$hashedPass = hashPassword($userPass);
-		
-		$sql = "UPDATE USER SET PASSWORD='$hashedPass' WHERE USER_ID='$userId'";
-		mysql_query($sql, $db);
-		
-		return TRUE;
-	}
-	return FALSE;
+	$hashedPass = hashPassword($userPass);
+	
+	$sql = "UPDATE USER SET PASSWORD='$hashedPass' WHERE USER_ID='$userId'";
+	mysql_query($sql, $db);
+	
+	return TRUE;
 }
 
+// Input: user ID, user status ID, DB handle
+// Action: edit user avatar name
 function editUserAvatar ($imageName, $userId, $db) {
 	$sql = "UPDATE USER SET USER_AVATAR_LOCATOR = '$imageName' WHERE USER_ID = '$userId'";
 	mysql_query($sql, $db);
 }
 
+// Input: Password
+// Output: Hashed password.
 function hashPassword($pass) {
-	global $hashFile;
-	include_once $hashFile;
+	include_once (dirname(__FILE__)."/../third-party/hasher/class-phpass.php");
 	
 	$hasher = new PasswordHash(8, TRUE);
 	$hashedPass = $hasher->HashPassword($pass);
@@ -3256,8 +3231,8 @@ function hashPassword($pass) {
 	return $hashedPass;
 }
 
-// Input: user ID, user name, user status, user privilege status, user email, administrator id, administrator privilege, administrator display name, WordPress DB handle, DB handle
-// Action: check user metadata
+// Input: User URL, User Personal Biography
+// Action: check user preferences metadata
 // Return: error message or null
 function checkUserPreferences($url, $bio) {
 	$result = "";
@@ -3283,10 +3258,10 @@ function editUserPreferences ($userId, $url, $bio, $emailEdPicks, $emailAnnounce
 	
 	$emailEP = "0";
 	$emailA = "0";
-	if (!empty($emailEdPicks)) {
+	if ($emailEdPicks == TRUE) {
 		$emailEP = "1";
 	}
-	if (!empty($emailAnnouncement)) {
+	if ($emailAnnouncement == TRUE) {
 		$emailA = "1";
 	}
 	
@@ -4317,10 +4292,9 @@ function clearClaimToken($blogId, $userId, $claimToken, $db) {
 // Input: URL to return to, Boolean to determine if Twitter should ask for confirmation again.
 // Output: Twitter authorization URL
 function getTwitterAuthURL ($returnUrl, $authorize = FALSE) {
-	global $twitterOAuth;
 	global $twitterConsumerKey;
 	global $twitterConsumerSecret;
-	include_once $twitterOAuth;
+	include_once (dirname(__FILE__)."/../third-party/twitteroauth/twitteroauth.php");
 	
 	// Connect to Twitter with our keys
 	$connection = new TwitterOAuth($twitterConsumerKey, $twitterConsumerSecret);
@@ -4337,10 +4311,9 @@ function getTwitterAuthURL ($returnUrl, $authorize = FALSE) {
 // Input: User Auth Token, User Secret Auth Token
 // Output: Connection to Twitter User Account
 function getTwitterAuthTokens ($oauthToken, $oauthSecret) {
-	global $twitterOAuth;
 	global $twitterConsumerKey;
 	global $twitterConsumerSecret;
-	include_once $twitterOAuth;
+	include_once (dirname(__FILE__)."/../third-party/twitteroauth/twitteroauth.php");
 	
 	// Ask Twitter for access to user account
 	$connection = new TwitterOAuth($twitterConsumerKey, $twitterConsumerSecret, $oauthToken, $oauthSecret);
@@ -4351,13 +4324,12 @@ function getTwitterAuthTokens ($oauthToken, $oauthSecret) {
 // Input: User Auth Token, User Secret Auth Token
 // Output: Connection to Twitter User Account
 function addToTwitterList($twitterUserId) {
-	global $twitterOAuth;
 	global $twitterConsumerKey;
 	global $twitterConsumerSecret;
 	global $twitterListId;
 	global $twitterListToken;
 	global $twitterListTokenSecret;
-	include_once $twitterOAuth;
+	include_once (dirname(__FILE__)."/../third-party/twitteroauth/twitteroauth.php");
 	
 	// Add new user to Twitter list
 	$connection = new TwitterOAuth($twitterConsumerKey, $twitterConsumerSecret, $twitterListToken, $twitterListTokenSecret);

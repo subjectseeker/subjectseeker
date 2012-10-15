@@ -80,14 +80,14 @@ function displayLogin() {
 			$content = "<div class=\"box-title\">Recover Account</div>
 			<form action=\"".$pages["login"]->getAddress()."/?step=recover-account\" name=\"login\" method=\"post\">
 			<p>Please enter your user name or email to recover your account<br />
-			<input type=\"text\" name=\"recover\" size=\"30\" /></p>
-			<p><input class=\"ss-button\" type=\"submit\" value=\"Send recovery email\" /></p>
+			<input type=\"text\" name=\"recovery-data\" size=\"30\" /></p>
+			<p><input class=\"white-button\" type=\"submit\" value=\"Send recovery email\" /></p>
 			</form>";
 		}
 		elseif ($step == "recover-account") {
 			$content = "<div class=\"box-title\">Recover Account</div>";
-			if (isset($_POST["verification-data"])) {
-				$userRecoveryData = $_POST["verification-data"];
+			if (isset($_POST["recovery-data"])) {
+				$userRecoveryData = $_POST["recovery-data"];
 				
 				// Determine if user submitted an email or a user name
 				if ((filter_var($userRecoveryData, FILTER_VALIDATE_EMAIL) && $userId = emailToUserId($userRecoveryData, $db)) || ((preg_match("/^[A-Za-z][A-Za-z0-9_]*$/", $userRecoveryData) && strlen($userRecoveryData) < 31) && $userId = getUserId($userRecoveryData, $db))) {
@@ -95,18 +95,15 @@ function displayLogin() {
 					$userEmail = getUserEmail($userId, $db);
 					$userDisplayName = getDisplayName($userId, $db);
 					$userStatusId = getUserStatus($userId, $db);
-					
-					if (!empty($userStatusId)) {
-						$recoveryCode = createSecretCode ($userId, 3, $db);
-						sendRecoveryEmail($recoveryCode, $userEmail, $userName, $userDisplayName);
-					}
+					$recoveryCode = createSecretCode ($userId, 2, $db);
+					sendRecoveryEmail($recoveryCode, $userEmail, $userName, $userDisplayName);
 				}
 				else {
-					$content .= "<p class=\"ss-error\">The submitted email or user was not found in our database.</p>";
+					$content .= "<p class=\"ss-error\">The submitted email or user was not found in our database.</p>
+					<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=lost-password\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
 					return $content;
 				}
 			}
-			
 			$content .= "<p class=\"ss-successful\">An email has been sent to you address to recover your account.</p>
 			<form action=\"".$pages["login"]->getAddress()."/?step=verify-recovery\" name=\"login\" method=\"post\">
 			<p class=\"margin-bottom-small\">Please enter your recovery code below or follow the link sent with the email.</p>
@@ -125,10 +122,11 @@ function displayLogin() {
 				if (isset($recoveryStatus["expired"]) && $recoveryStatus["expired"] == TRUE) {
 					$content .= "<p class=\"ss-error\">Your recovery code has expired.</p>";
 					$userId = $recoveryStatus["userId"];
-					removeRecoveryCode($userId, $db);
+					removeSecretCode($userId, 2, $db);
 				}
 				// Check if it's time to reset the password
 				elseif ($recoveryStatus["userId"] && $_POST["new-pass"]) {
+					$userId = $recoveryStatus["userId"];
 					$newUserPass1 = NULL;
 					$newUserPass2 = NULL;
 					if (isset($_POST["new-pass"])) {
@@ -143,17 +141,17 @@ function displayLogin() {
 						$errors .= "<p class=\"ss-error\">Missing value, please submit your new password and confirmation password.</p>";
 					}
 					
-					if (isset($errors)) {
+					if (!empty($errors)) {
 						$content .= "$errors";
 					}
 					else {
 						if ($newUserPass1 == $newUserPass2) {
 							$userId = $recoveryStatus["userId"];
 							editUserPass($userId, $newUserPass1, $db);
-							removeRecoveryCode($userId, $db);
+							removeSecretCode($userId, 2, $db);
 							
 							$content .= "<p class=\"ss-successful\">Password has been changed.</p>
-							<a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
+							<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."\">Log In</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
 						}
 					}
 				}
@@ -161,6 +159,7 @@ function displayLogin() {
 				elseif (isset($recoveryStatus["userId"])) {
 					$content .= "<p class=\"ss-successful\">Code verified, you can reset your password below.</p>
 					<form method=\"post\">
+					<input type=\"hidden\" name=\"recovery-code\" value=\"$recoveryCode\" />
 					<p>New Password<br />
 					<input name=\"new-pass\" type=\"password\" /></p>
 					<p>Re-type Password<br />
@@ -171,7 +170,7 @@ function displayLogin() {
 				}
 				else {
 					$content .= "<p class=\"ss-error\">Recovery code not found.</p>
-					<a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
+					<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=recover-account\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
 				}
 			}
 			else {
@@ -212,7 +211,8 @@ function displayLogin() {
 					}
 				}
 				else {
-					$content .= "<p class=\"ss-error\">The submitted email or user was not found in our database.</p>";
+					$content .= "<p class=\"ss-error\">The submitted email or user was not found in our database.</p>
+					<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=send-verification\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
 					return $content;
 				}
 			}
@@ -237,18 +237,22 @@ function displayLogin() {
 				
 				// Check if code has expired
 				if (isset($verificationStatus["expired"]) && $verificationStatus["expired"] == TRUE) {
-					$content .= "<p class=\"ss-error\">Your verification code has expired.</p>";
+					$content .= "<p class=\"ss-error\">Your verification code has expired.</p>
+					<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=send-verification\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
 				}
 				elseif (!empty($userId)) {
 					editUserStatus ($userId, 0, $db);
-					$content .= "<p class=\"ss-successful\">Your account has been verified.</p>";
+					$content .= "<p class=\"ss-successful\">Your account has been verified.</p>
+					<a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
 				}
 				else {
-					$content .= "<p class=\"ss-error\">Verification code not found in our database.</p>";
+					$content .= "<p class=\"ss-error\">Verification code not found in our database.</p>
+					<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=send-verification\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
 				}
 			}
 			else {
-				$content .= "<p class=\"ss-error\">Verification code not found.</p>";
+				$content .= "<p class=\"ss-error\">Verification code not submitted.</p>
+				<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=send-verification\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
 			}
 			
 			removeSecretCode($userId, 3, $db);

@@ -2,6 +2,7 @@
 global $currentPage;
 global $homeUrl;
 global $themeUrl;
+global $localStylesheet;
 $content = displayModules($currentPage->getLocations("center"), TRUE);
 ?>
 <!DOCTYPE html>
@@ -9,11 +10,18 @@ $content = displayModules($currentPage->getLocations("center"), TRUE);
 <head>
 <?php include_once("head.php"); ?>
 <link rel="stylesheet" type="text/css" href="<?php echo $themeUrl; ?>/standalone.css" media="all">
+<?php
+if (!empty($localStylesheet)) {
+?>
+<link rel="stylesheet" type="text/css" href="<?php echo $localStylesheet ?>" media="all" />
+<?php
+}
+?>
 </head>
 <body>
 <div id="wrapper">
 <div class="center-text">
-<a href="<?php echo $homeUrl ?>" title="Home page"><img style="margin: 30px 0px 50px 0px;" src="<?php echo $imagesUrl ?>/logos/SSMediumLogo.png" /></a>
+<a class="medium-logo" href="<?php echo $homeUrl ?>" title="Home page"><img src="<?php echo $imagesUrl ?>/logos/SSMediumLogo.png" /></a>
 </div>
 <div id="content-box">
 <?php

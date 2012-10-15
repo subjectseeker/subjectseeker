@@ -16,7 +16,7 @@ function displaySlideShow() {
 	$recommendations = getEditorsPicks("images", $db);
 	while ($row = mysql_fetch_array($recommendations)) {
 		$imageName = $row["REC_IMAGE"];
-		$postData = getPost("postId", $row["BLOG_POST_ID"], $db);
+		$postData = getPost($row["BLOG_POST_ID"], $db);
 		$title = $postData["BLOG_POST_TITLE"];
 		$url = htmlspecialchars($postData["BLOG_POST_URI"]);
 		

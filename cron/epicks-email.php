@@ -16,8 +16,8 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 // Input: DB Handle
 // Output: array of marked blog IDs
 
-include_once "../globals.php";
-include_once "../scripts/util.php";
+include_once (dirname(__FILE__)."/../globals.php");
+include_once (dirname(__FILE__)."/../scripts/util.php");
 	
 $db = ssDbConnect();
 
@@ -60,7 +60,7 @@ function sendEPEmail ($postId, $userEmail, $userName, $userDisplayName, $db) {
 	global $homeUrl;
 	global $sitename;
 	
-	$postData = getPost("postId", $postId, $db);
+	$postData = getPost($postId, $db);
 	$postTitle = $postData["BLOG_POST_TITLE"];+
 	
 	$subject = $sitename. " Editor's Pick";

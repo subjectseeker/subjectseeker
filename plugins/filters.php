@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 function displayFilters() {
 	global $pages;
-	global $serializerUrl;
+	global $feedUrl;
 	
 	$params = httpParamsToSearchQuery();
 	$db = ssDbConnect();
@@ -35,7 +35,7 @@ function displayFilters() {
 	}
 	
 	print "<div class=\"categories-wrapper\" data-posts=\"".$pages["posts"]->getAddress()."\" data-blogs=\"".$pages["sources"]->getAddress()."\" data-rss=\"$serializerUrl\" data-widget=\"".$pages["widget"]->getAddress()."\">
-	<div class=\"filter-buttons\"><a data-button=\"filter-posts\" class=\"button-small-red\" href=\"".$pages["posts"]->getAddress()."\">Posts</a><a data-button=\"filter-blogs\" class=\"button-small-red\" href=\"".$pages["sources"]->getAddress()."\">Blogs</a><a data-button=\"filter-widget\" class=\"button-small-red\" href=\"".$pages["widget"]->getAddress()."\">Widget</a><a data-button=\"filter-feed\" class=\"button-small-yellow\" href=\"$serializerUrl\" target=\"_blank\">Feed</a></div>
+	<div class=\"filter-buttons\"><a data-button=\"filter-posts\" class=\"button-small-red\" href=\"".$pages["posts"]->getAddress()."\">Posts</a><a data-button=\"filter-blogs\" class=\"button-small-red\" href=\"".$pages["sources"]->getAddress()."\">Blogs</a><a data-button=\"filter-widget\" class=\"button-small-red\" href=\"".$pages["widget"]->getAddress()."\">Widget</a><a data-button=\"filter-feed\" class=\"button-small-orange\" href=\"$feedUrl\" target=\"_blank\">Feed</a></div>
 	<p>Search Title<br />
 	<input class=\"filters-text\" type=\"text\" name=\"title\" /></p>
 	<ul>
@@ -54,7 +54,7 @@ function displayFilters() {
 	}
 	
 	print "</ul>
-	<div class=\"filter-buttons\"><a data-button=\"filter-posts\" class=\"button-small-red\" href=\"".$pages["posts"]->getAddress()."\">Posts</a><a data-button=\"filter-blogs\" class=\"button-small-red\" href=\"".$pages["sources"]->getAddress()."\">Blogs</a><a data-button=\"filter-widget\" class=\"button-small-red\" href=\"".$pages["widget"]->getAddress()."\">Widget</a><a data-button=\"filter-feed\" class=\"button-small-yellow\" href=\"$serializerUrl\" target=\"_blank\">Feed</a></div>
+	<div class=\"filter-buttons\"><a data-button=\"filter-posts\" class=\"button-small-red\" href=\"".$pages["posts"]->getAddress()."\">Posts</a><a data-button=\"filter-blogs\" class=\"button-small-red\" href=\"".$pages["sources"]->getAddress()."\">Blogs</a><a data-button=\"filter-widget\" class=\"button-small-red\" href=\"".$pages["widget"]->getAddress()."\">Widget</a><a data-button=\"filter-feed\" class=\"button-small-orange\" href=\"$feedUrl\" target=\"_blank\">Feed</a></div>
 	</div>";
 
 }

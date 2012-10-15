@@ -12,7 +12,8 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 */
 
-include_once "initialize.php";
+include_once (dirname(__FILE__)."/../globals.php");
+include_once (dirname(__FILE__)."/util.php");
 
 global $imagesUrl;
 $db = ssDbConnect();
@@ -22,22 +23,19 @@ $postId = $matchResult[0];
 
 // Use Search API to find Blog ID and Post URL
 $errormsgs = array();
-$queryList = httpParamsToSearchQuery("type=post&filter0=identifier&value0=$postId");
-$settings = httpParamsToExtraQuery("type=post&filter0=identifier&value0=$postId");
-$postData = generateSearchQuery ($queryList, $settings, 0, $errormsgs, $db);
-$row = mysql_fetch_array($postData);
-$postHasCitation = $row["BLOG_POST_HAS_CITATION"];
+$postData = getPost($postId, $db);
+$postHasCitation = $postData["BLOG_POST_HAS_CITATION"];
 $editorsPicksStatus = getRecommendationsCount($postId, NULL, NULL, 1, $db);
 
 global $postProfile;
 global $imagesUrl;
-if ($postHasCitation && $editorsPicksStatus) {
+if ($postHasCitation == TRUE && $editorsPicksStatus == TRUE) {
 	header("Location: $imagesUrl/icons/badge-3.gif");
 }
-elseif (isset($postHasCitation)) {
+elseif ($postHasCitation == TRUE) {
 	header("Location: $imagesUrl/icons/badge-2.gif");
 }
-elseif (isset($editorsPicksStatus)) {
+elseif ($editorsPicksStatus == TRUE) {
 	header("Location: $imagesUrl/icons/badge-1.gif");
 }
 else {

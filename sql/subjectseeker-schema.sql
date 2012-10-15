@@ -584,7 +584,6 @@ CREATE TABLE IF NOT EXISTS `USER` (
   `PASSWORD` varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'The encrypted password used to log in with the account.',
   `EMAIL_ADDRESS` varchar(127) collate utf8_unicode_ci NOT NULL COMMENT 'E-mail address associated with a user account.',
   `DISPLAY_NAME` varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'Human-readable name associated with this user.',
-  `BIOGRAPHY` text collate utf8_unicode_ci COMMENT 'Arbitrarily long free text describing a user.',
   `USER_AVATAR_LOCATOR` varchar(255) collate utf8_unicode_ci default NULL COMMENT 'The system identifier for a graphical image associated with a user.',
   PRIMARY KEY  (`USER_ID`),
   UNIQUE KEY `AK_USER_NAME` (`USER_NAME`),
@@ -605,20 +604,6 @@ CREATE TABLE IF NOT EXISTS `USER_ADMINISTRATOR_NOTE` (
   PRIMARY KEY  (`ADMINISTRATOR_NOTE_ID`,`USER_ID`),
   KEY `FK_USER_NOTES` (`USER_ID`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Association of an administrator note with a particular user ';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `USER_COOKIE`
---
-
-DROP TABLE IF EXISTS `USER_COOKIE`;
-CREATE TABLE IF NOT EXISTS `USER_COOKIE` (
-  `USER_ID` int(10) unsigned NOT NULL COMMENT 'Reference to a user associated with a cookie.',
-  `COOKIE_TEXT` varchar(100) collate utf8_unicode_ci NOT NULL COMMENT 'Unique text that identifies a cookie.',
-  `COOKIE_DATE_TIME` datetime NOT NULL COMMENT 'The date and time at which this cookie was made.',
-  UNIQUE KEY `USER_IDtoCOOKIE_TEXT` (`USER_ID`,`COOKIE_DATE_TIME`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Cookies to authenticate users.';
 
 -- --------------------------------------------------------
 

@@ -1,6 +1,7 @@
 <?php
 
-include_once "initialize.php";
+include_once (dirname(__FILE__)."/../globals.php");
+include_once (dirname(__FILE__)."/util.php");
 
 function displayWidget() {
 	global $homeUrl;

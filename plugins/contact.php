@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 function displayContactForm() {
 	
-	include_once('../third-party/recaptcha/recaptchalib.php');
+	include_once(dirname(__FILE__)."/../third-party/recaptcha/recaptchalib.php");
 	
 	$step = NULL;
 	$userDisplayName = NULL;
@@ -35,15 +35,18 @@ function displayContactForm() {
 			$name = strip_tags($_POST["name"]);
 		} else {
 			$errors .= "<p class=\"ss-error\">Please submit a name.</p>";
-		} if (isset($_POST["email"]) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+		}
+		if (isset($_POST["email"]) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
 			$email = strip_tags($_POST["email"]);
 		} else {
 			$errors .= "<p class=\"ss-error\">Please submit a valid email.</p>";
-		} if (isset($_POST["subject"])) {
+		}
+		if (isset($_POST["subject"])) {
 			$subject = htmlspecialchars($_POST["subject"]);
 		} else {
 			$errors .= "<p class=\"ss-error\">Please submit a subject.</p>";
-		} if (isset($_POST["name"])) {
+		}
+		if (isset($_POST["name"])) {
 			$message = htmlspecialchars($_POST["message"]);
 		} else {
 			$errors .= "<p class=\"ss-error\">Please submit a message.</p>";
@@ -58,8 +61,7 @@ function displayContactForm() {
 		
 		if (isset($errors)) {
 			print "$errors";
-		}
-		else {
+		} else {
 			global $contactEmail;
 			$content = "Author: ".$name."
 

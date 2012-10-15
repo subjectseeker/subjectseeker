@@ -18,13 +18,13 @@ $jsUrl = $homeUrl . "/js";
 $thirdPartyUrl = $homeUrl . "/third-party";
 $themeUrl = $homeUrl . "/theme";
 $scriptsUrl = $homeUrl . "/scripts";
+$feedUrl = $homeUrl. "/feed/posts/";
+$localStylesheet = "";
 
 // Files and directories
 $basedir = "/home/username/public_html";
 $imagedir = "$basedir/images";
 $cachedir = "$basedir/cache";
-$twitterOAuth = "$basedir/third-party/twitteroauth/twitteroauth.php";
-$hashFile = "$basedir/third-party/hasher/class-phpass.php";
 $configFile = "$basedir/config/pages.config";
 $crawlerLock = "$basedir/cron/lock.txt";
 
@@ -56,7 +56,5 @@ $rejectedSiteReasons = "	1. The site may not have enough science content. We are
 	2. The site must produce primarily original content that does not aggregate other sources. In no case is plagiarism allowed. When other sources are used, they must be clearly cited.
 	
 	3. Claims without scientific evidence that fall within the realm of pseudoscience and misinformation are not allowed."; // Reasons why a site is rejected to include in an email to the author.
-
-// Hash
-$hashData = array ("blogId" => "BLOG_ID","blogName" => "BLOG_NAME","blogStatus" => "BLOG_STATUS_ID","blogUri" => "BLOG_URI","blogSyndicationUri" => "BLOG_SYNDICATION_URI","addedTime" => "ADDED_DATE_TIME","crawledTime" => "CRAWLED_DATE_TIME","postId" => "BLOG_POST_ID","postStatus" => "BLOG_POST_STATUS_ID","postTitle" => "BLOG_POST_TITLE","postUri" => "BLOG_POST_URI","publicationTime" => "BLOG_POST_DATE_TIME","ingestTime" => "BLOG_POST_INGEST_DATE_TIME","userId" => "USER_ID","userName" => "USER_NAME","userStatus" => "USER_STATUS_ID","userPrivilege" => "USER_PRIVILEGE_ID","userEmail" => "EMAIL_ADDRESS","descending" => "DESC","ascending" => "ASC");
+	
 ?>
