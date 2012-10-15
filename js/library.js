@@ -176,23 +176,6 @@ $(document).ready(function() {
 		});
 	});
 	
-	/*$('.note-button').click(function() {
-		var button = $(this);
-		var number = $(button).attr('data-number');
-		var parent = $(button).parents('.data-carrier');
-		var slider = $(parent).find('.ss-slide-wrapper:eq(0)');
-		var commentsContent = $(parent).find('.comments-list-wrapper').html();
-		
-		if (commentsContent == "") updateComments(this);
-		if($(slider).is(':visible')){
-			if (commentsContent == "") {
-				return;
-			}
-		}
-		
-		toggleSlider(slider);
-	});*/
-	
 	$('.recommendation-wrapper').on('click', '.recommended,.recommend', function() {
 		var parent = $(this).parents('.data-carrier');
 		var id = $(parent).attr("id");
@@ -274,7 +257,7 @@ $(document).ready(function() {
 		var posts = $(wrapper).attr('data-posts');
 		var widget = $(wrapper).attr('data-widget');
 		var blogs = $(wrapper).attr('data-blogs');
-		var serializer = $(wrapper).attr('data-rss');
+		var serializer = $(wrapper).attr('data-feed');
 		var text = $(wrapper).find('.filters-text').val();
 		
 		var postsString = '';

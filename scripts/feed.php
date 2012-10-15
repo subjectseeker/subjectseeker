@@ -44,14 +44,14 @@ function dbPublicSearch($queryList, $settings, $db) {
 		$sourceInTitle = 0;
 		if (isset($settings["citation-in-summary"])) $citationInSummary = $settings["citation-in-summary"];
 		if (isset($settings["source-in-title"])) $sourceInTitle = $settings["source-in-title"];
-		return (formatSearchPostResults($searchResults["result"], $citationInSummary, $sourceInTitle, $searchResults["result"], $db));
+		return (formatSearchPostResults($searchResults["result"], $citationInSummary, $sourceInTitle, $searchResults["errors"], $db));
   }
 
   $xml = "<?xml version=\"1.0\" ?>\n";
   $xml .=  "<subjectseeker>\n";
 
-  if (count($searchResults["result"]) > 0) {
-    foreach ($searchResults["result"] as $error) {
+  if (count($searchResults["errors"]) > 0) {
+    foreach ($searchResults["errors"] as $error) {
       $xml .=  "<error>$error</error>\n";
     }
     $xml .=  "</subjectseeker>\n";

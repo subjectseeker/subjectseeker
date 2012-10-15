@@ -405,7 +405,7 @@ function generateSearchQuery ($queryList, $settings, $userPriv, $db) {
   $sql = "$select $from $where $group $count $order $limit $offset;";
 
   // for debugging:
-  // print "<br />SQL $sql</br>";
+  print "<br />SQL $sql</br>";
 
   // execute SQL query
  	$result["result"] = mysql_query($sql, $db);
