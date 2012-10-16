@@ -1033,7 +1033,9 @@ function insanitize( $htmlString ) {
  */
  
 function sendMail($userEmail, $subject, $message) {
-	$headers = "Mime-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nFrom: ScienceSeeker <contact@scienceseeker.org>\r\nReply-To: ScienceSeeker <contact@scienceseeker.org>\r\nX-Mailer: PHP/" . phpversion();
+	global $sitename;
+	global $contactEmail;
+	$headers = "Mime-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nFrom: $sitename <$contactEmail>\r\nReply-To: $sitename <$contactEmail>\r\nX-Mailer: PHP/" . phpversion();
 	if (! mail($userEmail, $subject, $message, $headers)) {
 		// TODO: Log this.
 	}
@@ -1769,10 +1771,8 @@ function addSimplePieItem ($item, $language, $blogId, $db) {
 	
 	$sql = "SELECT BLOG_POST_ID FROM BLOG_POST WHERE (BLOG_POST_TITLE = '$postTitle' AND BLOG_POST_DATE_TIME = '$timestamp') OR (BLOG_POST_URI = '$itemURI')";
 	$result =  mysql_query($sql, $db);
-	$row = mysql_fetch_array($result);
-	$existing = $row["BLOG_POST_ID"];
 	
-  if (isset($existing)) {
+	if (! $result || mysql_num_rows($result) == 0) {
     return NULL;
   }
 
@@ -1804,7 +1804,7 @@ function addSimplePieItem ($item, $language, $blogId, $db) {
   }
 
   $blogPostStatusId = 0; // active
-  $sql = "INSERT INTO BLOG_POST (BLOG_ID, BLOG_AUTHOR_ID, LANGUAGE_ID, BLOG_POST_STATUS_ID, BLOG_POST_URI, BLOG_POST_DATE_TIME, BLOG_POST_INGEST_DATE_TIME, BLOG_POST_SUMMARY, BLOG_POST_TITLE) VALUES ($blogId, $blogAuthorId, $languageId, $blogPostStatusId, '". mysql_real_escape_string( $itemURI ) . "' , '" . $timestamp . "', NOW(), '" . mysql_real_escape_string($summary) . "' ,'" . mysql_real_escape_string($item->get_title()) . "')";
+  $sql = "INSERT INTO BLOG_POST (BLOG_ID, BLOG_AUTHOR_ID, LANGUAGE_ID, BLOG_POST_STATUS_ID, BLOG_POST_URI, BLOG_POST_DATE_TIME, BLOG_POST_INGEST_DATE_TIME, BLOG_POST_SUMMARY, BLOG_POST_TITLE) VALUES ($blogId, $blogAuthorId, $languageId, $blogPostStatusId, '". mysql_real_escape_string( htmlspecialchars($itemURI) ) . "' , '" . $timestamp . "', NOW(), '" . mysql_real_escape_string($summary) . "' ,'" . mysql_real_escape_string($item->get_title()) . "')";
   mysql_query($sql, $db);
 
   // print "SQL: $sql\n";
@@ -2349,7 +2349,7 @@ function editBlogForm ($blogData, $userPriv, $open, $db) {
 	if ($debugSite == "true" && $userPriv > 0) {
 		print "<p><input type=\"checkbox\" class=\"checkbox\" name=\"delete\" value=\"1\" /> Delete from database (debug only).</p>";
 	}
-	print "<input class=\"ss-button\" name=\"editBlog\" type=\"submit\" value=\"Edit Site\" /> <input class=\"ss-button\" name=\"crawl\" type=\"submit\" value=\"Scan for new posts\" />\n
+	print "<input class=\"ss-button\" name=\"editBlog\" type=\"submit\" value=\"Save Changes\" /> <input class=\"ss-button\" name=\"crawl\" type=\"submit\" value=\"Scan for new posts\" />\n
 	</form>\n
 	</div>
 	</div>";
@@ -2418,7 +2418,7 @@ function displayPosts ($postsData, $minimal = FALSE, $open = FALSE, $db) {
 		$commentCount = getRecommendationsCount($postId, "comments", NULL, NULL, $db);
 		
 		print "<div class=\"ss-entry-wrapper\">
-		<div class=\"data-carrier\" id=\"post-$postId\">";
+		<div class=\"data-carrier\" data-id=\"post-$postId\">";
 		if ($open == TRUE) {
 			print "<div class=\"entry-indicator\">-</div>
 			<div class=\"post-header\">$formatHour | <a class=\"entry-title\" href=\"$postUri\" target=\"_blank\" rel=\"bookmark\" title=\"Permanent link to $postTitle\">$postTitle</a></div>
@@ -2551,10 +2551,10 @@ function confirmEditBlog ($step, $db) {
 			$blogName = $_REQUEST["blogName"];
 		}
 		if (isset($_REQUEST["blogUri"])) {
-			$blogUri = $_REQUEST["blogUri"];
+			$blogUri = htmlspecialchars($_REQUEST["blogUri"]);
 		}
 		if (isset($_REQUEST["blogSyndicationUri"])) {
-			$blogSyndicationUri = $_REQUEST["blogSyndicationUri"];
+			$blogSyndicationUri = htmlspecialchars($_REQUEST["blogSyndicationUri"]);
 		}
 		if (isset($_REQUEST["blogDescription"])) {
 			$blogDescription = $_REQUEST["blogDescription"];
@@ -2605,7 +2605,7 @@ function confirmEditBlog ($step, $db) {
 				storeClaimToken($claimToken, $blogId, $authUserId, $db);
 			}
 			
-			displayBlogClaimToken($claimToken, $blogId, $userName, $db);
+			displayBlogClaimToken($claimToken, $blogId, $db);
 			return;
 		}
 		elseif (!empty($crawl)) {
@@ -2701,7 +2701,7 @@ function confirmEditBlog ($step, $db) {
 			else {
 				$claimToken = getClaimToken($blogId, $authUserId, $db);
 				print "<p class=\"ss-error\">Your claim token ($claimToken) was not found on your blog and/or your syndication feed.</p>\n";
-				displayBlogClaimToken($claimToken, $blogId, $userName, $db);
+				displayBlogClaimToken($claimToken, $blogId, $db);
 				return;
 			}
 		}
@@ -2769,7 +2769,7 @@ function editPostForm ($postsData, $userPriv, $open, $db) {
 		}
 		print "</select></p>
 		<p><input type=\"checkbox\" class=\"checkbox\" name=\"checkCitations\" value=\"1\" /> Check for citations.</p>
-		<input class=\"ss-button\" type=\"submit\" value=\"Edit Post\" />
+		<input class=\"ss-button\" type=\"submit\" value=\"Save Changes\" />
 		</form>
 		</div>
 		</div>";
@@ -3307,9 +3307,9 @@ function canEdit($userId, $blogId, $db) {
 // Input: blog ID, DB handle
 // Return: name of this blog, or null
 function getBlogName($blogId, $db) {
-  $sql = "SELECT BLOG_NAME FROM BLOG WHERE BLOG_ID=$blogId";
+  $sql = "SELECT BLOG_NAME FROM BLOG WHERE BLOG_ID='$blogId'";
   $results = mysql_query($sql, $db);
-  if ($results == null || mysql_num_rows($results) == 0) {
+  if (mysql_num_rows($results) == 0) {
     return null;
   }
   $row = mysql_fetch_array($results);
@@ -3819,8 +3819,8 @@ function removeCitations($postId, $citationId, $db) {
 // Input: Array of parsed article data, Boolean identifying the source, DB handle.
 // Output: ID of the inserted article.
 function storeArticle ($articleData, $source, $db) {
-	
-	if (! $articleData["rfr_id"]) $articleData["rfr_id"] = "info:sid/scienceseeker.org";
+	global $rfrId;
+	if (! $articleData["rfr_id"]) $articleData["rfr_id"] = "info:sid/$rfrId";
 	if (! $articleData["id_type"]) $articleData["id_type"] = "other";
 	
 	$rftatitle = NULL;
@@ -4146,7 +4146,7 @@ function doVerifyEditClaim ($db) {
   } else {
     $claimToken = getClaimToken($blogId, $userId, $db);
     print "<p>Your claim token ($claimToken) was not found on your blog and/or your syndication feed.</p>\n";
-    displayBlogClaimToken($claimToken, $blogId, $displayName, $db);
+    displayBlogClaimToken($claimToken, $blogId, $db);
   }
 }
 
@@ -4166,7 +4166,7 @@ function getClaimToken($blogId, $userId, $db) {
 }
 
 function generateClaimToken() {
-  return uniqid("sciseekclaimtoken-");
+  return uniqid("claimtoken-");
 }
 
 function doClaimBlog($blogId, $userName, $db) {
@@ -4182,7 +4182,7 @@ function doClaimBlog($blogId, $userName, $db) {
     storeClaimToken($claimToken, $blogId, $userId, $db);
   }
 
-  displayBlogClaimToken($claimToken, $blogId, $userName, $db);
+  displayBlogClaimToken($claimToken, $blogId, $db);
 }
 
 function doVerifyClaim($blogId, $userName, $db) {
@@ -4204,7 +4204,7 @@ function doVerifyClaim($blogId, $userName, $db) {
   } else {
     $claimToken = getClaimToken($blogId, $userId, $db);
     print "<p class=\"ss-error\">Your claim token ($claimToken) was not found in your blog's feed.</p>\n";
-    displayBlogClaimToken($claimToken, $blogId, $userName, null, null, $db);
+    displayBlogClaimToken($claimToken, $blogId, $db);
   }
 }
 
@@ -4404,7 +4404,7 @@ function storeClaimToken($claimToken, $blogId, $userId, $db) {
 
 // Input: blog claim token, blog ID, display name of user, DB handle
 // Action: Display message to user with blog claim token, explaining how to use it to claim the blog in question
-function displayBlogClaimToken($claimToken, $blogId, $userName, $db) {
+function displayBlogClaimToken($claimToken, $blogId, $db) {
 	$blogName = NULL;
 	$blogUri = NULL;
 	$blogSyndicationUri = NULL;
@@ -4454,16 +4454,16 @@ function displayBlogClaimToken($claimToken, $blogId, $userName, $db) {
 	if (empty($blogId)) {
 		$blogId = $_REQUEST["blogId"];
 	}
-	if (! $blogName) {
+	if (empty($blogName)) {
 		$blogName = getBlogName($blogId, $db);
 	}
 
   print "<h3>Add claim token to your site.</h3>
-	<p>To claim this blog ($blogName), we need to verify that you actually are an author of this blog. Please place the following HTML code in the <span class=\"ss-bold\">most recent</span> post on your blog. It will be invisible to readers, and you can remove it once your blog has been verified by our system.</p>\n
+	<p>To claim this site ($blogName), we need to verify that you actually are an author of this blog. Please place the following HTML code in the <span class=\"ss-bold\">most recent</span> of your posts. It will be invisible to readers, and you can remove it once your site has been verified by our system.</p>\n
 	<p><span class=\"ss-bold\">Claim token:</span> $claimToken</p>\n
 	<p><span class=\"ss-bold\">HTML code to include:</span> &lt;p&gt;&lt;span style=\"display:none\"&gt;$claimToken&lt;/span&gt;&lt;/p&gt;\n
 	<p>Once the token is displayed in a post of your site, press the button below.</p> 
-	<form method='POST' name='doVerifyForm'>\n
+	<form method='post' name='doVerifyForm'>\n
 	<input type='hidden' name='step' value='verify' />\n
 	<input type=\"hidden\" name=\"blogId\" value=\"$blogId\" />
 	<input type=\"hidden\" name=\"blogName\" value=\"".htmlspecialchars($blogName, ENT_QUOTES)."\" />

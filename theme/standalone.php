@@ -20,8 +20,8 @@ if (!empty($localStylesheet)) {
 </head>
 <body>
 <div id="wrapper">
-<div class="center-text">
-<a class="medium-logo" href="<?php echo $homeUrl ?>" title="Home page"><img src="<?php echo $imagesUrl ?>/logos/SSMediumLogo.png" /></a>
+<div class="medium-logo">
+<a href="<?php echo $homeUrl ?>" title="Home page"><img src="<?php echo $imagesUrl ?>/logos/SSMediumLogo.png" /></a>
 </div>
 <div id="content-box">
 <?php

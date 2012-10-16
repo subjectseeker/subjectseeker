@@ -19,7 +19,8 @@ else {
 	echo $currentPage->title." | ".$sitename;
 }
 
-?></title>
+?>
+</title>
 <link rel="shortcut icon" href="<?php echo $imagesUrl ?>/misc/favicon.ico" type="image/x-icon" />
 <link rel="stylesheet" type="text/css" href="<?php echo $themeUrl . "/style.css?v=" . filemtime($basedir.'/theme/style.css') ?>" media="all" />
 <?php

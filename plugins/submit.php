@@ -102,8 +102,8 @@ function displayBlogForm ($errormsg, $db) {
 	$blogSyndicationUri = NULL;
 	$blogDescription = NULL;
   if (isset($_REQUEST["blogname"])) $blogName = $_REQUEST["blogname"];
-  if (isset($_REQUEST["blogurl"])) $blogUri = $_REQUEST["blogurl"];
-  if (isset($_REQUEST["blogsyndicationuri"])) $blogSyndicationUri = $_REQUEST["blogsyndicationuri"];
+  if (isset($_REQUEST["blogurl"])) $blogUri = htmlspecialchars($_REQUEST["blogurl"]);
+  if (isset($_REQUEST["blogsyndicationuri"])) $blogSyndicationUri = htmlspecialchars($_REQUEST["blogsyndicationuri"]);
   if (isset($_REQUEST["blogdescription"])) $blogDescription = $_REQUEST["blogdescription"];
 
 	$authUserId = NULL;

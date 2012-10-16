@@ -22,9 +22,8 @@ function displayWidget() {
 	
 	else {
 		global $sitename;
-		print "<div class=\"widget-title\"><a title=\"Go to $sitename\" href=\"$homeUrl\">Now on<br />
-		<div style=\"width: 100%; text-align:center; color: black; font-size: 0.8em;\">
-		<div class=\"logo-wrapper\"><img style=\"max-width: 90%;\" src=\"$homeUrl/images/logos/SSLogoSmall.png\" /></div></div></a></div>
+		print "<div class=\"widget-title\"><a title=\"Go to $sitename\" href=\"$homeUrl\" target=\"_blank\" >Now on<br />
+		<img class=\"logo-wrapper\" src=\"$homeUrl/images/logos/SSLogoSmall.png\" alt=\"$sitename Logo\" /></a></div>
 		<div id=\"posts-wrapper\">";
 		
 		if (isset($postsData["result"])) {
@@ -39,7 +38,7 @@ function displayWidget() {
 				if (! $postTitle) $postTitle = $postUri;
 				
 				print "<div class=\"ss-entry-wrapper\">
-				<a class=\"postTitle\" href=\"$postUri\" target=\"_blank\" rel=\"bookmark\" title=\"Permanent link to $postTitle\">$postTitle</a><br /><a target=\"_blank\" class=\"blogTitle\" title=\"Go to $blogName home page\" href=\"$blogUri\">$blogName</a>
+				<a class=\"postTitle\" href=\"$postUri\" target=\"_blank\" rel=\"bookmark\" title=\"Permanent link to $postTitle\">$postTitle</a><br /><a target=\"_blank\" class=\"blogTitle\" title=\"$blogName homepage\" href=\"$blogUri\">$blogName</a>
 				</div>";
 			}
 		}
@@ -50,18 +49,18 @@ function displayWidget() {
 		print "</div>";
 	}
 }
-
-print "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">
-<html xmlns=\"http://www.w3.org/1999/xhtml\">
+print "<!DOCTYPE html>
+<html>
 <head>
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />
 <title>Widget | $sitename</title>
-<link rel=\"shortcut icon\" href=\"http://dev.scienceseeker.org/wp-content/themes/eximius/images/favicon.ico\" type=\"image/x-icon\">
-<link rel=\"stylesheet\" type=\"text/css\" href=\"http://dev.scienceseeker.org/wp-content/themes/eximius/style.css\" media=\"all\">
 <style type=\"text/css\">
 * {
 	padding: 0;
 	margin: 0;
+	font-family: Verdana, Arial, Helvetica, Sans-Serif;
+	text-decoration: none;
+	font-size: 12px;
 }
 html {
 	height: 100%;
@@ -74,6 +73,9 @@ body {
 a, a:visited {
 	color: #975050;
 }
+a:hover, a:visited:hover {
+	color: #630707;
+}
 #posts-wrapper {
 	overflow: auto;
 	height: 338px;
@@ -82,8 +84,9 @@ a, a:visited {
 	color: #525252;
 	font-weight: bold;
 	font-size: 0.85em;
-	padding: 5px 5px 0px 5px;
+	padding: 5px 0px;
 	text-align: center;
+	width: 100%;
 }
 #wrapper {
 	width: 100%;
@@ -93,6 +96,7 @@ a, a:visited {
 	margin-top: 5px;
 	color: #8D4444;
 	font-weight: bold;
+	max-width: 90%;
 }
 .message {
 	font-size: 1.4em; color: #B8B8B8; background: #1A1A1A; padding: 40px;
@@ -115,7 +119,7 @@ a.postTitle, a:visited.postTitle {
 	color: #BA1212;
 }
 a:hover.postTitle, a:visited:hover.postTitle {
-	color: black;
+	color: #630707;
 	text-decoration: none;
 }
 a.postTitle, a:visited.postTitle {

@@ -310,6 +310,8 @@ a:hover.user-panel-button:hover {
 	text-align: center;
 	border: 1px solid #2B0101;
 	background: #200000;
+	color: #B62B2B;
+	font-size: 11px;
 }
 
 .footer-logo {

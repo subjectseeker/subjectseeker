@@ -114,7 +114,7 @@ function formatSearchPostResults($resultData, $citationsInSummary, $sourceInTitl
   <updated>$now</updated>
   <rights>No copyright asserted over individual posts; see original
     posts for copyright and/or licensing.</rights>
-  <generator>ScienceSeeker Atom serializer</generator>\n";
+  <generator>$sitename Atom serializer</generator>\n";
 
   if (count($errormsgs) > 0) {
     foreach ($errormsgs as $error) {
@@ -238,7 +238,7 @@ function formatSearchPostResults($resultData, $citationsInSummary, $sourceInTitl
 				if ($postData["citations"]) {
 					foreach ($postData["citations"] as $citation) {
 						$articleIdentifiers = articleIdToArticleIdentifier ($citation["articleId"], $db);
-						$xml .= "      <ss:citation>\n        <ss:citationId type=\"scienceseeker\">".$citation["id"]."</ss:citationId>\n";
+						$xml .= "      <ss:citation>\n        <ss:citationId type=\"$sitename\">".$citation["id"]."</ss:citationId>\n";
 						
 						foreach ($articleIdentifiers as $articleIdentifier) {
 							$xml .= "        <ss:citationId type=\"".$articleIdentifier["idType"]."\">".$articleIdentifier["text"]."</ss:citationId>\n";

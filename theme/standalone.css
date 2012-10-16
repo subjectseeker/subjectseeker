@@ -59,6 +59,7 @@ a.button:active {
 }
 .medium-logo {
 	margin: 30px 0px 50px 0px;
+	text-align: center;
 }
 .white-button, a.white-button {
 	-moz-box-shadow:inset 0px 1px 0px 0px #ffffff;

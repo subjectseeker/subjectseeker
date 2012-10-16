@@ -14,8 +14,8 @@ function claimSite() {
 	// Connect to DB.
 	$db  = ssDbConnect();
 	
-	preg_match('/(?<=\/claim\/)\d+/', $_SERVER["REQUEST_URI"], $matchResult);
-	$blogId = $matchResult[0];
+	preg_match('/(?<=\/claim\/)(\d+)/', $_SERVER["REQUEST_URI"], $matchResult);
+	$blogId = $matchResult[1];
 
   if (empty($blogId)) {
     print "<p class=\"ss-error\">No blog specified to claim.</p>";
@@ -27,7 +27,8 @@ function claimSite() {
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
 		$authUserEmail = getUserEmail($authUserId, $db);
-
+		
+		$step = NULL;
     if (isset($_REQUEST["step"])) {
 			$step = $_REQUEST["step"];
 		}
@@ -36,7 +37,7 @@ function claimSite() {
     if (empty($step) && retrieveVerifiedClaimToken($blogId, $authUserId, $db)) {
       displayUserAuthorLinkForm($blogId, $authUserId, $authUserName, $db);
     } else if (empty($step)) {
-      doClaimBlog($blogId, $authUserName, $authUserEmail, $db);
+      doClaimBlog($blogId, $authUserName, $db);
     } else if ($step === "verify") {
       doVerifyClaim($blogId, $authUserName, $db);
     } else if ($step === "userAuthorLinkForm") {

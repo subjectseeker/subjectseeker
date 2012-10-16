@@ -6,7 +6,7 @@ $(document).ready(function() {
 	
 	function updateComments (element) {
 		var parent = $(element).parents('.data-carrier');
-		var id = $(parent).attr("id");
+		var id = $(parent).data('id');
 		var dataString = 'postId='+ id + '&step=showComments';
 		var insert = $(parent).find('.comments-list-wrapper');
 		$(insert).html(loadingGif).fadeIn('slow');
@@ -56,12 +56,6 @@ $(document).ready(function() {
 	$('#ss-slideshow, .filter-buttons').fadeIn();
 	
 	$('#loading-message').hide();
-	
-	$('.recommended,.recommend').each(function() {
-		if($(this).attr('class') == 'recommended') {
-			$(this).parents('.data-carrier').find('.rec-comment').show();
-		}
-	});
 	
 	$('.tabs').on('click', '.tab-button', function() {
 		var eq = $(this).index();
@@ -133,7 +127,7 @@ $(document).ready(function() {
 	
 	$('.data-carrier').on('click', '.submit-comment', function() {
 		var parent = $(this).parents('.data-carrier');
-		var postId = $(parent).attr("id");
+		var postId = $(parent).data('id');
 		var step = $(this).attr("data-step");
 		var comment = $(parent).find('.note-area').val();
 		var commentButton = $(parent).find('.note-button');
@@ -178,7 +172,7 @@ $(document).ready(function() {
 	
 	$('.recommendation-wrapper').on('click', '.recommended,.recommend', function() {
 		var parent = $(this).parents('.data-carrier');
-		var id = $(parent).attr("id");
+		var id = $(parent).data('id');
 		var step = $(this).attr("class");
 		var dataString = 'postId='+ id +'&step=' + step;
 		var recWrapper = $(this).closest('.recommendation-wrapper');
@@ -220,7 +214,7 @@ $(document).ready(function() {
 		var tweet = $(this);
 		var parent = $(this).parents('.data-carrier');
 		var comment = $(parent).find('.note-area').val();
-		var postId = $(parent).attr("id");
+		var postId = $(parent).data('id');
 		$.ajax({
 			type: 'POST',
 			url: '/scripts/ajax/tweet-data.php',
