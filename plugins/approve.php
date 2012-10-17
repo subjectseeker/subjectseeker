@@ -12,7 +12,7 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 function approveSites() {
 	$step = NULL;
-  if (isset($_REQUEST["step"])) {
+  if (!empty($_REQUEST["step"])) {
 		$step = $_REQUEST["step"];
 	}
   $db = ssDbConnect();

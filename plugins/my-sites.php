@@ -19,10 +19,10 @@ function displayMySites() {
 		$userPriv = getUserPrivilegeStatus($authUserId, $db);
 		$step = NULL;
 	
-		if (isset($_REQUEST["step"])) {
+		if (!empty($_REQUEST["step"])) {
 			$step = $_REQUEST["step"];
 		}
-		if (isset($_REQUEST["blogId"])) {
+		if (!empty($_REQUEST["blogId"])) {
 			$blogId = $_REQUEST["blogId"];
 		}
 		

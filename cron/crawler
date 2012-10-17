@@ -1,6 +1,0 @@
-#!/bin/sh
-
-rm /home/sciseek/public_html/cache/* /home/sciseek/public_html/dev/cache/* /home/sciseek/public_html/alpha/cache/* /home/sciseek/public_html/images/tmp/* >> /home/sciseek/public_html/subjectseeker/logs/crawler.log -f
-
-date >> /home/sciseek/public_html/logs/crawler.log
-/home/sciseek/public_html/cron/crawler.php >> /home/sciseek/public_html/logs/crawler.log

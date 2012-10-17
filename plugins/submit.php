@@ -29,13 +29,13 @@ function addSite() {
 	
 	$step = NULL;
 	$submitUrl = NULL;
-	if (isset($_REQUEST["step"])) {
+	if (!empty($_REQUEST["step"])) {
 		$step = $_REQUEST["step"];
 	}
-	if (isset($_REQUEST["blogId"])) {
+	if (!empty($_REQUEST["blogId"])) {
 		$blogId = $_REQUEST["blogId"];
 	}
-	if (isset($_REQUEST["submitUrl"])) {
+	if (!empty($_REQUEST["submitUrl"])) {
 		$submitUrl = $_REQUEST["submitUrl"];
 	}
 
@@ -68,7 +68,7 @@ function displayShortBlogForm ($errormsg, $db) {
 	global $pages;
 	
 	$submitUrl = NULL;
-	if (isset($_REQUEST["submitUrl"])) $submitUrl = $_REQUEST["submitUrl"];
+	if (!empty($_REQUEST["submitUrl"])) $submitUrl = $_REQUEST["submitUrl"];
   $authUserId;
 
 	if (isLoggedIn()){
@@ -101,10 +101,10 @@ function displayBlogForm ($errormsg, $db) {
 	$blogUri = NULL;
 	$blogSyndicationUri = NULL;
 	$blogDescription = NULL;
-  if (isset($_REQUEST["blogname"])) $blogName = $_REQUEST["blogname"];
-  if (isset($_REQUEST["blogurl"])) $blogUri = htmlspecialchars($_REQUEST["blogurl"]);
-  if (isset($_REQUEST["blogsyndicationuri"])) $blogSyndicationUri = htmlspecialchars($_REQUEST["blogsyndicationuri"]);
-  if (isset($_REQUEST["blogdescription"])) $blogDescription = $_REQUEST["blogdescription"];
+  if (!empty($_REQUEST["blogname"])) $blogName = $_REQUEST["blogname"];
+  if (!empty($_REQUEST["blogurl"])) $blogUri = htmlspecialchars($_REQUEST["blogurl"]);
+  if (!empty($_REQUEST["blogsyndicationuri"])) $blogSyndicationUri = htmlspecialchars($_REQUEST["blogsyndicationuri"]);
+  if (!empty($_REQUEST["blogdescription"])) $blogDescription = $_REQUEST["blogdescription"];
 
 	$authUserId = NULL;
   if (isLoggedIn()){
@@ -122,7 +122,7 @@ function displayBlogForm ($errormsg, $db) {
 	}
 
   // Attempt to prepopulate from URL if submitUrl param set
-	if (isset($_REQUEST["submitUrl"])) {
+	if (!empty($_REQUEST["submitUrl"])) {
 		$submitUri = $_REQUEST["submitUrl"];
 	}
 	if ($submitUri != NULL) {
@@ -179,7 +179,7 @@ function submitBlogForm ($blogName, $blogUri, $blogDescription, $blogSyndication
     print "<option value='" . $row["TOPIC_ID"] . "'> " . $row["TOPIC_NAME"] . "</option>\n";
   }
   print "</select></p>\n<p>";
-	if (isset($authUserId)) {
+	if (!empty($authUserId)) {
 		print "<p><input type=\"checkbox\" name=\"userIsAuthor\" /> I want to be identified as an author of this blog.</p>";
 	}
 	print "<hr class=\"margin-bottom\" />
@@ -200,14 +200,14 @@ function doAddBlog ($db) {
 	$topic2 = NULL;
 	$twitterHandle = NULL;
 	$userIsAuthor = NULL;
-  if (isset($_REQUEST["blogName"])) $blogName = $_REQUEST["blogName"];
-  if (isset($_REQUEST["blogUri"])) $blogUri = $_REQUEST["blogUri"];
-  if (isset($_REQUEST["blogSyndicationUri"])) $blogSyndicationUri = $_REQUEST["blogSyndicationUri"];
-  if (isset($_REQUEST["blogDescription"])) $blogDescription = $_REQUEST["blogDescription"];
-  if (isset($_REQUEST["topic1"])) $topic1 = $_REQUEST["topic1"];
-  if (isset($_REQUEST["topic2"])) $topic2 = $_REQUEST["topic2"];
-  if (isset($_REQUEST["twitterHandle"])) $twitterHandle = str_replace("@", "", $_REQUEST["twitterHandle"]);
-  if (isset($_REQUEST["userIsAuthor"])) $userIsAuthor = $_REQUEST["userIsAuthor"];
+  if (!empty($_REQUEST["blogName"])) $blogName = $_REQUEST["blogName"];
+  if (!empty($_REQUEST["blogUri"])) $blogUri = $_REQUEST["blogUri"];
+  if (!empty($_REQUEST["blogSyndicationUri"])) $blogSyndicationUri = $_REQUEST["blogSyndicationUri"];
+  if (!empty($_REQUEST["blogDescription"])) $blogDescription = $_REQUEST["blogDescription"];
+  if (!empty($_REQUEST["topic1"])) $topic1 = $_REQUEST["topic1"];
+  if (!empty($_REQUEST["topic2"])) $topic2 = $_REQUEST["topic2"];
+  if (!empty($_REQUEST["twitterHandle"])) $twitterHandle = str_replace("@", "", $_REQUEST["twitterHandle"]);
+  if (!empty($_REQUEST["userIsAuthor"])) $userIsAuthor = $_REQUEST["userIsAuthor"];
 	
 	// Only get user info if logged in
 	if (isLoggedIn()){
@@ -229,7 +229,7 @@ function doAddBlog ($db) {
 	
 		$blogId = $addBlog["id"];
 		
-		if (isset($twitterHandle)) {
+		if (!empty($twitterHandle)) {
 			addBlogSocialAccount($twitterHandle, 1, $blogId, $db);
 		}
 	
@@ -238,7 +238,7 @@ function doAddBlog ($db) {
 			if ($userPriv == 0) {
 				echo "<p>This site will not be publicly displayed in the system until it has been approved by an editor.</p>";
 			}
-			if (isset($userIsAuthor) && $userIsAuthor == TRUE && !empty($userEmail)) {
+			if (!empty($userIsAuthor) && $userIsAuthor == TRUE && !empty($userEmail)) {
 				global $sitename;
 				global $contactEmail;
 				$subject = "Site Submission Status: Pending";

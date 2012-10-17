@@ -18,7 +18,7 @@ function displayResources() {
 	$db = ssDbConnect();
 	
 	global $pagesize;
-	if (isset($_REQUEST["n"])) {
+	if (!empty($_REQUEST["n"])) {
 		$pagesize = $_REQUEST["n"];
 	}
 	

@@ -22,23 +22,16 @@ function adminUsers() {
 		
 		if ($userPriv > 1) { // moderator or admin
 			$step = NULL;
-			if (isset($_REQUEST["step"])) {
+			if (!empty($_REQUEST["step"])) {
 				$step = $_REQUEST["step"];
 			}
-			$arrange = "userId";
-			$order = "descending";
+			
 			$pagesize = "30";
 			$offset = "0";
-			if (isset($_REQUEST["arrange"])) {
-				$arrange = $_REQUEST["arrange"];
-			}
-			if (isset($_REQUEST["order"])) {
-				$order = $_REQUEST["order"];
-			}
-			if (isset($_REQUEST["n"])) {
+			if (!empty($_REQUEST["n"])) {
 				$pagesize = $_REQUEST["n"];
 			}
-			if (isset($_REQUEST["offset"])) {
+			if (!empty($_REQUEST["offset"])) {
 				$offset = $_REQUEST["offset"];
 			}
 			
@@ -47,46 +40,6 @@ function adminUsers() {
 			<div class=\"ss-div-2\" id=\"filter-panel\">
 			<form method=\"get\">
 			<input type=\"hidden\" name=\"filters\" value=\"filters\" />
-			Sort by: 
-			<select name='arrange'>
-			<option value='userId'";
-			if ($arrange == "userId") {
-				print " selected";
-			}
-			print ">ID</option>\n";
-			print "<option value='userName'";
-			if ($arrange == "userName") {
-				print " selected";
-			}
-			print ">Name</option>\n";
-			print "<option value='userStatus'";
-			if ($arrange == "userStatus") {
-				print " selected";
-			}
-			print ">Status</option>\n";
-			print "<option value='userPrivilege'";
-			if ($arrange == "userPrivilege") {
-				print " selected";
-			}
-			print ">Privilege</option>\n";
-			print "<option value='userEmail'";
-			if ($arrange == "userEmail") {
-				print " selected";
-			}
-			print ">E-mail</option>\n";
-			print "</select>\n";
-			print " | <select name='order'>\n";
-			print "<option value='ascending'";
-			if ($order == "ascending") {
-				print " selected";
-			}
-			print ">Ascending</option>\n";
-			print "<option value='descending'";
-			if ($order == "descending") {
-				print " selected";
-			}
-			print ">Descending</option>\n
-			</select><br />\n
 			Entries per page: <input class=\"small-input\" type=\"text\" name=\"n\" size=\"2\" value=\"$pagesize\"/> | Start at: <input class=\"small-input\" type=\"text\" name=\"offset\" size=\"2\" value=\"$offset\"/>
 			<br /><input class=\"ss-button\" type=\"submit\" value=\"Go\" />
 			</form>
@@ -103,28 +56,28 @@ function adminUsers() {
 				$userPass = NULL;
 				$userPrivilege = NULL;
 				$delete = NULL;
-				if (isset($_POST["userId"])) {
+				if (!empty($_POST["userId"])) {
 					$userId = $_POST["userId"];
 				}
-				if (isset($_POST["userName"])) {
+				if (!empty($_POST["userName"])) {
 					$userName = $_POST["userName"];
 				}
-				if (isset($_POST["userDisplayName"])) {
+				if (!empty($_POST["userDisplayName"])) {
 					$userDisplayName = $_POST["userDisplayName"];
 				}
-				if (isset($_POST["userStatus"])) {
+				if (!empty($_POST["userStatus"])) {
 					$userStatus = $_POST["userStatus"];
 				}
-				if (isset($_POST["userEmail"])) {
+				if (!empty($_POST["userEmail"])) {
 					$userEmail = $_POST["userEmail"];
 				}
-				if (isset($_POST["userPass"])) {
+				if (!empty($_POST["userPass"])) {
 					$userPass = $_POST["userPass"];
 				}
-				if (isset($_POST["userPrivilege"])) {
+				if (!empty($_POST["userPrivilege"])) {
 					$userPrivilege = $_POST["userPrivilege"];
 				}
-				if (isset($_REQUEST["delete"])) {
+				if (!empty($_REQUEST["delete"])) {
 					$delete = $_REQUEST["delete"];
 				}
 				$oldUserName = getUserName($userId, $db);
@@ -163,7 +116,7 @@ function adminUsers() {
 					</div>";
 				}
 			}
-			$userList = getUsers ($arrange, $order, $pagesize, $offset, $db);
+			$userList = getUsers ($pagesize, $offset, $db);
 			$total = array_shift(mysql_fetch_array(mysql_query("SELECT FOUND_ROWS()", $db)));
 			if ($userList == null) {
 				print "There are no more users in the system.<br />";

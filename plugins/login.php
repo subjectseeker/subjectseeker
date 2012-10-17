@@ -12,19 +12,18 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 function displayLogin() {
 	global $sitename;
 	global $pages;
-	global $hashFile;
-	include_once $hashFile;
+	include_once (dirname(__FILE__)."/../third-party/hasher/class-phpass.php");
 	
 	$db = ssDbConnect();
 	$step = NULL;
-	if (isset($_GET["step"])) {
+	if (!empty($_GET["step"])) {
 		$step = $_GET["step"];
 	}
 	
 	// Get original URL for redirection
 	global $homeUrl;
 	$originalUrl = $homeUrl;
-	if (isset($_GET["url"])) {
+	if (!empty($_GET["url"])) {
 		$originalUrl = $_GET["url"];	
 	}
 	
@@ -43,11 +42,11 @@ function displayLogin() {
 	}
 	else {
 		// Check if user is coming from Twitter
-		if (isset($_REQUEST['oauth_token']) && $_SESSION['oauth_token'] !== $_REQUEST['oauth_token']) {
+		if (!empty($_REQUEST['oauth_token']) && $_SESSION['oauth_token'] !== $_REQUEST['oauth_token']) {
 			$content = "<div class=\"box-title\">Log In</div>
 			<p>Twitter session expired!</p>";
 		}
-		elseif (isset($_REQUEST['oauth_token']) && $_SESSION['oauth_token'] == $_REQUEST['oauth_token']) {
+		elseif (!empty($_REQUEST['oauth_token']) && $_SESSION['oauth_token'] == $_REQUEST['oauth_token']) {
 			// Get User ID from Auth Tokens for log in
 			$twitterConnection = getTwitterAuthTokens ($_SESSION['oauth_token'], $_SESSION['oauth_token_secret']);
 			$twitterCredentials = $twitterConnection->getAccessToken();
@@ -86,7 +85,7 @@ function displayLogin() {
 		}
 		elseif ($step == "recover-account") {
 			$content = "<div class=\"box-title\">Recover Account</div>";
-			if (isset($_POST["recovery-data"])) {
+			if (!empty($_POST["recovery-data"])) {
 				$userRecoveryData = $_POST["recovery-data"];
 				
 				// Determine if user submitted an email or a user name
@@ -114,12 +113,12 @@ function displayLogin() {
 		elseif ($step == "verify-recovery") {
 			$content = "<div class=\"box-title\">Recover Account</div>";
 			
-			if (isset($_REQUEST["recovery-code"])) {
+			if (!empty($_REQUEST["recovery-code"])) {
 				$recoveryCode = $_REQUEST["recovery-code"];
 				$recoveryStatus = secretCodeToUserId($recoveryCode, 2, $db);
 				
 				// Check if code has expired
-				if (isset($recoveryStatus["expired"]) && $recoveryStatus["expired"] == TRUE) {
+				if (!empty($recoveryStatus["expired"]) && $recoveryStatus["expired"] == TRUE) {
 					$content .= "<p class=\"ss-error\">Your recovery code has expired.</p>";
 					$userId = $recoveryStatus["userId"];
 					removeSecretCode($userId, 2, $db);
@@ -129,10 +128,10 @@ function displayLogin() {
 					$userId = $recoveryStatus["userId"];
 					$newUserPass1 = NULL;
 					$newUserPass2 = NULL;
-					if (isset($_POST["new-pass"])) {
+					if (!empty($_POST["new-pass"])) {
 						$newUserPass1 = $_POST["new-pass"];
 					}
-					if (isset($_POST["new-pass2"])) {
+					if (!empty($_POST["new-pass2"])) {
 						$newUserPass2 = $_POST["new-pass2"];
 					}
 					
@@ -156,7 +155,7 @@ function displayLogin() {
 					}
 				}
 				// Check if recovery code is valid.
-				elseif (isset($recoveryStatus["userId"])) {
+				elseif (!empty($recoveryStatus["userId"])) {
 					$content .= "<p class=\"ss-successful\">Code verified, you can reset your password below.</p>
 					<form method=\"post\">
 					<input type=\"hidden\" name=\"recovery-code\" value=\"$recoveryCode\" />
@@ -191,7 +190,7 @@ function displayLogin() {
 		}
 		elseif ($step == "confirm-verification") {
 			$content = "<div class=\"box-title\">Verify Account</div>";
-			if (isset($_POST["verification-data"])) {
+			if (!empty($_POST["verification-data"])) {
 				$userVerificationData = $_POST["verification-data"];
 				
 				// Determine if user submitted an email or a user name
@@ -227,16 +226,16 @@ function displayLogin() {
 		elseif ($step == "verify-email") {
 			$content =  "<div class=\"box-title\">Verify Account</div>";
 			
-			if (isset($_REQUEST["verification-code"])) {
+			if (!empty($_REQUEST["verification-code"])) {
 				$verificationCode = $_REQUEST["verification-code"];
 				$verificationStatus = secretCodeToUserId($verificationCode, 3, $db);
 				
-				if (isset($verificationStatus["userId"])) {
+				if (!empty($verificationStatus["userId"])) {
 					$userId = $verificationStatus["userId"];
 				}
 				
 				// Check if code has expired
-				if (isset($verificationStatus["expired"]) && $verificationStatus["expired"] == TRUE) {
+				if (!empty($verificationStatus["expired"]) && $verificationStatus["expired"] == TRUE) {
 					$content .= "<p class=\"ss-error\">Your verification code has expired.</p>
 					<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=send-verification\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
 				}
@@ -263,9 +262,9 @@ function displayLogin() {
 		else {
 			$content =  "<div class=\"box-title\">Log In</div>";
 			
-			if (isset($_POST["user-name"])) {
+			if (!empty($_POST["user-name"])) {
 				$userName = mysql_real_escape_string($_POST["user-name"]);
-				if (isset($_POST["pass"])) {
+				if (!empty($_POST["pass"])) {
 					$password = $_POST["pass"];
 				}
 				
@@ -281,7 +280,7 @@ function displayLogin() {
 				if ($hasher->CheckPassword($password, $passwordHashed) || $passwordHashed == md5($password)) {
 					$authUser = new auth();
 					if ($authUser->validateUser($userId, $db) == TRUE) {
-						if (isset($_POST["remember"]) && $_POST["remember"] == "true") {
+						if (!empty($_POST["remember"]) && $_POST["remember"] == "true") {
 							createCookie($userId, $db);
 						}
 						header("Location: ".$originalUrl);

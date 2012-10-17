@@ -12,7 +12,7 @@ function adminSources() {
 		
 		if ($userPriv > 0) { // moderator or admin
 			$step = NULL;
-			if (isset($_REQUEST["step"])) {
+			if (!empty($_REQUEST["step"])) {
 				$step = $_REQUEST["step"];
 			}
 			
@@ -20,16 +20,16 @@ function adminSources() {
 			$order = "asc";
 			$pagesize = "30";
 			$offset = "0";
-			if (isset($_REQUEST["sort"])) {
+			if (!empty($_REQUEST["sort"])) {
 				$sort = $_REQUEST["sort"];
 			}
-			if (isset($_REQUEST["order"])) {
+			if (!empty($_REQUEST["order"])) {
 				$order = $_REQUEST["order"];
 			}
-			if (isset($_REQUEST["n"])) {
+			if (!empty($_REQUEST["n"])) {
 				$pagesize = $_REQUEST["n"];
 			}
-			if (isset($_REQUEST["offset"])) {
+			if (!empty($_REQUEST["offset"])) {
 				$offset = $_REQUEST["offset"];
 			}
 				

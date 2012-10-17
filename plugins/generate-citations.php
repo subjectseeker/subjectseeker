@@ -5,7 +5,7 @@ function generateCitations() {
 	global $metadata2coins;
 	$db  = ssDbConnect();
 	$step = NULL;
-	if (isset($_REQUEST["step"])) {
+	if (!empty($_REQUEST["step"])) {
 		$step = $_REQUEST["step"];
 	}
 
@@ -86,7 +86,7 @@ function generateCitations() {
 	}
 	elseif ($step == "results") {
 		$title = NULL;
-		if (isset($_REQUEST["title"])) {
+		if (!empty($_REQUEST["title"])) {
 			$title = $_REQUEST["title"];
 		}
 		print "<p><input class=\"ss-button\" type=\"button\" value=\"Go Back\" onClick=\"history.go(-1);return true;\"></p>
@@ -128,7 +128,7 @@ function generateCitations() {
 		<h3>Edit Citation</h3>
 		<form method=\"post\">
 		<input type=\"hidden\" name=\"step\" value=\"end\" />";
-		if (isset($_REQUEST["selected"])) {
+		if (!empty($_REQUEST["selected"])) {
 			$citation = $_REQUEST["selected"];
 		}
 		$articleData = parseCitation($citation, $db);
@@ -155,18 +155,18 @@ function generateCitations() {
 		<p><input type=\"button\" id=\"add-author\" value=\"+ Add Author\" /></p>
 		<h4>Title</h4>
 		<p><textarea class=\"small-text-area\" name=\"title\" style=\"height: 48px;\">".$atitle."</textarea></p>";
-		if (isset($articleData["authors"])) {
+		if (!empty($articleData["authors"])) {
 			foreach ($articleData["authors"] as $author) {
 				$firstName = NULL;
 				$lastName = NULL;
 				$fullName = NULL;
-				if (isset($author["rft.aufirst"])) {
+				if (!empty($author["rft.aufirst"])) {
 					$firstName = $author["rft.aufirst"];
 				}
-				if (isset($author["rft.aulast"])) {
+				if (!empty($author["rft.aulast"])) {
 					$lastName = $author["rft.aulast"];
 				}
-				if (isset($author["rft.au"])) {
+				if (!empty($author["rft.au"])) {
 					$fullName = $author["rft.au"];
 				}
 				print "<div class=\"removable-parent\">
@@ -257,23 +257,23 @@ function generateCitations() {
 		print "<div class=\"margin-bottom\"><input class=\"ss-button\" type=\"button\" value=\"Go Back\" onClick=\"history.go(-1);return true;\"> <a class=\"ss-button\" href=\"".$pages["home"]->getAddress()."\">Homepage</a></div>
 		<h3>Result</h3>";
 		
-		if (isset($_REQUEST["idType"])) $articleData["id_type"] = $_REQUEST["idType"];
-		if (isset($_REQUEST["id"])) $articleData["id"] = $_REQUEST["id"];
-		if (isset($_REQUEST["id"])) $articleData["rft_id"] = $_REQUEST["id"];
-		if (isset($_REQUEST["title"])) $articleData["rft.atitle"] = $_REQUEST["title"];
-		if (isset($_REQUEST["journal"])) $articleData["rft.jtitle"] = $_REQUEST["journal"];
-		if (isset($_REQUEST["article"])) $articleData["rft.artnum"] = $_REQUEST["article"];
-		if (isset($_REQUEST["volume"])) $articleData["rft.volume"] = $_REQUEST["volume"];
-		if (isset($_REQUEST["issue"])) $articleData["rft.issue"] = $_REQUEST["issue"];
-		if (isset($_REQUEST["issn"])) $articleData["rft.issn"] = $_REQUEST["issn"];
-		if (isset($_REQUEST["spage"])) $articleData["rft.spage"] = $_REQUEST["spage"];
-		if (isset($_REQUEST["date"])) $articleData["rft.date"] = $_REQUEST["date"];
-		if (isset($_REQUEST["ssInclude"])) $articleData["ssInclude"] = $_REQUEST["ssInclude"];
-		if (isset($_REQUEST["rbInclude"])) $articleData["rbInclude"] = $_REQUEST["rbInclude"];
+		if (!empty($_REQUEST["idType"])) $articleData["id_type"] = $_REQUEST["idType"];
+		if (!empty($_REQUEST["id"])) $articleData["id"] = $_REQUEST["id"];
+		if (!empty($_REQUEST["id"])) $articleData["rft_id"] = $_REQUEST["id"];
+		if (!empty($_REQUEST["title"])) $articleData["rft.atitle"] = $_REQUEST["title"];
+		if (!empty($_REQUEST["journal"])) $articleData["rft.jtitle"] = $_REQUEST["journal"];
+		if (!empty($_REQUEST["article"])) $articleData["rft.artnum"] = $_REQUEST["article"];
+		if (!empty($_REQUEST["volume"])) $articleData["rft.volume"] = $_REQUEST["volume"];
+		if (!empty($_REQUEST["issue"])) $articleData["rft.issue"] = $_REQUEST["issue"];
+		if (!empty($_REQUEST["issn"])) $articleData["rft.issn"] = $_REQUEST["issn"];
+		if (!empty($_REQUEST["spage"])) $articleData["rft.spage"] = $_REQUEST["spage"];
+		if (!empty($_REQUEST["date"])) $articleData["rft.date"] = $_REQUEST["date"];
+		if (!empty($_REQUEST["ssInclude"])) $articleData["ssInclude"] = $_REQUEST["ssInclude"];
+		if (!empty($_REQUEST["rbInclude"])) $articleData["rbInclude"] = $_REQUEST["rbInclude"];
 		if (empty($articleData["ssInclude"])) $articleData["ssInclude"] = 0;
 		if (empty($articleData["rbInclude"])) $articleData["rbInclude"] = 0;
-		if (isset($_REQUEST["rbTags"])) $articleData["rbTags"] = $_REQUEST["rbTags"];
-		if (isset($_REQUEST["fName"])) {
+		if (!empty($_REQUEST["rbTags"])) $articleData["rbTags"] = $_REQUEST["rbTags"];
+		if (!empty($_REQUEST["fName"])) {
 			foreach ($_REQUEST["fName"] as $key => $value) {
 				if (!empty($value) || !empty($_REQUEST["lName"][$key])) {
 					$articleData["authors"][] = array("rft.aufirst"=>$value, "rft.aulast"=>$_REQUEST["lName"][$key]);
@@ -290,7 +290,7 @@ function generateCitations() {
 		print "<p>This is how the citation will look after you copy the HTML code to your article.</p>
 		<p class=\"padding-content\">$generatedCitation</p>";
 		print "<h4>HTML Code:</h4>";
-		if (isset($userId)) {
+		if (!empty($userId)) {
 			print "<p>Please insert this HTML code into your post to add the citation. Our site will find the post within a few hours after you publish it. If you want to have our site find your post sooner, you can <a href=\"".$pages["my-posts"]->getAddress()."/?step=scan&amp;scanNow=1&amp;addPosts=1&amp;n=10\" title=\"Scan 10 most recent posts.\">scan your recent posts for citations</a>.</p>";
 		}
 		else {

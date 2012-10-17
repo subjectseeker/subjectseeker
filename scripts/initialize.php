@@ -5,11 +5,11 @@ include_once (dirname(__FILE__)."/../globals.php");
 // If debug is enabled, show all errors, otherwise, hide them all.
 global $debugSite;
 if ($debugSite == "true") {
-	error_reporting("E_ALL");
+	error_reporting(E_ALL);
 	ini_set("display_errors", 1);
 }
 else {
-	error_reporting("E_NONE");
+	error_reporting(E_NONE);
 	ini_set("display_errors", 0);
 }
 

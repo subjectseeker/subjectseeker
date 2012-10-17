@@ -40,16 +40,16 @@ function displayFilters() {
 	<input class=\"filters-text\" type=\"text\" name=\"title\" /></p>
 	<ul>
 	<li><input class=\"filters\" type=\"checkbox\" name=\"category\" value=\"has-citation\"";
-	if (isset($checkCitation)) print " checked=\"checked\"";
+	if (!empty($checkCitation)) print " checked=\"checked\"";
 	print " /> <a href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=has-citation&amp;value0=true\">Citations</a></li>
 	<li style=\"margin-bottom: 20px;\"><input class=\"filters\" type=\"checkbox\" name=\"category\" value=\"recommender-status\"";
-	if (isset($checkEditorsPicks)) print " checked=\"checked\"";
+	if (!empty($checkEditorsPicks)) print " checked=\"checked\"";
 	print " /> <a href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=recommender-status&amp;value0=editor\">Editors' Picks</a></li>";
 	$topicList = getTopicList (1, $db);
 	while ($row = mysql_fetch_array($topicList)) {
 		$topicName = $row["TOPIC_NAME"];
 		print "<li><input class=\"categories\" type=\"checkbox\" name=\"category\" value=\"$topicName\"";
-		if (isset($topics) && array_search("$topicName", $topics) !== FALSE) print " checked=\"checked\"";
+		if (!empty($topics) && array_search("$topicName", $topics) !== FALSE) print " checked=\"checked\"";
 		print " /> <a href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=blog&amp;modifier0=topic&amp;value0=".urlencode($topicName)."\">$topicName</a></li>";
 	}
 	

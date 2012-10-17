@@ -19,7 +19,7 @@ function displayContactForm() {
 	$step = NULL;
 	$userDisplayName = NULL;
 	$userEmail = NULL;
-	if (isset($_REQUEST["step"])) $step = $_REQUEST["step"];
+	if (!empty($_REQUEST["step"])) $step = $_REQUEST["step"];
 	$db = ssDbConnect();
 	if (isLoggedIn()) {
 		$authUser = new auth();
@@ -31,22 +31,22 @@ function displayContactForm() {
 	
 	if ($step == "send") {
 		$errors = "";
-		if (isset($_POST["name"])) {
+		if (!empty($_POST["name"])) {
 			$name = strip_tags($_POST["name"]);
 		} else {
 			$errors .= "<p class=\"ss-error\">Please submit a name.</p>";
 		}
-		if (isset($_POST["email"]) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+		if (!empty($_POST["email"]) && filter_var($_POST["email"], FILTER_VALIDATE_EMAIL)) {
 			$email = strip_tags($_POST["email"]);
 		} else {
 			$errors .= "<p class=\"ss-error\">Please submit a valid email.</p>";
 		}
-		if (isset($_POST["subject"])) {
+		if (!empty($_POST["subject"])) {
 			$subject = htmlspecialchars($_POST["subject"]);
 		} else {
 			$errors .= "<p class=\"ss-error\">Please submit a subject.</p>";
 		}
-		if (isset($_POST["name"])) {
+		if (!empty($_POST["name"])) {
 			$message = htmlspecialchars($_POST["message"]);
 		} else {
 			$errors .= "<p class=\"ss-error\">Please submit a message.</p>";
@@ -59,12 +59,11 @@ function displayContactForm() {
 			}
 		}
 		
-		if (isset($errors)) {
+		if (!empty($errors)) {
 			print "$errors";
 		} else {
 			global $contactEmail;
 			$content = "Author: ".$name."
-
 Author Email: ".$email."
 	
 ".$message;

@@ -1047,12 +1047,8 @@ function sendMail($userEmail, $subject, $message) {
 
 // Input: Arrange type, order, number of users, offset, DB handle
 // Return: Users data
-function getUsers ($arrange, $order, $pagesize, $offset, $db) {
-	global $hashData;
-	$column = $hashData["$arrange"];
-	$direction = $hashData["$order"];
-	
-  $sql = "SELECT SQL_CALC_FOUND_ROWS USER_ID, USER_NAME, DISPLAY_NAME, USER_STATUS_ID, USER_PRIVILEGE_ID, EMAIL_ADDRESS FROM USER ORDER BY $column $direction LIMIT $pagesize OFFSET $offset";
+function getUsers ($pagesize, $offset, $db) {
+  $sql = "SELECT SQL_CALC_FOUND_ROWS USER_ID, USER_NAME, DISPLAY_NAME, USER_STATUS_ID, USER_PRIVILEGE_ID, EMAIL_ADDRESS FROM USER ORDER BY USER_ID LIMIT $pagesize OFFSET $offset";
   $users = array();
   $results = mysql_query($sql, $db);
 	
@@ -1799,7 +1795,7 @@ function addSimplePieItem ($item, $language, $blogId, $db) {
   }
 
   $summary = smartyTruncate($item->get_description(), 500);
-  if (strlen ($summary) != strlen ($item->get_description())) {
+  if (strlen ($summary) < strlen ($item->get_description())) {
     $summary .= " […]";
   }
 
@@ -2331,7 +2327,8 @@ function editBlogForm ($blogData, $userPriv, $open, $db) {
 		$authorList = getAuthorList($blogId, FALSE, $db);
 		if (mysql_num_rows($authorList) != 0) {
 			print "<div class=\"toggle-button\">Administer Authors</div>
-			<div class=\"ss-slide-wrapper\">";
+			<div class=\"ss-slide-wrapper\">
+			<br />";
 			while ($row = mysql_fetch_array($authorList)) {
 				print "<h4>Author</h4>
 				<input type=\"hidden\" name=\"authorId[]\" value=\"".$row["BLOG_AUTHOR_ID"]."\" />
@@ -2753,14 +2750,19 @@ function editPostForm ($postsData, $userPriv, $open, $db) {
 			print "<p>Post Date: $postDate</p>";
 		}
 		print "<p>Title<br />
-		<input type=\"text\" name=\"title\" size=\"40\" value=\"".htmlspecialchars($postTitle, ENT_QUOTES)."\"/></p>
+		<input type=\"text\" name=\"title\" value=\"".htmlspecialchars($postTitle, ENT_QUOTES)."\"/></p>
 		<p><a href=\"$postUrl\" target=\"_blank\">URL</a><br />
-		<input type=\"text\" name=\"url\" size=\"40\" value=\"".htmlspecialchars($postUrl, ENT_QUOTES)."\" /></p>
+		<input type=\"text\" name=\"url\" value=\"".htmlspecialchars($postUrl, ENT_QUOTES)."\" /></p>
 		<p>Summary<br />
-		<textarea name=\"summary\" rows=\"5\" cols=\"55\">$postSummary</textarea></p>";
+		<textarea name=\"summary\">$postSummary</textarea></p>";
 		print "<p>Status: <select name='status'>";
 		$statusList = getBlogPostStatusList ($db);
 		while ($row = mysql_fetch_array($statusList)) {
+			if ($userPriv == 0) {
+				if ($row["BLOG_POST_STATUS_ID"] != 0 && $row["BLOG_POST_STATUS_ID"] != 1) {
+					continue;
+				}
+			}
 			print "<option value='" . $row["BLOG_POST_STATUS_ID"] . "'";
 			if ($row["BLOG_POST_STATUS_ID"] == $postStatusId) {
 				print " selected";
@@ -2809,7 +2811,7 @@ function confirmEditPost($step, $db) {
 			$postSummary = $_REQUEST["summary"];
 		}
 		if (isset($_REQUEST["status"])) {
-			$postStatus = $_REQUEST["status"];
+			$postStatusId = $_REQUEST["status"];
 		}
 		if (isset($_REQUEST["postDate"])) {
 			$postDate = $_REQUEST["postDate"];
@@ -2818,8 +2820,15 @@ function confirmEditPost($step, $db) {
 			$check = $_REQUEST["checkCitations"];
 		}
 		$blogName = getBlogName($blogId, $db);
-		$result = checkPostData($postId, $postTitle, $postSummary, $postUrl, $authUserId, $authUserName, $postDate, $db);
-		if ($step == 'confirmed' || ($result == NULL && $step == 'edit')) {
+		$result = checkPostData($postId, $postTitle, $postSummary, $postUrl, $postDate, $postStatusId, $authUserId, $db);
+		if (empty($postTitle)) {
+			$result .= "<p class=\"ss-error\">You must submit a title for this post.</p>";
+		}
+		if ($postStatusId === NULL) {
+			$result .= "<p class=\"ss-error\">You must submit a status for this post.</p>";
+		}
+		
+		if (($step == "confirmed" && $userPriv > 0) || ($result == NULL && $step == "edit")) {
 			if ($check == 1) {
 				removeCitations($postId, NULL, $db);
 				$results = checkCitations ($postUrl, $postId, $db);
@@ -2841,22 +2850,28 @@ function confirmEditPost($step, $db) {
 					print "$results";
 				}
 			}
-			editPost ($postId, $postTitle, $postUrl, $postSummary, $postStatus, $authUserId, $authUserName, $postDate, $addedDate, $db);
+			editPost ($postId, $postTitle, $postUrl, $postSummary, $postStatusId, $db);
+			if (!empty($postDate) && $userPriv > 0) {
+				editPostDate ($postId, $postDate, $db);
+			}
+			
 			print "<p class=\"ss-successful\">$postTitle (ID $postId) was updated.</p>";
 		}
-		if ($result != NULL && $step == 'edit') {
-			print "<div class=\"ss-div-2\"><p>$postTitle (ID $postId):</p> <ul class=\"ss-error\">$result</ul></div>
-			<form class=\"ss-div\" method=\"post\">
-			<input type=\"hidden\" name=\"step\" value=\"confirmed\" />
-			<input type=\"hidden\" name=\"postId\" value=\"$postId\" />
-			<input type=\"hidden\" name=\"title\" value=\"".htmlspecialchars($postTitle, ENT_QUOTES)."\" />
-			<input type=\"hidden\" name=\"url\" value=\"".htmlspecialchars($postUrl, ENT_QUOTES)."\" />
-			<input type=\"hidden\" name=\"summary\" value=\"".htmlspecialchars($postSummary, ENT_QUOTES)."\" />
-			<input type=\"hidden\" name=\"postDate\" value=\"".htmlspecialchars($postDate, ENT_QUOTES)."\" />
-			<input type=\"hidden\" name=\"status\" value=\"$postStatus\" />
-			<p>There has been an error, are you sure you want to apply these changes?</p>
-			<input class=\"ss-button\" name=\"confirm\" type=\"submit\" value=\"Yes\" /> <a class=\"ss-button\" href=\"".$pages["administer-posts"]->getAddress()."\" />No</a>
-			</form>";
+		if ($result != NULL && $step == "edit") {
+			print "$result";
+			if ($userPriv > 0) {
+				print "<form method=\"post\">
+				<input type=\"hidden\" name=\"step\" value=\"confirmed\" />
+				<input type=\"hidden\" name=\"postId\" value=\"$postId\" />
+				<input type=\"hidden\" name=\"title\" value=\"".htmlspecialchars($postTitle, ENT_QUOTES)."\" />
+				<input type=\"hidden\" name=\"url\" value=\"".htmlspecialchars($postUrl, ENT_QUOTES)."\" />
+				<input type=\"hidden\" name=\"summary\" value=\"".htmlspecialchars($postSummary, ENT_QUOTES)."\" />
+				<input type=\"hidden\" name=\"postDate\" value=\"".htmlspecialchars($postDate, ENT_QUOTES)."\" />
+				<input type=\"hidden\" name=\"status\" value=\"$postStatus\" />
+				<p>There has been an error, are you sure you want to apply these changes?</p>
+				<p><input class=\"ss-button\" name=\"confirm\" type=\"submit\" value=\"Confirm\" /></p>
+				</form>";
+			}
 		}
 	}
 }
@@ -3031,7 +3046,7 @@ The ".$sitename." Team.";
 // Input: post ID, post title, post summary, post URL, user ID, user display name, DB handle
 // Action: check post metadata
 // Return: error message or null
-function checkPostData($postId, $postTitle, $postSummary, $postUrl, $userId, $userName, $postDate, $db) {
+function checkPostData($postId, $postTitle, $postSummary, $postUrl, $postDate, $postStatus, $userId, $db) {
 	global $pages;
 	$result = NULL;
 	
@@ -3042,48 +3057,72 @@ function checkPostData($postId, $postTitle, $postSummary, $postUrl, $userId, $us
   }
 
   // user exists? active (0)?
+	$userName = getUserName($userId, $db);
   $userStatus = getUserStatus($userId, $db);
   if ($userStatus == null) {
     $result .= "<p class=\"ss-error\">No such user $userName.</p>";
   }
   if ($userStatus != 0) {
-    $result .= "<p class=\"ss-error\">User $userName is not active; could not update blog info.</p>";
+    $result .= "<p class=\"ss-error\">User $userName is not active.</p>";
   }
+	
+	$userPriv = getUserPrivilegeStatus($userId, $db);
+	if ($postStatus != 0 && $postStatus != 1 && $userPriv == 0) {
+		$result .= "<p class=\"ss-error\">You can't set this post status.</p>";
+	}
 	
   $postStatus = getPostStatusId($postId, $db);
   if ($postStatus == null) {
     $result .= "<p class=\"ss-error\">No such post $postId.</p>";
   }
   
-  // check that there is a name
-  if ($postTitle == null) {
-	  $result .= "<p class=\"ss-error\">You need to submit a title for this post.</p>";
-  }
+	if (!empty($postSummary) && mb_strlen($postSummary) > 8000) {
+		$result .= "<p class=\"ss-error\">Summary is too long, a maximum of 500 characters is allowed.</p>";
+	}
 
   // check that blog URL is fetchable
-  if (! uriFetchable($postUrl)) {
+  if (!empty($postUrl) && !uriFetchable($postUrl)) {
     $result .= ("<p class=\"ss-error\">Unable to fetch the contents of this post at $postUrl. Did you remember to put \"http://\" before the URL when you entered it? If you did, make sure your blog page is actually working, or <a href='".$pages["contact"]->getAddress()."'>contact us</a> to ask for help in resolving this problem.</p>");
   }
 	
-	if (! preg_match("/\d+-\d+-\d+ \d+:\d+:\d+/", $postDate)) {
+	if (!empty($postDate) && !preg_match("/\d+-\d+-\d+ \d+:\d+:\d+/", $postDate)) {
 		$result .= "<p class=\"ss-error\">Post publication date is not a valid timestamp.</p>";
 	}
 	
   return $result;
 }
 
-// Input: blog ID, blog name, blog URI, blog syndication URI, blog description, first main topic, other main topic, DB handle
-// Action: edit blog metadata
-function editPost ($postId, $postTitle, $postUrl, $postSummary, $postStatusId, $userId, $userName, $postDate, $addedDate, $db) {
+// Input: Post ID, Post Title, Post URL, Post Summmary, Post Status ID, DB Handle
+// Action: edit post metadata
+function editPost ($postId, $postTitle, $postUrl, $postSummary, $postStatusId, $db) {
 	
 	// escape stuff
   $postTitle = mysql_real_escape_string($postTitle);
   $postSummary = mysql_real_escape_string($postSummary);
 	$postUrl = mysql_real_escape_string($postUrl);
 
-	$sql = "UPDATE BLOG_POST SET BLOG_POST_TITLE='$postTitle', BLOG_POST_URI='$postUrl', BLOG_POST_SUMMARY='$postSummary', BLOG_POST_STATUS_ID=$postStatusId, BLOG_POST_DATE_TIME='$postDate', BLOG_POST_INGEST_DATE_TIME='$addedDate' WHERE BLOG_POST_ID=$postId";
+	$sql = "UPDATE BLOG_POST SET BLOG_POST_TITLE='$postTitle', BLOG_POST_URI='$postUrl', BLOG_POST_SUMMARY='$postSummary', BLOG_POST_STATUS_ID='$postStatusId' WHERE BLOG_POST_ID='$postId'";
 	mysql_query($sql, $db);
 
+}
+
+// Input: Post ID, Post Date, DB Handle
+// Action: edit post date
+function editPostDate ($postId, $postDate, $db) {
+	
+	// escape stuff
+  $postDate = mysql_real_escape_string($postDate);
+
+	$sql = "UPDATE BLOG_POST SET BLOG_POST_DATE_TIME='$postDate' WHERE BLOG_POST_ID='$postId'";
+	mysql_query($sql, $db);
+}
+
+// Input: Post ID, Post Date, DB Handle
+// Action: edit post date
+function editPostStatus ($postId, $postStatus, $db) {
+
+	$sql = "UPDATE BLOG_POST SET BLOG_POST_STATUS_ID='$postStatus' WHERE BLOG_POST_ID='$postId'";
+	mysql_query($sql, $db);
 }
 
 // Input: user ID, user name, display name, user status, user privilege status, user email, administrator id, administrator privilege, administrator display name, WordPress DB handle, DB handle
@@ -3564,54 +3603,52 @@ function titleToCitations($title) {
 	# Send query to CrossRef Metadata Search
   $result = curl_exec($ch);
   $cerror = curl_error($ch);
-	if (($cerror != null & strlen($cerror) > 0)) {
-		return "ERROR: $cerror\n";
-	}
-	
-	$doc = new DOMDocument();
-  @$doc->loadHTML($result);
-	$xml = simplexml_import_dom($doc);
-	
-	// Search for Z3988 class and return all its contents
-	$resultLinks = $xml->xpath("//a[text()='[xml]']/@href");
-
-	$citations = array();
-	foreach ($resultLinks as $uri) {
-		$articleData = NULL;
-		$ch = curl_init();    // initialize curl handle
-		curl_setopt($ch, CURLOPT_URL,$uri); // set url to post to
-		curl_setopt($ch, CURLOPT_FAILONERROR, 1);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
-		curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
-		$result = curl_exec($ch);
-		
+	if (($cerror == null & strlen($cerror) == 0)) {
 		$doc = new DOMDocument();
 		@$doc->loadHTML($result);
 		$xml = simplexml_import_dom($doc);
 		
-		// Build article data for the citation generator.
-		foreach ($xml->xpath("//person_name") as $author) {
-			$articleData["authors"][] = array("rft.aufirst"=>$author->given_name, "rft.aulast"=>$author->surname);
-		}
-		$articleData["rft.jtitle"] = (string)array_shift($xml->xpath("//journal_metadata/full_title"));
-		$articleData["rft.atitle"] = (string)array_shift($xml->xpath("//journal_article/titles/title"));
-		$articleData["rft.issn"] = (string)array_shift($xml->xpath("//journal_metadata/issn"));
-		$articleData["rft.date"] = (string)array_shift($xml->xpath("//journal_issue/publication_date/year"));
-		$articleData["rft.volume"] = (string)array_shift($xml->xpath("//journal_issue/journal_volume/volume"));
-		$articleData["rft.issue"] = (string)array_shift($xml->xpath("//journal_issue/issue"));
-		$articleData["rft.spage"] = (string)array_shift($xml->xpath("//pages/first_page"));
-		$articleData["rft.epage"] = (string)array_shift($xml->xpath("//pages/last_page"));
-		$articleData["rft.artnum"] = (string)array_shift($xml->xpath("//doi_data/resource[last()]"));
-		$articleData["id"] = (string)array_shift($xml->xpath("(//doi_data/doi)[last()]"));
-		$articleData["id_type"] = "doi";
+		// Search for Z3988 class and return all its contents
+		$resultLinks = $xml->xpath("//a[text()='[xml]']/@href");
 		
-		$citations[] = generateCitation ($articleData);
- }
+		$citations = array();
+		foreach ($resultLinks as $uri) {
+			$articleData = NULL;
+			$ch = curl_init();    // initialize curl handle
+			curl_setopt($ch, CURLOPT_URL,$uri); // set url to post to
+			curl_setopt($ch, CURLOPT_FAILONERROR, 1);
+			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
+			curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
+			$result = curl_exec($ch);
+			
+			$doc = new DOMDocument();
+			@$doc->loadHTML($result);
+			$xml = simplexml_import_dom($doc);
+			
+			// Build article data for the citation generator.
+			foreach ($xml->xpath("//person_name") as $author) {
+				$articleData["authors"][] = array("rft.aufirst"=>$author->given_name, "rft.aulast"=>$author->surname);
+			}
+			$articleData["rft.jtitle"] = (string)array_shift($xml->xpath("//journal_metadata/full_title"));
+			$articleData["rft.atitle"] = (string)array_shift($xml->xpath("//journal_article/titles/title"));
+			$articleData["rft.issn"] = (string)array_shift($xml->xpath("//journal_metadata/issn"));
+			$articleData["rft.date"] = (string)array_shift($xml->xpath("//journal_issue/publication_date/year"));
+			$articleData["rft.volume"] = (string)array_shift($xml->xpath("//journal_issue/journal_volume/volume"));
+			$articleData["rft.issue"] = (string)array_shift($xml->xpath("//journal_issue/issue"));
+			$articleData["rft.spage"] = (string)array_shift($xml->xpath("//pages/first_page"));
+			$articleData["rft.epage"] = (string)array_shift($xml->xpath("//pages/last_page"));
+			$articleData["rft.artnum"] = (string)array_shift($xml->xpath("//doi_data/resource[last()]"));
+			$articleData["id"] = (string)array_shift($xml->xpath("(//doi_data/doi)[last()]"));
+			$articleData["id_type"] = "doi";
+			
+			$citations[] = generateCitation ($articleData);
+		}
+	}
 	
 	/* Alternative non-experimental API
 	
-  $uri = "http://crossref.org/sigg/sigg/FindWorks?version=1&access=liminality@scienceseeker.org&format=json&op=OR&expression=" . urlencode($title);
+  $uri = "http://crossref.org/sigg/sigg/FindWorks?version=1&access=API_KEY&format=json&op=OR&expression=" . urlencode($title);
 
   $ch = curl_init();    // initialize curl handle
   curl_setopt($ch, CURLOPT_URL,$uri); // set url to post to
@@ -3635,82 +3672,91 @@ function titleToCitations($title) {
  
 	/* PubMed */
 	
+	global $pubMedUrl;
+	global $pubMedIdUrl;
 	$ch = curl_init();    // initialize curl handle
-	curl_setopt($ch, CURLOPT_URL,"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=" . urlencode($title));
+	curl_setopt($ch, CURLOPT_URL,$pubMedUrl . urlencode($title));
 	curl_setopt($ch, CURLOPT_FAILONERROR, 1);
 	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
 	curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
 	$result = curl_exec($ch);
 	
-	$doc = new DOMDocument();
-	@$doc->loadHTML($result);
-	$xml = simplexml_import_dom($doc);
-	
-	$pmids = $xml->xpath("//esearchresult/idlist/id");
-	
-	foreach ($pmids as $pmid) {
-		$url = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&id=" . urlencode((string)$pmid);
-		
-		$ch = curl_init();    // initialize curl handle
-		curl_setopt($ch, CURLOPT_URL,$url);
-		curl_setopt($ch, CURLOPT_FAILONERROR, 1);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
-		curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
-		$result = curl_exec($ch);
-		
+	$cerror = curl_error($ch);
+	if (($cerror == null & strlen($cerror) == 0)) {
 		$doc = new DOMDocument();
 		@$doc->loadHTML($result);
 		$xml = simplexml_import_dom($doc);
 		
-		$articles = $xml->xpath("//pubmedarticleset/pubmedarticle");
+		$pmids = $xml->xpath("//esearchresult/idlist/id");
 		
-		foreach ($articles as $entry) {
-			$articleData = array();
-			$authors = $entry->medlinecitation->article->authorlist->author;
-			if (!empty($authors)) {
-				foreach ($authors as $author) {
-					$articleData["authors"][] = array("rft.aufirst"=>$author->forename, "rft.aulast"=>$author->lastname);
+		foreach ($pmids as $pmid) {
+			$url = $pubMedIdUrl . urlencode((string)$pmid);
+			
+			$ch = curl_init();    // initialize curl handle
+			curl_setopt($ch, CURLOPT_URL,$url);
+			curl_setopt($ch, CURLOPT_FAILONERROR, 1);
+			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
+			curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
+			$result = curl_exec($ch);
+			
+			$doc = new DOMDocument();
+			@$doc->loadHTML($result);
+			$xml = simplexml_import_dom($doc);
+			
+			$articles = $xml->xpath("//pubmedarticleset/pubmedarticle");
+			
+			foreach ($articles as $entry) {
+				$articleData = array();
+				$authors = $entry->medlinecitation->article->authorlist->author;
+				if (!empty($authors)) {
+					foreach ($authors as $author) {
+						$articleData["authors"][] = array("rft.aufirst"=>$author->forename, "rft.aulast"=>$author->lastname);
+					}
 				}
+				$articleData["rft.jtitle"] = $entry->medlinecitation->article->journal->title;
+				$articleData["rft.atitle"] = $entry->medlinecitation->article->articletitle;
+				$articleData["rft.date"] = $entry->medlinecitation->article->articledate->year;
+				$articleData["rft.issn"] = $entry->medlinecitation->medlinejournalinfo->issnlinking;
+				$articleData["id"] = array_shift($entry->pubmeddata->articleidlist->xpath("articleid[@idtype='pubmed']"));
+				$articleData["id_type"] = "pmid";
+				$citations[] = generateCitation ($articleData);
 			}
-			$articleData["rft.jtitle"] = $entry->medlinecitation->article->journal->title;
-			$articleData["rft.atitle"] = $entry->medlinecitation->article->articletitle;
-			$articleData["rft.date"] = $entry->medlinecitation->article->articledate->year;
-			$articleData["rft.issn"] = $entry->medlinecitation->medlinejournalinfo->issnlinking;
-			$articleData["id"] = array_shift($entry->pubmeddata->articleidlist->xpath("articleid[@idtype='pubmed']"));
-			$articleData["id_type"] = "pmid";
-			$citations[] = generateCitation ($articleData);
 		}
 	}
  
 	/* arXiv */
-
+	
+	global $arxivUrl;
 	$ch = curl_init();    // initialize curl handle
-	curl_setopt($ch, CURLOPT_URL,"http://export.arxiv.org/api/query?max_results=6&search_query=all:" . urlencode($title));
+	curl_setopt($ch, CURLOPT_URL, $arxivUrl.urlencode($title));
 	curl_setopt($ch, CURLOPT_FAILONERROR, 1);
 	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
 	curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
 	$result = curl_exec($ch);
 	
-	$doc = new DOMDocument();
-	@$doc->loadHTML($result);
-	$xml = simplexml_import_dom($doc);
-	
-	$entries = $xml->xpath("//entry");
-	
-	foreach ($entries as $entry) {
-		$articleData = array();
-		foreach ($entry->author as $author) {
-			$articleData["authors"][] = array("rft.au"=>$author->name);
+	$cerror = curl_error($ch);
+	if (($cerror == null & strlen($cerror) == 0)) {
+		$doc = new DOMDocument();
+		@$doc->loadHTML($result);
+		$xml = simplexml_import_dom($doc);
+		
+		$entries = $xml->xpath("//entry");
+		
+		foreach ($entries as $entry) {
+			$articleData = array();
+			foreach ($entry->author as $author) {
+				$articleData["authors"][] = array("rft.au"=>$author->name);
+			}
+			$articleData["rft.jtitle"] = $entry->journal_ref;
+			$articleData["rft.atitle"] = $entry->title;
+			$articleData["rft.date"] = array_shift(preg_split("/-/", $entry->published, 2));
+			$articleData["id"] = str_replace("http://arxiv.org/abs/","",$entry->id);
+			$articleData["id_type"] = "arxiv";
+			$citations[] = generateCitation ($articleData);
 		}
-		$articleData["rft.jtitle"] = $entry->journal_ref;
-		$articleData["rft.atitle"] = $entry->title;
-		$articleData["rft.date"] = array_shift(preg_split("/-/", $entry->published, 2));
-		$articleData["id"] = str_replace("http://arxiv.org/abs/","",$entry->id);
-		$articleData["id_type"] = "arxiv";
-		$citations[] = generateCitation ($articleData);
 	}
 	
 	return $citations;

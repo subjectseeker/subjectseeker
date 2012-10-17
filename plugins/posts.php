@@ -47,7 +47,7 @@ function displayFeed($httpQuery = NULL, $allowOverride = TRUE, $minimal = FALSE,
 	}
 	else {
 		$limit = NULL;
-		if (isset($_REQUEST["n"])) $limit = $_REQUEST["n"];
+		if (!empty($_REQUEST["n"])) $limit = $_REQUEST["n"];
 		pageButtons ($pages["posts"]->getAddress(), $limit, $postsData["total"]);
 	}
 }

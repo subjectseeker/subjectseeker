@@ -13,7 +13,7 @@ function displayUserPanel() {
 		$userAvatar = getUserAvatar($authUserId, $db);
 		
 		global $imagesUrl;
-		if (isset($userAvatar)) {
+		if (!empty($userAvatar)) {
 			$avatarSrc = $imagesUrl."/users/$authUserId/avatars/small-$userAvatar";
 		}
 		else {

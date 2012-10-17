@@ -19,7 +19,7 @@ function displayMyPosts($minimal = FALSE, $open = FALSE) {
 		$authUserName = $authUser->userName;
 		$userPriv = getUserPrivilegeStatus($authUserId, $db);
 		$step = NULL;
-		if (isset($_REQUEST["step"])) {
+		if (!empty($_REQUEST["step"])) {
 			$step = $_REQUEST["step"];
 		}
 		
@@ -29,19 +29,19 @@ function displayMyPosts($minimal = FALSE, $open = FALSE) {
 		$pagesize = "15";
 		$offset = "0";
 		
-		if (isset($_GET["arrange"])) {
+		if (!empty($_GET["arrange"])) {
 			$arrange = $_GET["arrange"];
 		}
-		if (isset($_GET["order"])) {
+		if (!empty($_GET["order"])) {
 			$order = $_GET["order"];
 		}
-		if (isset($_GET["n"])) {
+		if (!empty($_GET["n"])) {
 			$pagesize = $_GET["n"];
 		}
-		if (isset($_GET["offset"])) {
+		if (!empty($_GET["offset"])) {
 			$offset = $_GET["offset"];
 		}
-		if (isset($_GET["blog"])) {
+		if (!empty($_GET["blog"])) {
 			$blogId = $_GET["blog"];
 		}
 		
@@ -61,7 +61,7 @@ function displayMyPosts($minimal = FALSE, $open = FALSE) {
 				editPostForm ($postsData["result"], $userPriv, FALSE, $db);
 			}
 			$limit = NULL;
-			if (isset($_REQUEST["n"])) {
+			if (!empty($_REQUEST["n"])) {
 				$limit = $_REQUEST["n"];
 			}
 			pageButtons ($pages["posts"]->getAddress(), $limit, $postsData["total"]);

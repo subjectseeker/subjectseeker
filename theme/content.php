@@ -8,7 +8,7 @@
 	<div id="sidebar">
   	<div class="tabs">
 			<?php
-      if (isset($currentPage->sidebar) && $currentPage->sidebar == "right-2") {
+      if (!empty($currentPage->sidebar) && $currentPage->sidebar == "right-2") {
       ?>
       <div class="tab-buttons">
         <div class="tab-button">Sidebar</div><div class="tab-button-pressed">Filters</div>

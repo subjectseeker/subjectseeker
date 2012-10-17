@@ -13,7 +13,7 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 function displayPostProfile() {
 	global $pages;
-	if (isset($_REQUEST["step"])) {
+	if (!empty($_REQUEST["step"])) {
 		$step = $_REQUEST["step"];
 	}
   $db = ssDbConnect();
@@ -70,7 +70,7 @@ function displayPostProfile() {
 	if (!empty($postHasCitation)) $postCitations = postIdToCitation($postId, $db);
 	
 	// Check if user has recommended this post
-	if (isset($authUserId)) $recStatus = getRecommendationsCount($postId, NULL, $authUserId, NULL, $db);
+	if (!empty($authUserId)) $recStatus = getRecommendationsCount($postId, NULL, $authUserId, NULL, $db);
 	
 	$editorsPicksStatus = getRecommendationsCount($postId, NULL, NULL, 1, $db);
 	
@@ -145,7 +145,7 @@ function displayPostProfile() {
 	
 	<div class=\"recs\">
 		<div class=\"recommendation-wrapper\">";
-			if (isset($recStatus) && $recStatus == TRUE) print "<div class=\"recommended\" title=\"Remove recommendation and note\"></div>";
+			if (!empty($recStatus) && $recStatus == TRUE) print "<div class=\"recommended\" title=\"Remove recommendation and note\"></div>";
 			else print "<div class=\"recommend\" title=\"Recommend\"></div>";
 			print "<span class=\"rec-count\">$recCount</span>
 		</div>
@@ -162,7 +162,7 @@ function displayPostProfile() {
 	
 	displayNotes ($postId, $db);
 	
-	if (isset($authUserId)) {
+	if (!empty($authUserId)) {
 		print "<div class=\"rec-comment\">
 		<div class=\"text-area\">
 		<form method=\"post\" enctype=\"multipart/form-data\">
@@ -170,7 +170,7 @@ function displayPostProfile() {
 		<p><textarea class=\"note-area\" name=\"comment\"></textarea></p>
 		<div style=\"display: none;\" class=\"tweet-preview-area margin-bottom\"><div class=\"subtle-text margin-bottom-small ss-bold\">Tweet Preview</div><div class=\"tweet-preview\"><span class=\"tweet-message\"></span><span class=\"tweet-extras\"></span></div></div>
 		<input id=\"submit-comment\" class=\"submit-comment ss-button\" type=\"button\" data-step=\"store\" value=\"Submit\" />";
-		if (isset($twitterStatus)) {
+		if (!empty($twitterStatus)) {
 			print " <span class=\"subtle-text alignright\" title=\"The blog's twitter handle and post's url will be included in your tweet.\"><input class=\"tweet-note\" type=\"checkbox\" value=\"true\" /> Tweet this note.</span>";
 		}
 		else {

@@ -87,7 +87,7 @@ function editImage() {
 			$target = "avatar";
 			
 			// Check if editor is uploading a header.
-			if (isset($_GET["type"]) && $_GET["type"] == "header" && $userPriv > 0) {		
+			if (!empty($_GET["type"]) && $_GET["type"] == "header" && $userPriv > 0) {		
 				if ($width < 580 || $height < 200) {
 					return $content .= "<p class=\"ss-error\">Your image must be at least 580 x 200.</p>";
 				}
@@ -117,10 +117,10 @@ function editImage() {
 			<input type=\"hidden\" name=\"url\" value=\"$originalUrl\" />
 			<input type=\"hidden\" name=\"imageName\" value=\"$imageName\" />";
 			if ($userPriv > 0) {
-				if (isset($_POST["userId"])) {
+				if (!empty($_POST["userId"])) {
 					$content .= "<input type=\"hidden\" name=\"userId\" value=\"".$_POST["userId"]."\" />";
 				}
-				if (isset($_GET["type"]) && $_GET["type"] == "header") {
+				if (!empty($_GET["type"]) && $_GET["type"] == "header") {
 					$postId = $_REQUEST["postId"];
 					$content .= "<input type=\"hidden\" name=\"postId\" value=\"$postId\" />
 					<input type=\"hidden\" name=\"type\" value=\"header\" />";

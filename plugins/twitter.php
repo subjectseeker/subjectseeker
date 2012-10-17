@@ -18,7 +18,7 @@ function syncTwitter() {
 	
 	global $homeUrl;
 	$originalUrl = $homeUrl;
-	if (isset($_REQUEST["url"])) {
+	if (!empty($_REQUEST["url"])) {
 		$originalUrl = $_REQUEST["url"];
 	}
 	
@@ -31,8 +31,8 @@ function syncTwitter() {
 		$userTwitter = getUserSocialAccount(1, $authUserId, $db);
 		
 		// If coming from Twitter with the new token, display this.
-		if (isset($_REQUEST['oauth_token'])) {
-			if (isset($_REQUEST['oauth_token']) && $_SESSION['oauth_token'] !== $_REQUEST['oauth_token']) {
+		if (!empty($_REQUEST['oauth_token'])) {
+			if (!empty($_REQUEST['oauth_token']) && $_SESSION['oauth_token'] !== $_REQUEST['oauth_token']) {
 				$content = "<div class=\"box-title\">Sync</div>
 				<p>Session Expired!</p>
 				<p><a class=\"white-button\" href=\"".$pages["twitter"]->getAddress()."\" title=\"Go to synchronization page\">Retry synchronization</a> <a class=\"white-button\" title=\"Go back to the original page\" href=\"$originalUrl\">Take me back to $sitename</a></p>";
@@ -53,8 +53,8 @@ function syncTwitter() {
 			}
 		}
 		// Confirm account removal
-		elseif (isset($_REQUEST["remove"]) && $_REQUEST["remove"] == "true") {
-			if (isset($userTwitter)) {
+		elseif (!empty($_REQUEST["remove"]) && $_REQUEST["remove"] == "true") {
+			if (!empty($userTwitter)) {
 				$content = "<div class=\"box-title\">Sync</div>
 				<p>Are you sure you want to remove your Twitter account from our system?</p>
 				<p><a class=\"white-button\" title=\"Confirm social network account removal\" href=\"".$pages["twitter"]->getAddress()."/?remove=confirmed&amp;url=$originalUrl\">Yes</a> <a class=\"white-button\" title=\"Cancel social network account removal\" href=\"$originalUrl\">No, go back to $sitename</a></p>";
@@ -65,8 +65,8 @@ function syncTwitter() {
 				<p><a class=\"white-button\" href=\"".$pages["twitter"]->getAddress()."\" title=\"Go to synchronization page\">Sync my Twitter account</a>  <a class=\"white-button\" title=\"Cancel social network account removal\" href=\"$originalUrl\">Take me back to $sitename</a></p>";
 			}
 		}
-		elseif (isset($_REQUEST["remove"]) && $_REQUEST["remove"] == "confirmed") {
-			if (isset($userTwitter)) {
+		elseif (!empty($_REQUEST["remove"]) && $_REQUEST["remove"] == "confirmed") {
+			if (!empty($userTwitter)) {
 				$content = "<div class=\"box-title\">Sync</div>
 				<p>Your Twitter account has been successfully removed from our system.</p>
 				<p><a class=\"white-button\" title=\"Go back to the original page\" href=\"$originalUrl\">Take me back to $sitename</a></p>";

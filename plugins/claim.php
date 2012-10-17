@@ -29,7 +29,7 @@ function claimSite() {
 		$authUserEmail = getUserEmail($authUserId, $db);
 		
 		$step = NULL;
-    if (isset($_REQUEST["step"])) {
+    if (!empty($_REQUEST["step"])) {
 			$step = $_REQUEST["step"];
 		}
 

@@ -31,16 +31,16 @@ if (isLoggedIn()){
 }
 	
 $postId = str_replace("post-", "", $_REQUEST["postId"]);
-if (isset($_REQUEST["step"])) {
+if (!empty($_REQUEST["step"])) {
 	$step = $_REQUEST["step"];
 }
-if (isset($_REQUEST["tweet"])) {
+if (!empty($_REQUEST["tweet"])) {
 	$tweet = $_REQUEST["tweet"];
 }
-if (isset($_REQUEST["comment"])) {
+if (!empty($_REQUEST["comment"])) {
 	$note = $_REQUEST["comment"];
 }
-if (isset($_REQUEST["tweetContent"])) {
+if (!empty($_REQUEST["tweetContent"])) {
 	$tweetContent = $_REQUEST["tweetContent"];
 }
 $overwriteStatus = FALSE;
@@ -89,7 +89,7 @@ if ($step == "store" || $step == "confirm") {
 		$shortUrl = get_bitly_short_url($postUri,$bitlyUser,$bitlyKey);
 		
 		$noteAuthor = $authUserName;
-		if (isset($userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"])) {
+		if (!empty($userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"])) {
 			$noteAuthor = "@".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"];
 		}
 		$ssNote = "$note $shortUrl —$noteAuthor";

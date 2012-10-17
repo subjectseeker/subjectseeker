@@ -26,7 +26,7 @@ if (isLoggedIn()){
 	// If user is logged in
 	if ($authUserId != NULL) {
 		$step = NULL;
-		if (isset($_REQUEST["step"])) {
+		if (!empty($_REQUEST["step"])) {
 			$step = $_REQUEST["step"];
 		}
 		

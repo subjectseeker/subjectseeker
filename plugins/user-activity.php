@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 function userActivity ($limit = 8) {
 	global $twitterListId;
 	
-	if (isset($_REQUEST["url"])) {
+	if (!empty($_REQUEST["url"])) {
 		$originalUrl = $_REQUEST["url"];
 	}
 	else {

@@ -23,7 +23,7 @@ function userSettings() {
 		$userPriv = getUserPrivilegeStatus($authUserId, $db);
 		
 		$step = NULL;
-		if (isset($_REQUEST["step"])) {
+		if (!empty($_REQUEST["step"])) {
 			$step = $_REQUEST["step"];
 		}
 		// Read name on URL
@@ -36,25 +36,25 @@ function userSettings() {
 		}
 		elseif ($userId == $authUserId || $userPriv > 1) { // Check if user or admin
 			// Check which of the forms have been submitted, if any
-			if (isset($_POST["form"]) && $_POST["form"] == "personal") {
+			if (!empty($_POST["form"]) && $_POST["form"] == "personal") {
 				$newDisplayName = NULL;
 				$newUrl = NULL;
 				$newBio = NULL;
 				$emailEdPicks = NULL;
 				$emailAnnouncements = NULL;
-				if (isset($_POST["display-name"])) {
+				if (!empty($_POST["display-name"])) {
 					$newDisplayName = $_POST["display-name"];
 				}
-				if (isset($_POST["url"])) {
+				if (!empty($_POST["url"])) {
 					$newUrl = $_POST["url"];
 				}
-				if (isset($_POST["bio"])) {
+				if (!empty($_POST["bio"])) {
 					$newBio = $_POST["bio"];
 				}
-				if (isset($_POST["email-edpicks"])) {
+				if (!empty($_POST["email-edpicks"])) {
 					$emailEdPicks = $_POST["email-edpicks"];
 				}
-				if (isset($_POST["email-announcements"])) {
+				if (!empty($_POST["email-announcements"])) {
 					$emailAnnouncements = $_POST["email-announcements"];
 				}
 				
@@ -69,13 +69,13 @@ function userSettings() {
 					editUserPreferences($userId, $newUrl, $newBio, $emailEdPicks, $emailAnnouncements, $db);
 					editDisplayName ($userId, $newDisplayName, $db);
 				}
-			} elseif (isset($_POST["form"]) && $_POST["form"] == "email") {
+			} elseif (!empty($_POST["form"]) && $_POST["form"] == "email") {
 				$newEmail = NULL;
 				$userPass = NULL;
-				if (isset($_POST["email"])) {
+				if (!empty($_POST["email"])) {
 					$newEmail = $_POST["email"];
 				}
-				if (isset($_POST["current-pass"])) {
+				if (!empty($_POST["current-pass"])) {
 					$userPass = $_POST["current-pass"];
 				}
 				
@@ -90,17 +90,17 @@ function userSettings() {
 				} else {
 					editEmail($userId, $newEmail, $db);
 				}
-			} elseif (isset($_POST["form"]) && $_POST["form"] == "password") {
+			} elseif (!empty($_POST["form"]) && $_POST["form"] == "password") {
 				$userPass = NULL;
 				$newUserPass1 = NULL;
 				$newUserPass2 = NULL;
-				if (isset($_POST["current-pass"])) {
+				if (!empty($_POST["current-pass"])) {
 					$userPass = $_POST["current-pass"];
 				}
-				if (isset($_POST["new-pass"])) {
+				if (!empty($_POST["new-pass"])) {
 					$newUserPass1 = $_POST["new-pass"];
 				}
-				if (isset($_POST["new-pass2"])) {
+				if (!empty($_POST["new-pass2"])) {
 					$newUserPass2 = $_POST["new-pass2"];
 				}
 				

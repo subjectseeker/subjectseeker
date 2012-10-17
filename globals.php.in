@@ -31,6 +31,9 @@ $crawlerLock = "$basedir/cron/lock.txt";
 // CitationSeeker URLs
 $rfrId = "example.com";
 $crossRefUrl = "http://api.labs.crossref.org/search?q=";
+$pubMedUrl = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=";
+$pubMedIdUrl = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&id=";
+$arxivUrl = "http://export.arxiv.org/api/query?max_results=6&search_query=all:";
 
 // Social Network Integration
 $recaptchaPublicKey = "****"; // Recaptcha Public Key

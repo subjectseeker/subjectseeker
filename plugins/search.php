@@ -15,7 +15,7 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 function searchForm() {
 	print "<form action=\"/search/\" method=\"get\">
 	<input class=\"search-input\" type=\"text\" name=\"text\"";
-	if (isset($_REQUEST["text"])) {
+	if (!empty($_REQUEST["text"])) {
 		print " value=\"".$_REQUEST["text"]."\"";
 	}
 	print "/><input class=\"search-button\" type=\"submit\" value=\"Search\" />
@@ -28,13 +28,13 @@ function searchPage($text = NULL, $minimal = FALSE, $open = FALSE) {
 	global $numResults;
 	$limit = $numResults;
 	$offset = 0;
-	if (empty($text) && isset($_REQUEST["text"])) {
+	if (empty($text) && !empty($_REQUEST["text"])) {
 		$text = $_REQUEST["text"];
 	}
-	if (isset($_REQUEST["n"])) {
+	if (!empty($_REQUEST["n"])) {
 		$limit = $numResults;
 	}
-	if (isset($_REQUEST["offset"])) {
+	if (!empty($_REQUEST["offset"])) {
 		$offset = $_REQUEST["offset"];
 	}
 	
@@ -65,7 +65,7 @@ SELECT post.BLOG_POST_ID, post.BLOG_POST_URI, post.BLOG_POST_DATE_TIME, post.BLO
 	}
 	else {
 		$limit = NULL;
-		if (isset($_REQUEST["n"])) $limit = $_REQUEST["n"];
+		if (!empty($_REQUEST["n"])) $limit = $_REQUEST["n"];
 		pageButtons ($pages["search"]->getAddress(), $limit, $total);
 	}
 }
