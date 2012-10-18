@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 function adminPosts($httpQuery = NULL, $allowOverride = TRUE, $minimal = FALSE, $open = FALSE) {
   $db = ssDbConnect();
-	if (isLoggedIn()){
+	if (isLoggedIn()) {
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
@@ -32,20 +32,31 @@ function adminPosts($httpQuery = NULL, $allowOverride = TRUE, $minimal = FALSE, 
 			$queryList = httpParamsToSearchQuery($httpQuery, $allowOverride);
 			$settings = httpParamsToExtraQuery($httpQuery, $allowOverride);
 			$settings["type"] = "post";
-			$postsData = generateSearchQuery ($queryList, $settings, 1, $db);
-			if (empty($postsData["result"])) {
-				print "<p>There are no more posts in the system.</p>";
+			$postsData = generateSearchQuery ($queryList, $settings, 1, $db);			
+			if (!empty($postsData["errors"])) {
+				foreach ($postsData["errors"] as $error) {
+					print "<p class=\"ss-error\">$error</p>";
+				}
 			}
 			else {
-				editPostForm ($postsData["result"], $userPriv, FALSE, $db);
+				if (empty($postsData["result"])) {
+					print "<p>There are no more posts in the system.</p>";
+				}
+				else {
+					editPostForm ($postsData["result"], $userPriv, FALSE, $db);
+				}
+				global $pages;
+				$pagesize = NULL;
+				if (isset($_REQUEST["n"])) {
+					$pagesize = $_REQUEST["n"];
+				}
+				pageButtons ($pages["administer-posts"]->getAddress(), $pagesize, $postsData["total"]);
 			}
-			global $pages;
-			pageButtons ($pages["administer-posts"]->getAddress(), $pagesize, $postsData["total"]);
 		} else { // not moderator or admin
-			print "You are not authorized to administrate posts.<br />";
+			print "<p class=\"ss-warning\">You are not authorized to administrate posts.</p>";
 		}
   } else { // not logged in
-    print "Please log in.";
+    print "<p class=\"ss-warning\">Please log in.</p>";
   }
 }
 ?>

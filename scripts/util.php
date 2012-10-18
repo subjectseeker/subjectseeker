@@ -325,6 +325,7 @@ function generateSearchQuery ($queryList, $settings, $userPriv, $db) {
 	$result = array();
   $fromList = array();
   $whereList = array();
+	$errormsgs = array();
 	$minimumRec = FALSE;
 	$groupCheck = FALSE;
 	$type = $settings["type"];
@@ -376,10 +377,12 @@ function generateSearchQuery ($queryList, $settings, $userPriv, $db) {
 		$select = "SELECT SQL_CALC_FOUND_ROWS post.BLOG_POST_ID, post.BLOG_POST_URI, post.BLOG_POST_DATE_TIME, post.BLOG_POST_SUMMARY, post.BLOG_POST_TITLE, post.BLOG_POST_HAS_CITATION, blog.BLOG_ID, blog.BLOG_NAME, blog.BLOG_URI, blog.BLOG_SYNDICATION_URI, author.BLOG_AUTHOR_ACCOUNT_NAME";
   } else {
     array_push ($errormsgs, "Unknown type: $type");
-		return $result["errors"] = $errormsgs;
   }
 	
-	if (! empty($errormsgs)) return; 
+	if (! empty($errormsgs)) {
+		$result["errors"] = $errormsgs;
+		return $result;
+	}
 	
 	$limitNumber = $numResults;
   // Construct LIMIT part of query
@@ -1768,7 +1771,7 @@ function addSimplePieItem ($item, $language, $blogId, $db) {
 	$sql = "SELECT BLOG_POST_ID FROM BLOG_POST WHERE (BLOG_POST_TITLE = '$postTitle' AND BLOG_POST_DATE_TIME = '$timestamp') OR (BLOG_POST_URI = '$itemURI')";
 	$result =  mysql_query($sql, $db);
 	
-	if (! $result || mysql_num_rows($result) == 0) {
+	if (! $result || mysql_num_rows($result) != 0) {
     return NULL;
   }
 
@@ -1803,7 +1806,7 @@ function addSimplePieItem ($item, $language, $blogId, $db) {
   $sql = "INSERT INTO BLOG_POST (BLOG_ID, BLOG_AUTHOR_ID, LANGUAGE_ID, BLOG_POST_STATUS_ID, BLOG_POST_URI, BLOG_POST_DATE_TIME, BLOG_POST_INGEST_DATE_TIME, BLOG_POST_SUMMARY, BLOG_POST_TITLE) VALUES ($blogId, $blogAuthorId, $languageId, $blogPostStatusId, '". mysql_real_escape_string( htmlspecialchars($itemURI) ) . "' , '" . $timestamp . "', NOW(), '" . mysql_real_escape_string($summary) . "' ,'" . mysql_real_escape_string($item->get_title()) . "')";
   mysql_query($sql, $db);
 
-  // print "SQL: $sql\n";
+  //print "SQL: $sql\n";
 
   if (mysql_error()) {
     die ("addSimplePieItem: " . mysql_error() . " ($sql)\n");
@@ -2355,6 +2358,7 @@ function editBlogForm ($blogData, $userPriv, $open, $db) {
 // Input: Lists of posts from the DB, Minimalistic option, Slider option
 // Action: Display a list of posts.
 function displayPosts ($postsData, $minimal = FALSE, $open = FALSE, $db) {
+	global $homeUrl;
 	global $pages;
 	if (isLoggedIn()){
 		$authUser = new auth();
@@ -2373,9 +2377,9 @@ function displayPosts ($postsData, $minimal = FALSE, $open = FALSE, $db) {
 		$postDate = strtotime($row["BLOG_POST_DATE_TIME"]);
 		$formatHour = date("g:i A", $postDate);
 		$postSummary = strip_tags($row["BLOG_POST_SUMMARY"]);
-		$postTitle = $row[ "BLOG_POST_TITLE"];
-		$postUri = $row[ "BLOG_POST_URI"];
-		$postProfile = "/post/" . $postId;
+		$postTitle = htmlspecialchars($row[ "BLOG_POST_TITLE"]);
+		$postUri = htmlspecialchars($row[ "BLOG_POST_URI"]);
+		$postProfile = $homeUrl . "/post/" . $postId;
 		$postHasCitation = $row["BLOG_POST_HAS_CITATION"];
 		$formatDay = date("F d, Y", $postDate);
 		
@@ -2500,7 +2504,8 @@ function displayNotes ($postId, $db) {
 	print "<div class=\"comments-list-wrapper\" data-count=\"$commentCount\">
 	<h3>Notes</h3>";
 	if ($commentList == NULL) {
-		print "<p>There are no notes for this post. Recommend this post to leave a note.</p>";
+		print "<p>There are no notes for this post. Recommend this post to leave a note.</p>
+		<br />";
 	}
 	else {
 		// Display comments
@@ -3806,7 +3811,7 @@ function checkCitations ($postUri, $postId, $db) {
 // Action: Store topics from the citation
 function storeTopics ($postId, $topicsData, $db) {
 	preg_match("/(?<=bpr3.tags=)[^&;]+/", $topicsData, $topics);
-	$topic = preg_split("/[,\/]/", $topics[0]);
+	$topic = preg_split("/[,\/]/", array_shift($topics));
 	foreach ($topic as $category) {
 		$tag = trim($category);
 		$topicId = addTopic($tag, $db);

@@ -310,7 +310,7 @@ a:hover.user-panel-button:hover {
 	text-align: center;
 	border: 1px solid #2B0101;
 	background: #200000;
-	color: #B62B2B;
+	color: #CCC;
 	font-size: 11px;
 }
 
@@ -1213,7 +1213,7 @@ top: 0px;
 }
 
 .citation-mark, .citation-mark-content {
-  background: #747474;
+  background: #525252;
   width: 80px;
   float: right;
 }

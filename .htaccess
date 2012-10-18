@@ -1,8 +1,7 @@
 RewriteEngine On
-RewriteRule ^search/default/?$ /scripts/feed.php [L]
-RewriteRule ^feed/posts/?$ /scripts/feed.php [L]
-RewriteRule ^widget/default/?$ /scripts/widget.php [L]
-RewriteRule ^post/([0-9]+)/badge/?$ /scripts/post-badge.php [L]
+RewriteRule ^search/default/?$ scripts/feed.php [L]
+RewriteRule ^feed/posts/?$ scripts/feed.php [L]
+RewriteRule ^widget/default/?$ scripts/widget.php [L]
+RewriteRule ^post/([0-9]+)/badge/?$ scripts/post-badge.php [L]
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ /index.php [L,QSA]
+RewriteRule ^(.*)$ index.php [L,QSA]

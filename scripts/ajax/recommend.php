@@ -26,7 +26,7 @@ if (isLoggedIn()){
 	// If user is logged in
 	if ($authUserId != NULL) {
 		$step = NULL;
-		if (!empty($_REQUEST["step"])) {
+		if (isset($_REQUEST["step"])) {
 			$step = $_REQUEST["step"];
 		}
 		
@@ -56,7 +56,7 @@ if (isLoggedIn()){
 	// Update recommendation button.
 	if ($recStatus == TRUE) {
 		print "<div class=\"recommended\" title=\"Remove recommendation and note\"></div>";
-	} else  {
+	} else {
 		print "<div class=\"recommend\" title=\"Recommend\"></div>";
 	}
 	print "<span class=\"rec-count\">$recCount</span>";

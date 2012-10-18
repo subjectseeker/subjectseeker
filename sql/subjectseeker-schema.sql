@@ -1,4 +1,9 @@
--- Generation Time: Oct 13, 2012 at 11:16 AM
+-- phpMyAdmin SQL Dump
+-- version 3.4.9
+-- http://www.phpmyadmin.net
+--
+-- Host: localhost
+-- Generation Time: Oct 18, 2012 at 07:05 AM
 -- Server version: 5.0.95
 -- PHP Version: 5.2.6
 
@@ -458,35 +463,6 @@ CREATE TABLE IF NOT EXISTS `SECONDARY_BLOG_TOPIC` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `USER_SECRET_CODE`
---
-
-DROP TABLE IF EXISTS `USER_SECRET_CODE`;
-CREATE TABLE IF NOT EXISTS `USER_SECRET_CODE` (
-  `USER_ID` int(10) unsigned NOT NULL COMMENT 'Reference to a user that solicited a recovery code.',
-  `USER_SECRET_CODE_TEXT` varchar(100) collate utf8_unicode_ci NOT NULL COMMENT 'Unique secret code associated with a user',
-  `USER_SECRET_CODE_DATE_TIME` datetime NOT NULL COMMENT 'The date and time at which this code was made.',
-  `USER_SECRET_CODE_SOURCE_ID` tinyint(4) NOT NULL COMMENT 'Reference to the source of this code.',
-  PRIMARY KEY  (`USER_ID`,`USER_SECRET_CODE_TEXT`,`USER_SECRET_CODE_SOURCE_ID`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Secret codes associated with users.';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `USER_SECRET_CODE_SOURCE`
---
-
-DROP TABLE IF EXISTS `USER_SECRET_CODE_SOURCE`;
-CREATE TABLE IF NOT EXISTS `USER_SECRET_CODE_SOURCE` (
-  `USER_SECRET_CODE_SOURCE_ID` int(15) NOT NULL auto_increment COMMENT 'Unique identifier of a secret code source.',
-  `USER_SECRET_CODE_SOURCE_NAME` varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'Name of a secret code source.',
-  PRIMARY KEY  (`USER_SECRET_CODE_SOURCE_ID`),
-  UNIQUE KEY `AK_SECRET_CODE_SOURCE_NAME` (`USER_SECRET_CODE_SOURCE_NAME`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Sources for secret codes.';
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `SOCIAL_NETWORK`
 --
 
@@ -496,7 +472,7 @@ CREATE TABLE IF NOT EXISTS `SOCIAL_NETWORK` (
   `SOCIAL_NETWORK_NAME` varchar(127) collate utf8_unicode_ci NOT NULL COMMENT 'Human-readable name of a social network.',
   PRIMARY KEY  (`SOCIAL_NETWORK_ID`),
   UNIQUE KEY `AK_SOCIAL_NETWORK_NAME` (`SOCIAL_NETWORK_NAME`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='A social network system with well-defined unique user IDs, t';
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='A social network system with well-defined unique user IDs, t';
 
 -- --------------------------------------------------------
 
@@ -650,6 +626,35 @@ CREATE TABLE IF NOT EXISTS `USER_RECOMMENDATION` (
   PRIMARY KEY  (`USER_ID`,`AUTHOR_USER_ID`),
   KEY `FK_RECOMMENDATIONS` (`AUTHOR_USER_ID`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Recommendations of particular posts.';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `USER_SECRET_CODE`
+--
+
+DROP TABLE IF EXISTS `USER_SECRET_CODE`;
+CREATE TABLE IF NOT EXISTS `USER_SECRET_CODE` (
+  `USER_ID` int(10) unsigned NOT NULL COMMENT 'Reference to a user that solicited a recovery code.',
+  `USER_SECRET_CODE_TEXT` varchar(100) collate utf8_unicode_ci NOT NULL COMMENT 'Unique secret code associated with a user',
+  `USER_SECRET_CODE_DATE_TIME` datetime NOT NULL COMMENT 'The date and time at which this code was made.',
+  `USER_SECRET_CODE_SOURCE_ID` tinyint(4) NOT NULL COMMENT 'Reference to the source of this code.',
+  PRIMARY KEY  (`USER_ID`,`USER_SECRET_CODE_TEXT`,`USER_SECRET_CODE_SOURCE_ID`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Secret codes associated with users.';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `USER_SECRET_CODE_SOURCE`
+--
+
+DROP TABLE IF EXISTS `USER_SECRET_CODE_SOURCE`;
+CREATE TABLE IF NOT EXISTS `USER_SECRET_CODE_SOURCE` (
+  `USER_SECRET_CODE_SOURCE_ID` int(15) NOT NULL auto_increment COMMENT 'Unique identifier of a secret code source.',
+  `USER_SECRET_CODE_SOURCE_NAME` varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'Name of a secret code source.',
+  PRIMARY KEY  (`USER_SECRET_CODE_SOURCE_ID`),
+  UNIQUE KEY `AK_SECRET_CODE_SOURCE_NAME` (`USER_SECRET_CODE_SOURCE_NAME`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Sources for secret codes.';
 
 -- --------------------------------------------------------
 

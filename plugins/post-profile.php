@@ -80,7 +80,7 @@ function displayPostProfile() {
 	// Get number of comments for this post
 	$commentCount = getRecommendationsCount($postId, "comments", NULL, NULL, $db);
 	
-	print "<div class=\"data-carrier\" id=\"$postId\">
+	print "<div class=\"data-carrier\" data-id=\"post-$postId\">
 	<div class=\"page-title\"><a href=\"$postUri\" target=\"_blank\" rel=\"bookmark\" title=\"Permanent link to $postTitle\">$postTitle</a></div>
 	<div class=\"floater-wrapper\">
 	<div id=\"post-sidebar\">
@@ -145,7 +145,7 @@ function displayPostProfile() {
 	
 	<div class=\"recs\">
 		<div class=\"recommendation-wrapper\">";
-			if (!empty($recStatus) && $recStatus == TRUE) print "<div class=\"recommended\" title=\"Remove recommendation and note\"></div>";
+			if ($recStatus == TRUE) print "<div class=\"recommended\" title=\"Remove recommendation and note\"></div>";
 			else print "<div class=\"recommend\" title=\"Recommend\"></div>";
 			print "<span class=\"rec-count\">$recCount</span>
 		</div>
@@ -163,8 +163,13 @@ function displayPostProfile() {
 	displayNotes ($postId, $db);
 	
 	if (!empty($authUserId)) {
-		print "<div class=\"rec-comment\">
-		<div class=\"text-area\">
+		if ($recStatus == TRUE) {
+			print "<div class=\"rec-comment\" style=\"display: block\">";
+		}
+		else {
+			print "<div class=\"rec-comment\">";
+		}
+		print "<div class=\"text-area\">
 		<form method=\"post\" enctype=\"multipart/form-data\">
 		<div class=\"subtle-text margin-bottom-small\"><span class=\"ss-bold\">Leave a note!</span><span class=\"alignright\"><span style=\"color: #383838;\" class=\"charsLeft\">102</span> characters left.</span></div>
 		<p><textarea class=\"note-area\" name=\"comment\"></textarea></p>

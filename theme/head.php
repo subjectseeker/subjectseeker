@@ -26,7 +26,7 @@ else {
 <?php
 if (!empty($localStylesheet)) {
 ?>
-<link rel="stylesheet" type="text/css" href="<?php echo $localStylesheet ?>" media="all" />
+<link rel="stylesheet" type="text/css" href="<?php echo $localStylesheet; ?>" media="all" />
 <?php
 }
 ?>
