@@ -1396,9 +1396,6 @@ function getTopicList ($topLevel, $db) {
 // Output: ids of blogs owned by this user
 function getBlogIdsByUserId ($userId, $db) {
 
-  // BLOG_AUTHOR has USER_ID
-  // BLOG_AUTHOR has BLOG_ID and BLOG_AUTHOR_ACCOUNT_NAME
-
   $sql = "select ba.BLOG_ID, user.DISPLAY_NAME from USER user, BLOG_AUTHOR ba, BLOG pa where user.USER_ID=$userId and ba.USER_ID=user.USER_ID and (pa.BLOG_STATUS_ID=0 or pa.BLOG_STATUS_ID=3) and pa.BLOG_ID=ba.BLOG_ID";
   $results = mysql_query($sql, $db);
   $blogIds = array();
@@ -3012,7 +3009,6 @@ function editBlogStatus ($blogId, $blogStatusId, $mailAuthor, $db) {
 			$blogName = getBlogName($blogId, $db);
 			if ($blogStatusId == 0) {
 				global $userBlogs;
-				global $rejectedSiteReasons;
 				$subject = "Site Submission Status: Approved";
 				$message = "Hello, ".$userDisplayName."!
 	
@@ -3026,6 +3022,7 @@ The ".$sitename." Team.";
 				sendMail($userEmail, $subject, $message);
 			}
 			if ($blogStatusId == 2) {
+				global $rejectedSiteReasons;
 				$subject = "Site Submission Status: Rejected";
 				$message = "Hello, ".$userDisplayName.".
 	
@@ -3509,8 +3506,6 @@ function addUser($userName, $userEmail, $pass, $db) {
   mysql_query($sql, $db);
 	
 	$userId = mysql_insert_id();
-	
-	editUserPreferences ($userId, NULL, NULL, 1, 1, $db);
 	
   return $userId;
 }

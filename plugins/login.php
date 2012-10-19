@@ -36,7 +36,7 @@ function displayLogin() {
 		}
 		else {
 			$content =  "<div class=\"box-title\">Log In</div>
-			<p>You are logged in</p>
+			<p>You are logged in.</p>
 			<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?logout=true\">Log Out</a></p>";
 		}
 	}
@@ -241,6 +241,8 @@ function displayLogin() {
 				}
 				elseif (!empty($userId)) {
 					editUserStatus ($userId, 0, $db);
+					$authUser = new auth();
+					$authUser->validateUser($userId, $db);
 					$content .= "<p class=\"ss-successful\">Your account has been verified.</p>
 					<a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
 				}

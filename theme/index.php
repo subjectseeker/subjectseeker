@@ -4,7 +4,7 @@ include_once(dirname(__FILE__)."/../scripts/initialize.php");
 if (count($currentPage->getLocations()) != 1) {
 ?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 <head>
 <?php include_once("head.php"); ?>
 </head>

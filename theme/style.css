@@ -1309,13 +1309,17 @@ left: -20px;
   margin: 0px auto 10px auto;
 }
 
-.page-title {
-	font-size: 2em;
+.page-title, .page-title a, .page-title a:visited {
+	font-size: 1.35em;
 	text-align: left;
 	margin-bottom: 15px;
 	color: #BA1212;
 	font-weight: bold;
 	font-family: Helvetica, Arial, "Lucida Grande", "Lucida Sans Unicode", Sans-Serif;
+}
+
+.page-title:hover, .page-title:hover a, .page-title:hover a:visited {
+	color: #E92E2E;
 }
 
 #post-sidebar {

@@ -56,7 +56,7 @@ function displayResources() {
 			print "<div class=\"ss-entry-wrapper\">
 			<div class=\"entry-indicator\">+</div>
 			<a class=\"post-header\" href=\"".$blogUri."\">".$blogName."</a>
-			<div class=\"ss-slide-wrapper\"\">
+			<div class=\"ss-slide-wrapper\">
 				<div class=\"padding-content\">
 				<div class=\"margin-bottom\">".$blogDescription."</div>
 				<div>

@@ -55,7 +55,7 @@ function displayMyPosts($minimal = FALSE, $open = FALSE) {
 			$settings["type"] = "post";
 			$postsData = generateSearchQuery ($queryList, $settings, 1, $db);
 			if (empty($postsData["result"])) {
-				print "<p>There are no more posts in the system.</p>";
+				print "<p>No posts found.</p>";
 			}
 			else {
 				editPostForm ($postsData["result"], $userPriv, FALSE, $db);

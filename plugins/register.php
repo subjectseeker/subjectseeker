@@ -28,12 +28,16 @@ function displayRegistration() {
 		include_once(dirname(__FILE__)."/../third-party/recaptcha/recaptchalib.php");
 		
 		$userName = NULL;
+		$userEmail = NULL;
+		$userPass1 = NULL;
+		$userPass2 = NULL;
+		
 		// Check if user has submitted information
 		if (!empty($_POST['user-name'])) {
 			$userName = mysql_escape_string($_POST['user-name']);
 			$userEmail = mysql_escape_string($_POST['email']);
-			$userPass1 = $_POST['pass1'];
-			$userPass2 = $_POST['pass2'];
+			$userPass1 = $_POST["pass1"];
+			$userPass2 = $_POST["pass2"];
 			
 			$errors = checkUserData(NULL, NULL, $userName, $userName, $userEmail, NULL, $userPass1, $userPass2, $db);
 			
@@ -46,16 +50,19 @@ function displayRegistration() {
 			if (empty($userPass1) || empty($userPass2)) {
 				$errors .= "<p class=\"ss-error\">Please submit your desired password and confirmation password.</p>";
 			}
-			if (empty($_SESSION["oauth_token"]) || $_SESSION["regStep"] != "two") {
+			if (empty($_SESSION["oauth_token"]) || (isset($_SESSION["regStep"]) && $_SESSION["regStep"] != "two")) {
 				global $recaptchaPrivateKey;
 				$resp = recaptcha_check_answer ($recaptchaPrivateKey, $_SERVER["REMOTE_ADDR"], $_POST["recaptcha_challenge_field"], $_POST["recaptcha_response_field"]);
 				if (!$resp->is_valid) {
 					$errors .= "<p class=\"ss-error\">Submitted captcha code is invalid, please try again.</p>";
 				}
+				else {
+					$_SESSION["validCaptcha"] = "true";
+				}
 			}
 			
 			if (!empty($errors)) {
-				if ($_SESSION["regStep"] == "two") {
+				if (isset($_SESSION["regStep"]) && $_SESSION["regStep"] == "two") {
 					$_SESSION["regStep"] = "one";
 				}
 				$content .= "$errors";
@@ -63,18 +70,17 @@ function displayRegistration() {
 			else {
 				$hashedPass = hashPassword($userPass1);
 				$userId = addUser($userName, $userEmail, $hashedPass, $db);
-				editUserPreferences($userId, $twitterUserDetails->url, $twitterUserDetails->description, 1, 1, $db);
 				editUserStatus ($userId, 3, $db);
+				$userDisplayName = $userName;
 				
 				// Check if Twitter details have been imported
-				if (isset($_SESSION["oauth_token"], $_SESSION["oauth_token_secret"]) && $_SESSION["regStep"] == "two") {
+				if (isset($_SESSION["oauth_token"], $_SESSION["oauth_token_secret"], $_SESSION["regStep"]) && $_SESSION["regStep"] == "two") {
 					addToTwitterList($_SESSION['user_id']);
 					addUserSocialAccount (1, $_SESSION['screen_name'], $_SESSION['oauth_token'], $_SESSION['oauth_token_secret'], $userId, $db);
 					$twitterUserDetails = getTwitterUserDetails($_SESSION['user_id']);
 					editUserPreferences($userId, $twitterUserDetails->url, $twitterUserDetails->description, 1, 1, $db);
-					$userDisplayName = $twitterUserDetails->name;
-					if (empty($userDisplayName)) {
-						$userDisplayName = $userName;
+					if (!empty( $twitterUserDetails->name)) {
+						$userDisplayName = $twitterUserDetails->name;
 					}
 					editDisplayName ($userId, $userDisplayName, $db);
 				}
@@ -99,14 +105,14 @@ function displayRegistration() {
 		$content .= "<div class=\"half-box\">
 		<form name=\"register\" method=\"post\">
 		<p>E-mail<br />
-		<input type=\"text\" name=\"email\" /></p>
+		<input type=\"text\" name=\"email\" value=\"$userEmail\" /></p>
 		<p>User Name<br />
 		<input type=\"text\" name=\"user-name\" size=\"30\" maxlength=\"20\" value=\"$userName\" /></p>
 		<p>Password<br />
 		<input type=\"password\" name=\"pass1\" /></p>
 		<p>Re-type Password<br />
 		<input type=\"password\". name=\"pass2\" /></p>";
-		if (empty($_SESSION["regStep"]) || $_SESSION["regStep"] != "one") {
+		if ((empty($_SESSION["regStep"]) || $_SESSION["regStep"] != "one") && (isset($_SESSION["validCaptcha"]) && $_SESSION["validCaptcha"] != "true")) {
 			$content .= "<p>".recaptcha_get_html($recaptchaPublicKey)."</p>";
 		}
 		$content .= "<p><input class=\"white-button\" style=\"width: 100%; padding: 6px 0px;\" type=\"submit\" value=\"Register\" /></p>

@@ -4,6 +4,7 @@
 global $homeUrl;
 global $sitename;
 global $subtitle;
+global $feedUrl;
 global $themeUrl;
 global $jsUrl;
 global $imagesUrl;
@@ -22,6 +23,7 @@ else {
 ?>
 </title>
 <link rel="shortcut icon" href="<?php echo $imagesUrl ?>/misc/favicon.ico" type="image/x-icon" />
+<link rel="alternate" type="application/rss+xml" title="Feed | <?php echo $homeUrl; ?>" href="<?php echo $feedUrl; ?>" />
 <link rel="stylesheet" type="text/css" href="<?php echo $themeUrl . "/style.css?v=" . filemtime($basedir.'/theme/style.css') ?>" media="all" />
 <?php
 if (!empty($localStylesheet)) {
