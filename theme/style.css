@@ -1344,19 +1344,19 @@ left: -20px;
 
 #post-sidebar .citation-mark-content, #post-sidebar .editors-mark-content {
   position: relative;
-  bottom: -9px;
-  float: none;
-  width: 80px;
-  height: auto;
-  padding: 3px 0px;
-  font-size: 0.8em;
-  display: inline-block;
-  color: white;
-  font-family: arial;
-  font-weight: bold;
-  text-decoration: none;
-  text-shadow: 1px 1px 0px #3D3D3D;
-  cursor: default;
+	bottom: -9px;
+	float: none;
+	width: 80px;
+	height: auto;
+	padding: 3px 0px;
+	font-size: 10px;
+	display: inline-block;
+	color: white;
+	font-family: arial;
+	font-weight: bold;
+	text-decoration: none;
+	text-shadow: 1px 1px 3px #969696;
+	cursor: default;
 }
 
 .post-sidebar-title {

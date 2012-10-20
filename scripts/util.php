@@ -2256,8 +2256,13 @@ function editBlogForm ($blogData, $userPriv, $open, $db) {
 	$blogtopics = getBlogTopics($blogId, $db);
 	$blogStatus = ucwords(blogStatusIdToName ($blogStatusId, $db));
 	
-	print "<div class=\"ss-entry-wrapper\">
-	<div class=\"post-header\">$blogId | <a class=\"red-title\" href=\"$blogUri\" target=\"_blank\">$blogName</a> | $blogStatus | $blogAddedDate</div>";
+	print "<div class=\"ss-entry-wrapper\">";
+	if ($open == TRUE) {
+		print "<div class=\"entry-indicator\">-</div>";
+	} else {
+		print "<div class=\"entry-indicator\">+</div>";
+	}
+	print "<div class=\"post-header\">$blogId | <a class=\"red-title\" href=\"$blogUri\" target=\"_blank\">$blogName</a> | $blogStatus | $blogAddedDate</div>";
 	if ($open == TRUE) {
 		print "<div class=\"ss-slide-wrapper\" style=\"display: block;\">";
 	}
@@ -2419,12 +2424,20 @@ function displayPosts ($postsData, $minimal = FALSE, $open = FALSE, $db) {
 		<div class=\"data-carrier\" data-id=\"post-$postId\">";
 		if ($open == TRUE) {
 			print "<div class=\"entry-indicator\">-</div>
-			<div class=\"post-header\">$formatHour | <a class=\"entry-title\" href=\"$postUri\" target=\"_blank\" rel=\"bookmark\" title=\"Permanent link to $postTitle\">$postTitle</a></div>
+			<div class=\"post-header\">";
+			if ($minimal != TRUE) {
+				print "$formatHour | ";
+			}
+			print "<a class=\"entry-title\" href=\"$postUri\" target=\"_blank\" rel=\"bookmark\" title=\"Permanent link to $postTitle\">$postTitle</a></div>
 			<div class=\"ss-slide-wrapper\" style=\"display: block;\">";
 		}
 		else {
 			print "<div class=\"entry-indicator\">+</div>
-			<div class=\"post-header\">$formatHour | <a class=\"entry-title\" href=\"$postUri\" target=\"_blank\" rel=\"bookmark\" title=\"Permanent link to $postTitle\">$postTitle</a></div>
+			<div class=\"post-header\">";
+			if ($minimal != TRUE) {
+				print "$formatHour | ";
+			}
+			print "<a class=\"entry-title\" href=\"$postUri\" target=\"_blank\" rel=\"bookmark\" title=\"Permanent link to $postTitle\">$postTitle</a></div>
 			<div class=\"ss-slide-wrapper\">";
 		}
 		print "<div class=\"padding-content\">
@@ -2707,6 +2720,8 @@ function confirmEditBlog ($step, $db) {
 	}
 }
 
+// Input: Array of posts data, user privilege, Slider "open" or closed, DB handle
+// Output: HTML edit post form.
 function editPostForm ($postsData, $userPriv, $open, $db) {
 	print "<div class=\"entries\">";
 	while ($row = mysql_fetch_array($postsData)) {
@@ -2722,8 +2737,13 @@ function editPostForm ($postsData, $userPriv, $open, $db) {
 		$postStatus = ucwords(blogPostStatusIdToName ($postStatusId, $db));
 		$blogName = getBlogName($blogId, $db);
 		$postLanguage = postIdToLanguageName ($postId, $db);
-		print "<div class=\"ss-entry-wrapper\">
-		<div class=\"post-header\">
+		print "<div class=\"ss-entry-wrapper\">";
+		if ($open == TRUE) {
+			print "<div class=\"entry-indicator\">-</div>";
+		} else {
+			print "<div class=\"entry-indicator\">+</div>";
+		}
+		print "<div class=\"post-header\">
 		$postId | <a href=\"$postUrl\" target=\"_blank\">$postTitle</a> | $blogName | $postStatus
 		</div>";
 		if ($open == TRUE) {

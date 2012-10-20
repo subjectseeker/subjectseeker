@@ -15,10 +15,8 @@ function generateCitations() {
 		}
 		
 		print "<h3>Search Citation</h3>
-		<div class=\"subtle-text\">
 		<p>This tool will allow you to generate a citation that you can add to your posts for reference and aggregation here and with other services that use the industry-standard COinS system for citation of peer-reviewed research.</p>
-		<p>Please enter words from the title of the article you'd like to cite. The first 7 or 8 words work best. You can also use the DOI, author name, or other keywords. Our system will search the CrossRef database for the article.</p>
-		</div>
+		<p>Please enter words from the title of the article you'd like to cite. The first 7 or 8 words work best. You can also use the ID, author name, or other keywords. Our system will search the CrossRef, Pubmed, and arXiv databases for the article.</p>
 		<div class=\"center-text\">
 		<form method=\"get\">
 		<input type=\"hidden\" name=\"step\" value=\"results\" />
@@ -26,7 +24,7 @@ function generateCitations() {
 		<p><input class=\"big-button\" type=\"submit\" value=\"Search\"></p>
 		</form>
 		<p>Or</p>
-		<p><a class=\"big-button\" href=\"".$pages["generate-citations"]->getAddress()."/?step=create\">Create Citation</a></p>
+		<p><a class=\"big-button\" href=\"".$pages["generate-citations"]->getAddress()."/?step=create\">Create Citation Manually</a></p>
 		</div>";
 	}
 	elseif ($step == "create") {
@@ -85,6 +83,7 @@ function generateCitations() {
 		</form>";
 	}
 	elseif ($step == "results") {
+		global $imagesUrl;
 		$title = NULL;
 		if (!empty($_REQUEST["title"])) {
 			$title = $_REQUEST["title"];
@@ -95,9 +94,9 @@ function generateCitations() {
 		<form class=\"center-text\" method=\"get\">
 		<input type=\"hidden\" name=\"step\" value=\"results\" />
 		<p class=\"margin-bottom-small\"><input class=\"big-input\" type=\"text\" name=\"title\" value=\"$title\" /></p>
-		<p><input class=\"big-button\" type=\"submit\" value=\"Modify Search\"></p>
-		<div id=\"loading-message\" class=\"margin-bottom\">Please wait while we search the Crossref database for your citation.<br />
-		<img src=\"/images/icons/loading.gif\" alt=\"Loading\" title=\"Loading\" /></div>
+		<p><input class=\"big-button\" type=\"submit\" value=\"Modify Search\"> <a class=\"big-button\" href=\"".$pages["generate-citations"]->getAddress()."/?step=create\">Create Citation Manually</a></p>
+		<div id=\"loading-message\" class=\"margin-bottom\">Please wait while we search online databases for your citation.<br />
+		<img src=\"$imagesUrl/icons/loading.gif\" alt=\"Loading\" title=\"Loading\" /></div>
 		</form>";
 		$results = titleToCitations($title, $metadata2coins);
 		if ($results == NULL) {

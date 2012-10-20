@@ -145,7 +145,7 @@ function displayPostProfile() {
 	
 	<div class=\"recs\">
 		<div class=\"recommendation-wrapper\">";
-			if ($recStatus == TRUE) print "<div class=\"recommended\" title=\"Remove recommendation and note\"></div>";
+			if (isset($recStatus) && $recStatus == TRUE) print "<div class=\"recommended\" title=\"Remove recommendation and note\"></div>";
 			else print "<div class=\"recommend\" title=\"Recommend\"></div>";
 			print "<span class=\"rec-count\">$recCount</span>
 		</div>
@@ -179,6 +179,7 @@ function displayPostProfile() {
 			print " <span class=\"subtle-text alignright\" title=\"The blog's twitter handle and post's url will be included in your tweet.\"><input class=\"tweet-note\" type=\"checkbox\" value=\"true\" /> Tweet this note.</span>";
 		}
 		else {
+			$currentUrl = getURL();
 			print " <a class=\"alignright subtle-text\" href=\"".$pages["twitter"]->getAddress()."/?url=$currentUrl\">Sync with Twitter</a>";
 		}
 		print "</form>

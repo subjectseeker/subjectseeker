@@ -50,7 +50,7 @@ function displayRegistration() {
 			if (empty($userPass1) || empty($userPass2)) {
 				$errors .= "<p class=\"ss-error\">Please submit your desired password and confirmation password.</p>";
 			}
-			if (empty($_SESSION["oauth_token"]) || (isset($_SESSION["regStep"]) && $_SESSION["regStep"] != "two")) {
+			if ((isset($_SESSION["validCaptcha"]) == FALSE || $_SESSION["validCaptcha"] != "true") || (isset($_SESSION["regStep"]) == FALSE && $_SESSION["regStep"] != "two")) {
 				global $recaptchaPrivateKey;
 				$resp = recaptcha_check_answer ($recaptchaPrivateKey, $_SERVER["REMOTE_ADDR"], $_POST["recaptcha_challenge_field"], $_POST["recaptcha_response_field"]);
 				if (!$resp->is_valid) {
@@ -112,13 +112,13 @@ function displayRegistration() {
 		<input type=\"password\" name=\"pass1\" /></p>
 		<p>Re-type Password<br />
 		<input type=\"password\". name=\"pass2\" /></p>";
-		if ((empty($_SESSION["regStep"]) || $_SESSION["regStep"] != "one") && (isset($_SESSION["validCaptcha"]) && $_SESSION["validCaptcha"] != "true")) {
+		if ((isset($_SESSION["validCaptcha"]) == FALSE || $_SESSION["validCaptcha"] != "true") || (isset($_SESSION["regStep"]) == FALSE && $_SESSION["regStep"] != "one")) {
 			$content .= "<p>".recaptcha_get_html($recaptchaPublicKey)."</p>";
 		}
 		$content .= "<p><input class=\"white-button\" style=\"width: 100%; padding: 6px 0px;\" type=\"submit\" value=\"Register\" /></p>
 		</form>
 		</div>";
-		if (empty($_SESSION["regStep"]) || $_SESSION["regStep"] != "one") {
+		if (isset($_SESSION["validCaptcha"]) == FALSE || $_SESSION["regStep"] != "one") {
 			$content .= "<div class=\"half-box\" style=\"float: right;\"> 
 			<h4>Or...</h4>
 			<div class=\"center-text\">

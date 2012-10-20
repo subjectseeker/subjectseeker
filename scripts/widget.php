@@ -134,7 +134,7 @@ a.postTitle, a:visited.postTitle {
 background: #EEE;
 }
 .ss-entry-wrapper {
-padding: 6px;
+padding: 4px;
 }
 </style>
 </head>
