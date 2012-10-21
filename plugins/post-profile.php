@@ -12,6 +12,7 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 */
 
 function displayPostProfile() {
+	global $homeUrl;
 	global $pages;
 	if (!empty($_REQUEST["step"])) {
 		$step = $_REQUEST["step"];
@@ -86,7 +87,7 @@ function displayPostProfile() {
 	<div id=\"post-sidebar\">
 	<p><span class=\"ss-bold\">Source:</span> <a href=\"$blogUri\" target=\"_blank\" title=\"Permanent link to $blogName homepage\" rel=\"alternate\">$blogName</a></p>";
 	if (!empty($postAuthor)) {
-		print "<p><span class=\"ss-bold\">Author:</span> $postAuthor</p>";
+		print "<p><span class=\"ss-bold\">Author:</span> <a href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=author&amp;value0=$postAuthor\">$postAuthor</a></p>";
 	}
 	print "<p><span class=\"ss-bold\">Date:</span> $date</p>";
 	if (!empty($postLanguage)) {
@@ -102,8 +103,8 @@ function displayPostProfile() {
 	<div class=\"toggle-button\">Link to this page</div>
 	<div class=\"ss-slide-wrapper\" style=\"text-align: center;\">
 	<br />
-	<p><a title=\"Go to profile page\" href=\"".$pages["home"]->getAddress()."post/$postId\"><img src=\"".$pages["home"]->getAddress()."post/$postId/badge\" /></a></p>
-	<textarea onClick=\"this.focus();this.select()\" style=\"overflow: hidden; height: 62px;\" readonly=\"readonly\"><a title=\"Go to profile page\" href=\"".$pages["home"]->getAddress()."post/$postId\"><img src=\"".$pages["home"]->getAddress()."post/$postId/badge\" /></a></textarea>
+	<p><a title=\"Visit the ScienceSeeker post profile\" href=\"$homeUrl/post/$postId\"><img src=\"$homeUrl/post/$postId/badge\" /></a></p>
+	<textarea onClick=\"this.focus();this.select()\" style=\"overflow: hidden; height: 62px;\" readonly=\"readonly\"><a title=\"Go to profile page\" href=\"$homeUrl/post/$postId\"><img src=\"$homeUrl/post/$postId/badge\" /></a></textarea>
 	</div>";
 	
 	if ($postHasCitation == TRUE  || $editorsPicksStatus == TRUE ) {

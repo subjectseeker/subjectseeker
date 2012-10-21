@@ -15,8 +15,7 @@ function generateCitations() {
 		}
 		
 		print "<h3>Search Citation</h3>
-		<p>This tool will allow you to generate a citation that you can add to your posts for reference and aggregation here and with other services that use the industry-standard COinS system for citation of peer-reviewed research.</p>
-		<p>Please enter words from the title of the article you'd like to cite. The first 7 or 8 words work best. You can also use the ID, author name, or other keywords. Our system will search the CrossRef, Pubmed, and arXiv databases for the article.</p>
+		<p>Enter the title of the article you'd like to cite. You can also use the ID, author name, or other keywords. Our system will search the CrossRef, arXiv and PubMed databases for the article.
 		<div class=\"center-text\">
 		<form method=\"get\">
 		<input type=\"hidden\" name=\"step\" value=\"results\" />
@@ -56,7 +55,7 @@ function generateCitations() {
 		<h4>First Page</h4>
 		<p><textarea class=\"small-text-area\" name=\"spage\" ></textarea></p>
 		<h4>Last Page</h4>
-		<p><textarea class=\"small-text-area\" name=\"spage\" ></textarea></p>
+		<p><textarea class=\"small-text-area\" name=\"epage\" ></textarea></p>
 		<h4>Year of Publication</h4>
 		<p><textarea class=\"small-text-area\" name=\"date\" ></textarea></p>
 		<h4>ID Type</h4>
@@ -196,7 +195,7 @@ function generateCitations() {
 		<h4>First Page</h4>
 		<p><textarea class=\"small-text-area\" name=\"spage\" >".$spage."</textarea></p>
 		<h4>Last Page</h4>
-		<p><textarea class=\"small-text-area\" name=\"spage\" >".$epage."</textarea></p>
+		<p><textarea class=\"small-text-area\" name=\"epage\" >".$epage."</textarea></p>
 		<h4>Year of Publication</h4>
 		<p><textarea class=\"small-text-area\" name=\"date\" >".$date."</textarea></p>
 		<h4>ID Type</h4>
@@ -266,6 +265,7 @@ function generateCitations() {
 		if (!empty($_REQUEST["issue"])) $articleData["rft.issue"] = $_REQUEST["issue"];
 		if (!empty($_REQUEST["issn"])) $articleData["rft.issn"] = $_REQUEST["issn"];
 		if (!empty($_REQUEST["spage"])) $articleData["rft.spage"] = $_REQUEST["spage"];
+		if (!empty($_REQUEST["epage"])) $articleData["rft.epage"] = $_REQUEST["epage"];
 		if (!empty($_REQUEST["date"])) $articleData["rft.date"] = $_REQUEST["date"];
 		if (!empty($_REQUEST["ssInclude"])) $articleData["ssInclude"] = $_REQUEST["ssInclude"];
 		if (!empty($_REQUEST["rbInclude"])) $articleData["rbInclude"] = $_REQUEST["rbInclude"];

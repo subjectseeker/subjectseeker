@@ -28,27 +28,28 @@ function displayFeed($httpQuery = NULL, $allowOverride = TRUE, $minimal = FALSE,
 		// Get current URL for Social Network sync page.
 		$currentUrl = getURL();
 		
-		if (!empty($postsData["result"]) && mysql_num_rows($postsData["result"]) != 0) {
+		if (mysql_num_rows($postsData["result"]) != 0) {
 			displayPosts ($postsData["result"], $minimal, $open, $db);
+			
+			global $pages;
+			if ($minimal == TRUE) {
+				parse_str($httpQuery, $queryResults);
+				unset($queryResults["n"]);
+				unset($queryResults["offset"]);
+				$linkQuery = http_build_query($queryResults);
+				print "<div class=\"page-buttons\">
+				<a class=\"ss-button\" href=\"".$pages["posts"]->address."/?".htmlspecialchars($linkQuery)."\">More</a>
+				</div>";
+			}
+			else {
+				$limit = NULL;
+				if (!empty($_REQUEST["n"])) $limit = $_REQUEST["n"];
+				pageButtons ($pages["posts"]->getAddress(), $limit, $postsData["total"]);
+			}
 		}
 		else {
 			print "<p>No results found for your search parameters.</p>";
 		}
-	}
-	global $pages;
-	if ($minimal == TRUE) {
-		parse_str($httpQuery, $queryResults);
-		unset($queryResults["n"]);
-		unset($queryResults["offset"]);
-		$linkQuery = http_build_query($queryResults);
-		print "<div class=\"page-buttons\">
-		<a class=\"ss-button\" href=\"".$pages["posts"]->address."/?".htmlspecialchars($linkQuery)."\">More</a>
-		</div>";
-	}
-	else {
-		$limit = NULL;
-		if (!empty($_REQUEST["n"])) $limit = $_REQUEST["n"];
-		pageButtons ($pages["posts"]->getAddress(), $limit, $postsData["total"]);
 	}
 }
 

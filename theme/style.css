@@ -496,7 +496,7 @@ a:visited.tweet-author:hover, a.tweet-author:hover {
 
 .entry-title, .entry-title:visited  {
 	font-weight: bold;
-	color: #E63D3D;
+	color: #D51E1E;
 }
 
 .entry-title:hover, .entry-title:visited:hover {
@@ -626,6 +626,8 @@ a:visited.tweet-author:hover, a.tweet-author:hover {
 	position: relative;
 	color: #7A7A7A;
 	font-size: 8px;
+	width: 8px;
+	text-align: center;
 }
 
 .error-title {
@@ -800,7 +802,7 @@ color: #541515;
 	font-family:arial;
 	font-size:0.9em;
 	font-weight:bold;
-	padding: 4px 4%;
+	padding: 4px 3.5%;
 	text-decoration:none;
 	text-shadow:1px 1px 0px #810e05;
 }
@@ -1043,18 +1045,23 @@ box-shadow:  1px 3px 10px 1px rgba(0, 0, 0, 0.3);
 	vertical-align: top;
 }
 
-.post-footer {
+.post-footer, .post-header {
 	overflow: hidden;
 }
 
-.post-footer, .post-footer a, .post-footer a:visited {
+.post-footer, .post-footer a, .post-footer a:visited, .index-categories a, .index-categories a:visited {
 	font-family: Arial, Arial, Helvetica, sans-serif;
 	font-weight: bold;
 	color: #797979;
 }
 
-.post-footer a:hover {
+.post-footer a:hover, .index-categories a:hover {
 	color: #202020;
+}
+
+.index-categories {
+	float: right;
+	margin: 0px 10px;
 }
 
 .recommendation-wrapper, .note-button {

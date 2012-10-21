@@ -24,7 +24,7 @@ function addSite() {
     $userPriv = getUserPrivilegeStatus($authUserId, $db);
 	}
 	else {
-		print "<p class=\"ss-warning\">You can claim your blog if you <a href=\"".$pages["login"]->getAddress()."\" title=\"Log In Page\">log in</a>.</p>";
+		print "<p class=\"ss-warning\">You can claim your site if you <a href=\"".$pages["login"]->getAddress()."\" title=\"Log In Page\">log in</a>.</p>";
 	}
 	
 	$step = NULL;
@@ -78,15 +78,14 @@ function displayShortBlogForm ($errormsg, $db) {
     $userPriv = getUserPrivilegeStatus($authUserId, $db);
   }
 
-	print "<p>Submit a new blog to be aggregated by our system. If you have a large number of blogs to add to the system, please <a href='".$pages["contact"]->getAddress()."'>contact us</a> to discuss a data upload.</p>
-	<form method=\"post\">";
+	print "<form method=\"post\">";
 
    if ($errormsg !== null) {
      print "$errormsg\n";
    }
 
   print "<div class=\"center-text\">
-	<p class=\"margin-bottom-small\">Please enter either the URL of the blog or the URL of the blog's feed (RSS or Atom):</p>
+	<p class=\"margin-bottom-small\">Enter either the URL of the site or the URL of the site's feed (RSS or Atom):</p>
 	<div class=\"margin-bottom-small\"><input class=\"big-input\" type=\"text\" name=\"submitUrl\" size=\"40\" value=\"$submitUrl\" /></div>
 	<p class=\"subtle-text\">(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>\n
 	<p><input class=\"big-button\" type=\"submit\" value=\"Next step\" /></p>
@@ -101,10 +100,10 @@ function displayBlogForm ($errormsg, $db) {
 	$blogUri = NULL;
 	$blogSyndicationUri = NULL;
 	$blogDescription = NULL;
-  if (!empty($_REQUEST["blogname"])) $blogName = $_REQUEST["blogname"];
-  if (!empty($_REQUEST["blogurl"])) $blogUri = htmlspecialchars($_REQUEST["blogurl"]);
-  if (!empty($_REQUEST["blogsyndicationuri"])) $blogSyndicationUri = htmlspecialchars($_REQUEST["blogsyndicationuri"]);
-  if (!empty($_REQUEST["blogdescription"])) $blogDescription = $_REQUEST["blogdescription"];
+  if (isset($_REQUEST["blogname"])) $blogName = $_REQUEST["blogname"];
+  if (isset($_REQUEST["blogurl"])) $blogUri = htmlspecialchars($_REQUEST["blogurl"]);
+  if (isset($_REQUEST["blogsyndicationuri"])) $blogSyndicationUri = htmlspecialchars($_REQUEST["blogsyndicationuri"]);
+  if (isset($_REQUEST["blogdescription"])) $blogDescription = $_REQUEST["blogdescription"];
 
 	$authUserId = NULL;
   if (isLoggedIn()){
@@ -114,11 +113,9 @@ function displayBlogForm ($errormsg, $db) {
     $userPriv = getUserPrivilegeStatus($authUserId, $db);
   }
 
-	print "<p>Submit a new site to be aggregated by our system. If you have a large number of blogs to add to the system, please <a href='".$pages["contact"]->getAddress()."'>contact us</a> to discuss a data upload.</p>";
-
 	// TODO: Looks like we are not using this error area, remove it?
 	if ($errormsg !== null) {
-		print "<p class=\"ss-error\">Error: $errormsg</p>\n";
+		print "<p class=\"ss-error\">$errormsg</p>\n";
 	}
 
   // Attempt to prepopulate from URL if submitUrl param set
@@ -139,7 +136,7 @@ function displayBlogForm ($errormsg, $db) {
 
      $blogId = getBlogByAltUri($blogUri, $db);
      if (!empty($blogId)) {
-       print "<p class=\"ss-error\">This blog is already in the system.</p>\n";
+       print "<p class=\"ss-error\">This site is already in the system.</p>\n";
      } else {
        $blogId = getBlogByAltSyndicationUri($blogSyndicationUri, $db);
        if ($blogId != null) {
@@ -234,7 +231,7 @@ function doAddBlog ($db) {
 		}
 	
 		if (empty($addBlog["errormsg"])) {
-			echo "<p class=\"ss-successful\">Successfully added blog to the system.</p>";
+			echo "<p class=\"ss-successful\">Successfully added site to the system.</p>";
 			if ($userPriv == 0) {
 				echo "<p>This site will not be publicly displayed in the system until it has been approved by an editor.</p>";
 			}
@@ -264,7 +261,7 @@ The ".$sitename." Team.";
 		}
 		
 		if ($userIsAuthor === "on") {
-			doClaimBlog($blogId, $authUserName, $userEmail, $db);
+			doClaimBlog($blogId, $authUserName, $db);
 		}
 	}
 }

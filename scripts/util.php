@@ -2375,15 +2375,19 @@ function displayPosts ($postsData, $minimal = FALSE, $open = FALSE, $db) {
 	while ($row = mysql_fetch_array($postsData)) {
 		$postId = $row["BLOG_POST_ID"];
 		$blogName = $row[ "BLOG_NAME"];
-		$blogUri = $row[ "BLOG_URI"];
+		$blogUri = htmlspecialchars($row["BLOG_URI"]);
 		$postDate = strtotime($row["BLOG_POST_DATE_TIME"]);
 		$formatHour = date("g:i A", $postDate);
 		$postSummary = strip_tags($row["BLOG_POST_SUMMARY"]);
-		$postTitle = htmlspecialchars($row[ "BLOG_POST_TITLE"]);
+		$postTitle = $row[ "BLOG_POST_TITLE"];
 		$postUri = htmlspecialchars($row[ "BLOG_POST_URI"]);
 		$postProfile = $homeUrl . "/post/" . $postId;
 		$postHasCitation = $row["BLOG_POST_HAS_CITATION"];
 		$formatDay = date("F d, Y", $postDate);
+		
+		if (empty($blogDescription)) {
+			$blogDescription = "No summary available for this post.";
+		}
 		
 		// Check if this post should be grouped with other posts of the same day.
 		if ($previousDay != $formatDay && $minimal != TRUE) {
@@ -2454,7 +2458,6 @@ function displayPosts ($postsData, $minimal = FALSE, $open = FALSE, $db) {
 		</div>
 		<div class=\"post-footer\">
 		<a class=\"post-source\" href=\"$blogUri\" target=\"_blank\" title=\"Permanent link to $blogName homepage\" rel=\"alternate\">$blogName</a>
-		
 		<div class=\"alignright\">
 		<div class=\"post-categories\">";
 		foreach ($categories as $i => $category) {
@@ -2477,7 +2480,6 @@ function displayPosts ($postsData, $minimal = FALSE, $open = FALSE, $db) {
 		print "</a>
 		</div>
 		</div>
-		
 		</div>";
 		if ($postHasCitation == TRUE || $editorsPicksStatus == TRUE) {
 			print "<div class=\"badges\">";
@@ -2737,6 +2739,8 @@ function editPostForm ($postsData, $userPriv, $open, $db) {
 		$postStatus = ucwords(blogPostStatusIdToName ($postStatusId, $db));
 		$blogName = getBlogName($blogId, $db);
 		$postLanguage = postIdToLanguageName ($postId, $db);
+		$editorsPicksStatus = getRecommendationsCount($postId, NULL, NULL, 1, $db);
+		
 		print "<div class=\"ss-entry-wrapper\">";
 		if ($open == TRUE) {
 			print "<div class=\"entry-indicator\">-</div>";
@@ -2795,8 +2799,22 @@ function editPostForm ($postsData, $userPriv, $open, $db) {
 		<p><input type=\"checkbox\" class=\"checkbox\" name=\"checkCitations\" value=\"1\" /> Check for citations.</p>
 		<input class=\"ss-button\" type=\"submit\" value=\"Save Changes\" />
 		</form>
-		</div>
 		</div>";
+		if ($hasCitation == TRUE || $editorsPicksStatus == TRUE) {
+			print "<div class=\"badges\">";
+				if ($hasCitation == TRUE) print "<span class=\"citation-mark\"></span>";
+				if ($editorsPicksStatus == TRUE) print "<span class=\"editors-mark\"></span>";
+				print "<div class=\"ss-slide-wrapper\" style=\"width: 100%; float: right;\">";
+					if ($hasCitation == TRUE) {
+						print "<div class=\"citation-mark-content\" title=\"Post citing a peer-reviewed source\">Citation</div>";
+					}
+					if ($editorsPicksStatus == TRUE) {
+						print "<div class=\"editors-mark-content\" title=\"Recommended by our editors\">Editor's Pick</div>";
+					}
+				print "</div>
+				</div>";
+		}
+		print "</div>";
 	}
 	print "</div>";
 }
@@ -2925,7 +2943,7 @@ function checkBlogData($blogId, $blogname, $blogurl, $blogsyndicationuri, $blogd
 			}
 			
 			$userPriv = getUserPrivilegeStatus($userId, $db);
-			if ($userPriv == 0 && ($blogStatusId =! 0 || $blogStatusId =! 3)) {
+			if ($userPriv == 0 && ($blogStatusId =! 0 && $blogStatusId =! 3)) {
 				$result .= "<p class=\"ss-error\">You don't have editing privileges to set this status.</p>";
 			}
 		}
@@ -4588,7 +4606,7 @@ function displayUserAuthorLinkForm($blogId, $userId, $userName, $db) {
     $authorList = getAuthorList($blogId, TRUE, $db);
 
     if (mysql_num_rows($authorList) > 0) {
-      print "<p>This blog seems to have the following author(s). Please indicate which one is you (OK to choose more than one).</p>\n";
+      print "<p>This site seems to have the following author(s). Please indicate which one is you (OK to choose more than one).</p>\n";
       $firstAuthor = null;
       while ($row = mysql_fetch_array($authorList)) {
 				$authorId = $row["BLOG_AUTHOR_ID"];
@@ -4612,7 +4630,7 @@ function displayUserAuthorLinkForm($blogId, $userId, $userName, $db) {
 		print "</form>\n";
 
   } else {
-    print "<p class=\"ss-error\">This blog has already been claimed. If you feel this is in error, please <a href='".$pages["contact"]->getAddress()."'>contact us</a>.</p>";
+    print "<p class=\"ss-error\">This site has already been claimed. If you feel this is in error, please <a href='".$pages["contact"]->getAddress()."'>contact us</a>.</p>";
   }
 
 }
@@ -4650,7 +4668,7 @@ function doLinkUserAndAuthor($userId, $userName, $db) {
       // either there are authors and no "unknown" authors
       // or there are authors AND an "unknown" author (weird!)
       // either way, assume this person wants to link to a KNOWN author
-      print "<p class=\"ss-error\">Please choose an author from the list. If your name is not on the list, it may be because you have not posted recently. Try again after a recent post. If you believe your blog has been claimed by someone else, please <a href='".$pages["contact"]->getAddress()."'>contact us.</a></p>\n";
+      print "<p class=\"ss-error\">Please choose an author from the list. If your name is not on the list, it may be because you have not posted recently. Try again after a recent post. If you believe your site has been claimed by someone else, please <a href='".$pages["contact"]->getAddress()."'>contact us.</a></p>\n";
       displayUserAuthorLinkForm($blogId, $userId, $userName, $db);
     }
   }

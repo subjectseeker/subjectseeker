@@ -15,6 +15,7 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 function displayFilters() {
 	global $pages;
 	global $feedUrl;
+	global $currentPage;
 	
 	$params = httpParamsToSearchQuery();
 	$db = ssDbConnect();
@@ -35,26 +36,32 @@ function displayFilters() {
 	}
 	
 	print "<div class=\"categories-wrapper\" data-posts=\"".$pages["posts"]->getAddress()."\" data-blogs=\"".$pages["sources"]->getAddress()."\" data-feed=\"$feedUrl\" data-widget=\"".$pages["widget"]->getAddress()."\">
-	<div class=\"filter-buttons\"><a data-button=\"filter-posts\" class=\"button-small-red\" href=\"".$pages["posts"]->getAddress()."\">Posts</a><a data-button=\"filter-blogs\" class=\"button-small-red\" href=\"".$pages["sources"]->getAddress()."\">Blogs</a><a data-button=\"filter-widget\" class=\"button-small-red\" href=\"".$pages["widget"]->getAddress()."\">Widget</a><a data-button=\"filter-feed\" class=\"button-small-yellow\" href=\"$feedUrl\" target=\"_blank\">Feed</a></div>
+	<div class=\"filter-buttons\"><a data-button=\"filter-posts\" class=\"button-small-red\" href=\"".$pages["posts"]->getAddress()."\">Posts</a><a data-button=\"filter-blogs\" class=\"button-small-red\" href=\"".$pages["sources"]->getAddress()."\">Sources</a><a data-button=\"filter-widget\" class=\"button-small-red\" href=\"".$pages["widget"]->getAddress()."\">Widget</a><a data-button=\"filter-feed\" class=\"button-small-yellow\" href=\"$feedUrl\" target=\"_blank\">Feed</a></div>
 	<p>Search Title<br />
 	<input class=\"filters-text\" type=\"text\" name=\"title\" /></p>
 	<ul>
 	<li><input class=\"filters\" type=\"checkbox\" name=\"category\" value=\"has-citation\"";
-	if (!empty($checkCitation)) print " checked=\"checked\"";
+	if (isset($checkCitation)) print " checked=\"checked\"";
 	print " /> <a href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=has-citation&amp;value0=true\">Citations</a></li>
 	<li style=\"margin-bottom: 20px;\"><input class=\"filters\" type=\"checkbox\" name=\"category\" value=\"recommender-status\"";
-	if (!empty($checkEditorsPicks)) print " checked=\"checked\"";
+	if (isset($checkEditorsPicks)) print " checked=\"checked\"";
 	print " /> <a href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=recommender-status&amp;value0=editor\">Editors' Picks</a></li>";
 	$topicList = getTopicList (1, $db);
 	while ($row = mysql_fetch_array($topicList)) {
 		$topicName = $row["TOPIC_NAME"];
 		print "<li><input class=\"categories\" type=\"checkbox\" name=\"category\" value=\"$topicName\"";
-		if (!empty($topics) && array_search("$topicName", $topics) !== FALSE) print " checked=\"checked\"";
-		print " /> <a href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=blog&amp;modifier0=topic&amp;value0=".urlencode($topicName)."\">$topicName</a></li>";
+		if (isset($topics) && array_search("$topicName", $topics) !== FALSE) {
+			print " checked=\"checked\"";
+		}
+		if ($currentPage->id == "sources") {
+			print " /> <a href=\"".$pages["sources"]->getAddress()."/?type=blog&amp;filter0=topic&amp;value0=".urlencode($topicName)."\">$topicName</a></li>";
+		} else {
+			print " /> <a href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=blog&amp;modifier0=topic&amp;value0=".urlencode($topicName)."\">$topicName</a></li>";
+		}
 	}
 	
 	print "</ul>
-	<div class=\"filter-buttons\"><a data-button=\"filter-posts\" class=\"button-small-red\" href=\"".$pages["posts"]->getAddress()."\">Posts</a><a data-button=\"filter-blogs\" class=\"button-small-red\" href=\"".$pages["sources"]->getAddress()."\">Blogs</a><a data-button=\"filter-widget\" class=\"button-small-red\" href=\"".$pages["widget"]->getAddress()."\">Widget</a><a data-button=\"filter-feed\" class=\"button-small-yellow\" href=\"$feedUrl\" target=\"_blank\">Feed</a></div>
+	<div class=\"filter-buttons\"><a data-button=\"filter-posts\" class=\"button-small-red\" href=\"".$pages["posts"]->getAddress()."\">Posts</a><a data-button=\"filter-blogs\" class=\"button-small-red\" href=\"".$pages["sources"]->getAddress()."\">Sources</a><a data-button=\"filter-widget\" class=\"button-small-red\" href=\"".$pages["widget"]->getAddress()."\">Widget</a><a data-button=\"filter-feed\" class=\"button-small-yellow\" href=\"$feedUrl\" target=\"_blank\">Feed</a></div>
 	</div>";
 
 }

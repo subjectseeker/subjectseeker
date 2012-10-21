@@ -68,6 +68,8 @@ function userSettings() {
 					}
 					editUserPreferences($userId, $newUrl, $newBio, $emailEdPicks, $emailAnnouncements, $db);
 					editDisplayName ($userId, $newDisplayName, $db);
+					
+					print "<p class=\"ss-successful\">You settings have been updated.</p>";
 				}
 			} elseif (!empty($_POST["form"]) && $_POST["form"] == "email") {
 				$newEmail = NULL;
@@ -89,6 +91,8 @@ function userSettings() {
 					print "$errors";
 				} else {
 					editEmail($userId, $newEmail, $db);
+					
+					print "<p class=\"ss-successful\">You settings have been updated.</p>";
 				}
 			} elseif (!empty($_POST["form"]) && $_POST["form"] == "password") {
 				$userPass = NULL;
@@ -115,6 +119,8 @@ function userSettings() {
 				} else {
 					if ($newUserPass1 == $newUserPass2) {
 						editUserPass($userId, $newUserPass1);
+						
+						print "<p class=\"ss-successful\">You settings have been updated.</p>";
 					}
 				}
 			}
