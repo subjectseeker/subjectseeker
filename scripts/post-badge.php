@@ -12,7 +12,7 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 */
 
-include_once (dirname(__FILE__)."/../globals.php");
+include_once (dirname(__FILE__)."/../config/globals.php");
 include_once (dirname(__FILE__)."/util.php");
 
 global $imagesUrl;

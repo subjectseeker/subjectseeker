@@ -3230,7 +3230,7 @@ function checkUserData($loggedUserId, $userId, $userName, $userDisplayName, $use
 // Input: user ID, password, DB handle
 // Action: check if password matches the current user password.
 function checkUserPassword($userId, $userPass, $db) {
-	include_once (dirname(__FILE__)."/../third-party/hasher/class-phpass.php");
+	include_once (dirname(__FILE__)."/../third-party/hasher/phpass.php");
 	
 	$sql = "SELECT PASSWORD FROM USER WHERE USER_ID = '$userId'";
 	$result = mysql_query($sql, $db);
@@ -3302,7 +3302,7 @@ function editUserAvatar ($imageName, $userId, $db) {
 // Input: Password
 // Output: Hashed password.
 function hashPassword($pass) {
-	include_once (dirname(__FILE__)."/../third-party/hasher/class-phpass.php");
+	include_once (dirname(__FILE__)."/../third-party/hasher/phpass.php");
 	
 	$hasher = new PasswordHash(8, TRUE);
 	$hashedPass = $hasher->HashPassword($pass);
@@ -3598,7 +3598,7 @@ function linkAuthorToUser($authorId, $userId, $db) {
 // Get SimplePie object, with appropriate cache location set
 // SimplePie is for parsing syndication feeds
 function getSimplePie($uri, $cacheTime = 0) {
-	include_once(dirname(__FILE__)."/../third-party/simplepie/class-simplepie.php");
+	include_once(dirname(__FILE__)."/../third-party/simplepie/simplepie.php");
   global $cachedir;
 
   $feed = new SimplePie;

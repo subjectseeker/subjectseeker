@@ -4,7 +4,7 @@
 
 include "ss-globals.php";
 include "ss-util.php";
-require_once(dirname(__FILE__).'/../wp-includes/class-simplepie.php');
+require_once(dirname(__FILE__).'/../wp-includes/simplepie.php');
 
 $db = ssDbConnect();
 

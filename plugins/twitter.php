@@ -64,16 +64,14 @@ function syncTwitter() {
 				<p>You don't have any Twitter accounts associated with $sitename</p>
 				<p><a class=\"white-button\" href=\"".$pages["twitter"]->getAddress()."\" title=\"Go to synchronization page\">Sync my Twitter account</a>  <a class=\"white-button\" title=\"Cancel social network account removal\" href=\"$originalUrl\">Take me back to $sitename</a></p>";
 			}
-		}
-		elseif (!empty($_REQUEST["remove"]) && $_REQUEST["remove"] == "confirmed") {
+		} elseif (!empty($_REQUEST["remove"]) && $_REQUEST["remove"] == "confirmed") {
 			if (!empty($userTwitter)) {
 				$content = "<div class=\"box-title\">Sync</div>
 				<p>Your Twitter account has been successfully removed from our system.</p>
 				<p><a class=\"white-button\" title=\"Go back to the original page\" href=\"$originalUrl\">Take me back to $sitename</a></p>";
 				removeUserSocialAccount(1, $authUserId, $db);
 			}
-		}
-		else {
+		} else {
 			if ($userTwitter == TRUE) {
 				$content = "<div class=\"box-title\">Sync</div>
 				<p>Your Twitter account is already synced with our system, do you want to desync it?.</p>
@@ -87,6 +85,10 @@ function syncTwitter() {
 				<p><a class=\"white-button\" title=\"Go back to the Twitter authorization page\" href=\"$twitterUrl\">Continue to the next step</a> <a class=\"white-button\" title=\"Go back to the original page\" href=\"$originalUrl\">Take me back to $sitename</a></p>";
 			}
 		}
+	} elseif (isset($_REQUEST["step"]) && $_REQUEST["step"] == "authUrl") {
+		$twitterUrl = getTwitterAuthURL ($pages["login"]->getAddress()."/?=".$originalUrl, TRUE);
+		header("Location: $twitterUrl");
+		
 	}
 	else {
 		$content = "<div class=\"box-title\">Sync</div>

@@ -12,39 +12,41 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 function displayLogin() {
 	global $sitename;
 	global $pages;
-	include_once (dirname(__FILE__)."/../third-party/hasher/class-phpass.php");
+	include_once (dirname(__FILE__)."/../third-party/hasher/phpass.php");
 	
 	$db = ssDbConnect();
 	$step = NULL;
-	if (!empty($_GET["step"])) {
-		$step = $_GET["step"];
+	if (isset($_REQUEST["step"])) {
+		$step = $_REQUEST["step"];
 	}
 	
 	// Get original URL for redirection
 	global $homeUrl;
 	$originalUrl = $homeUrl;
-	if (!empty($_GET["url"])) {
-		$originalUrl = $_GET["url"];	
+	if (isset($_REQUEST["url"])) {
+		$originalUrl = $_REQUEST["url"];	
 	}
 	
 	// If user is logged in, log out or ask.
 	if (isLoggedIn()) {
+		$authUser = new auth();
 		if ($_REQUEST["logout"] == "true") {
-			$authUser = new auth();
 			$authUser->logout();
 			header("Location: ".$originalUrl);
 		}
 		else {
+			$authUserName = $authUser->userName;
 			$content =  "<div class=\"box-title\">Log In</div>
-			<p>You are logged in.</p>
-			<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?logout=true\">Log Out</a></p>";
+			<p>You are logged in as $authUserName</p>
+			<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?logout=true\">Log Out</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 		}
 	}
 	else {
 		// Check if user is coming from Twitter
 		if (!empty($_REQUEST['oauth_token']) && $_SESSION['oauth_token'] !== $_REQUEST['oauth_token']) {
 			$content = "<div class=\"box-title\">Log In</div>
-			<p>Twitter session expired!</p>";
+			<p>Twitter session expired!</p>
+			<p><a class=\"white-button\" href=\"".$pages["twitter"]->getAddress()."/?step=authUrl&amp;url=".$originalUrl."\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 		}
 		elseif (!empty($_REQUEST['oauth_token']) && $_SESSION['oauth_token'] == $_REQUEST['oauth_token']) {
 			// Get User ID from Auth Tokens for log in
@@ -69,7 +71,7 @@ function displayLogin() {
 				$_SESSION["screen_name"] = $twitterCredentials["screen_name"];
 				$_SESSION["oauth_token"] = $twitterCredentials['oauth_token'];
 				$_SESSION["oauth_token_secret"] = $twitterCredentials['oauth_token_secret'];
-				header("Location: ".$pages["register"]->getAddress());
+				header("Location: ".$pages["register"]->getAddress()."/?url=".$originalUrl);
 			}
 		}
 		
@@ -169,12 +171,12 @@ function displayLogin() {
 				}
 				else {
 					$content .= "<p class=\"ss-error\">Recovery code not found.</p>
-					<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=recover-account\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
+					<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=recover-account\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 				}
 			}
 			else {
 				$content .= "<p class=\"ss-error\">You must submit a recovery code.</p>
-				<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=recover-account\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
+				<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=recover-account\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 			}
 		}
 		
@@ -205,13 +207,14 @@ function displayLogin() {
 						sendVerificationEmail($verificationCode, $userEmail, $userName, $userDisplayName);
 					}
 					else {
-						$content .= "<p class=\"ss-warning\">This account ($userName) has already been verified.</p>";
+						$content .= "<p class=\"ss-warning\">This account ($userName) has already been verified.</p>
+						<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."\">Log In</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 						return $content;
 					}
 				}
 				else {
 					$content .= "<p class=\"ss-error\">The submitted email or user was not found in our database.</p>
-					<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=send-verification\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
+					<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=send-verification\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 					return $content;
 				}
 			}
@@ -288,14 +291,14 @@ function displayLogin() {
 						header("Location: ".$originalUrl);
 					}
 					elseif ($authUser->error == 1) {
-						$content .= "<p class=\"ss-error\">This account is disabled.</p>";
+						$content .= "<p class=\"ss-error\">This account ($userName) is disabled.</p>";
 					}
 					elseif ($authUser->error == 2) {
-						$content .= "<p class=\"ss-error\">User email is unverified.</p>
+						$content .= "<p class=\"ss-error\">User email is unverified for $userName.</p>
 						<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=send-verification\">Verify Account</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 					}
 					elseif ($authUser->error == 3) {
-						$content .= "<p class=\"ss-error\">User doesn't exist.</p>";
+						$content .= "<p class=\"ss-error\">User doesn't exist ($userName).</p>";
 					}
 				}
 				else {
@@ -303,9 +306,6 @@ function displayLogin() {
 					<p><a class=\"white-button\" href=\"$originalUrl\">Back to homepage</a></p>";
 				}
 			}
-			
-			// Get Twitter Auth URL
-			$twitterUrl = getTwitterAuthURL ($pages["login"]->getAddress()."/?url=".$originalUrl, TRUE);
 			
 			// Display log in form.
 			$content .=  "<div class=\"half-box\">
@@ -323,7 +323,7 @@ function displayLogin() {
 			<div class=\"half-box\" style=\"float: right;\"> 
 			<h4>Or...</h4>
 			<div class=\"center-text\">
-			<p><a class=\"twitter-button\" href=\"$twitterUrl\">Log in with Twitter</a></p>
+			<p><a class=\"twitter-button\" href=\"".$pages["twitter"]->getAddress()."/?step=authUrl&amp;url=".$originalUrl."\">Log in with Twitter</a></p>
 			<p><a class=\"white-button\" style=\"width: 100%; padding: 6px 0px;\" href=\"".$pages["register"]->getAddress()."\">Register</a></p>
 			</div>";
 		}

@@ -189,6 +189,8 @@ function submitBlogForm ($blogName, $blogUri, $blogDescription, $blogSyndication
 }
 
 function doAddBlog ($db) {
+	global $pages;
+	
 	$blogName = NULL;
 	$blogUri = NULL;
 	$blogSyndicationUri = NULL;

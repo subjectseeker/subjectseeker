@@ -5,9 +5,11 @@ function generateCitations() {
 	global $metadata2coins;
 	$db  = ssDbConnect();
 	$step = NULL;
-	if (!empty($_REQUEST["step"])) {
+	if (isset($_REQUEST["step"])) {
 		$step = $_REQUEST["step"];
 	}
+	
+	$rbTags = array ("Anthropology", "Astronomy", "Biology", "Chemistry", "Computer Science / Engineering", "Ecology / Conservation", "Geosciences", "Health", "Mathematics", "Medicine", "Neuroscience", "Philosophy", "Physics", "Psychology", "Social Science", "Research / Scholarship", "Other");
 
 	if ($step == NULL) {
 		if (! isLoggedIn()){
@@ -72,7 +74,6 @@ function generateCitations() {
 		<div class=\"ss-hidden-option\">
 		<h4>Research Blogging Tags</h4>
 		<p>";
-		$rbTags = array ("Anthropology", "Astronomy", "Biology", "Chemistry", "Computer Science / Engineering", "Ecology / Conservation", "Geosciences", "Health", "Mathematics", "Medicine", "Neuroscience", "Philosophy", "Physics", "Psychology", "Social Science", "Research / Scholarship", "Other");
 		foreach ($rbTags as $tag) {
 			print "<span class=\"inline-options\"><input type=\"checkbox\" name=\"rbTags[]\" value=\"$tag\" /> $tag</span>";
 		}
@@ -229,7 +230,6 @@ function generateCitations() {
 		<div class=\"ss-hidden-option\">
 		<h4>Research Blogging Tags</h4>
 		<p>";
-		$rbTags = array ("Anthropology", "Astronomy", "Biology", "Chemistry", "Computer Science / Engineering", "Ecology / Conservation", "Geosciences", "Health", "Mathematics", "Medicine", "Neuroscience", "Philosophy", "Physics", "Psychology", "Social Science", "Research / Scholarship", "Other");
 		foreach ($rbTags as $tag) {
 			print "<span class=\"inline-options\"><input type=\"checkbox\" name=\"rbTags[]\" value=\"$tag\" /> $tag</span>";
 		}

@@ -1,6 +1,6 @@
 <?php
 
-include_once (dirname(__FILE__)."/../globals.php");
+include_once (dirname(__FILE__)."/../config/globals.php");
 
 // If debug is enabled, show all errors, otherwise, hide them all.
 global $debugSite;

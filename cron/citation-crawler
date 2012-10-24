@@ -1,0 +1,4 @@
+#!/bin/sh
+
+date >> ../logs/citation-crawler.log
+./citation-crawler.php >> ../logs/citation-crawler.log

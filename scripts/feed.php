@@ -5,7 +5,7 @@
 date_default_timezone_set( "America/New_York" );
 header('Access-Control-Allow-Origin: *');
 
-include_once (dirname(__FILE__)."/../globals.php");
+include_once (dirname(__FILE__)."/../config/globals.php");
 include_once (dirname(__FILE__)."/util.php");
 
 $db = ssDbConnect();

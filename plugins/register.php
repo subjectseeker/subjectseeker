@@ -93,7 +93,7 @@ function displayRegistration() {
 		}
 		
 		// Check if user is coming from Twitter
-		if (!empty($_SESSION["regStep"]) && $_SESSION["regStep"] == "one") {
+		if (isset($_SESSION["regStep"]) && $_SESSION["regStep"] == "one") {
 			$userName = $_SESSION["screen_name"];
 		
 			$content .= "<p class=\"ss-successful\">You settings have been imported.</p>
@@ -101,7 +101,7 @@ function displayRegistration() {
 		}
 		
 		global $recaptchaPublicKey;
-		$twitterUrl = getTwitterAuthURL ($pages["login"]->getAddress()."/?=".$originalUrl, TRUE);
+		$currentUrl = getURL();
 		$content .= "<div class=\"half-box\">
 		<form name=\"register\" method=\"post\">
 		<p>E-mail<br />
@@ -112,17 +112,17 @@ function displayRegistration() {
 		<input type=\"password\" name=\"pass1\" /></p>
 		<p>Re-type Password<br />
 		<input type=\"password\". name=\"pass2\" /></p>";
-		if ((isset($_SESSION["validCaptcha"]) == FALSE || $_SESSION["validCaptcha"] != "true") || (isset($_SESSION["regStep"]) == FALSE && $_SESSION["regStep"] != "one")) {
+		if ((isset($_SESSION["validCaptcha"]) == FALSE || $_SESSION["validCaptcha"] != "true") && (isset($_SESSION["regStep"]) == FALSE || $_SESSION["regStep"] != "one")) {
 			$content .= "<p>".recaptcha_get_html($recaptchaPublicKey)."</p>";
 		}
 		$content .= "<p><input class=\"white-button\" style=\"width: 100%; padding: 6px 0px;\" type=\"submit\" value=\"Register\" /></p>
 		</form>
 		</div>";
-		if (isset($_SESSION["validCaptcha"]) == FALSE || $_SESSION["regStep"] != "one") {
+		if (isset($_SESSION["regStep"]) == FALSE || $_SESSION["regStep"] != "one") {
 			$content .= "<div class=\"half-box\" style=\"float: right;\"> 
 			<h4>Or...</h4>
 			<div class=\"center-text\">
-			<p><a class=\"twitter-button\" href=\"$twitterUrl\">Create account with Twitter</a></p>
+			<p><a class=\"twitter-button\" href=\"".$pages["twitter"]->getAddress()."/?step=authUrl&amp;url=".$originalUrl."\">Create account with Twitter</a></p>
 			<p><a class=\"white-button\" style=\"width: 100%; padding: 6px 0px;\" href=\"".$pages["login"]->getAddress()."\">Log in</a></p>
 			</div>";
 		}
