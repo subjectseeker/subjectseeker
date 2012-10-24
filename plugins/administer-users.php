@@ -18,7 +18,7 @@ function adminUsers() {
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
-    $userPriv = getUserPrivilegeStatus($authUserId, $db);
+                $userPriv = getUserPrivilegeStatus($authUserId, $db);
 		
 		if ($userPriv > 1) { // moderator or admin
 			$step = NULL;

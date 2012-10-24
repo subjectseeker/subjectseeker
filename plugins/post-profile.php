@@ -20,20 +20,20 @@ function displayPostProfile() {
   $db = ssDbConnect();
   if (isLoggedIn()){
     $authUser = new auth();
-		$authUserId = $authUser->userId;
-		$authUserName = $authUser->userName;
+    $authUserId = $authUser->userId;
+    $authUserName = $authUser->userName;
     $userPriv = getUserPrivilegeStatus($authUserId, $db);
-		$twitterStatus = getUserSocialAccount(1, $authUserId, $db);
-	}
-	preg_match('/(?<=\/post\/)\d+/', $_SERVER["REQUEST_URI"], $matchResult);
-	$postId = $matchResult[0];
+    $twitterStatus = getUserSocialAccount(1, $authUserId, $db);
+  }
+  preg_match('/(?<=\/post\/)\d+/', $_SERVER["REQUEST_URI"], $matchResult);
+  $postId = $matchResult[0];
 	
 	// Use Search API to find Blog ID and Post URL
 	$queryList = httpParamsToSearchQuery("type=post&filter0=identifier&value0=$postId");
 	$settings = httpParamsToExtraQuery("type=post&filter0=identifier&value0=$postId");
 	$postData = generateSearchQuery ($queryList, $settings, 0, $db);
 	$row = mysql_fetch_array($postData["result"]);
-  $postId = $row["BLOG_POST_ID"];
+        $postId = $row["BLOG_POST_ID"];
 	$blogName = $row["BLOG_NAME"];
 	$blogUri = $row["BLOG_URI"];
 	$postDate = strtotime($row["BLOG_POST_DATE_TIME"]);

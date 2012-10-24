@@ -75,7 +75,7 @@ function displayShortBlogForm ($errormsg, $db) {
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
-    $userPriv = getUserPrivilegeStatus($authUserId, $db);
+                $userPriv = getUserPrivilegeStatus($authUserId, $db);
   }
 
 	print "<form method=\"post\">";
@@ -108,8 +108,8 @@ function displayBlogForm ($errormsg, $db) {
 	$authUserId = NULL;
   if (isLoggedIn()){
     $authUser = new auth();
-		$authUserId = $authUser->userId;
-		$authUserName = $authUser->userName;
+    $authUserId = $authUser->userId;
+    $authUserName = $authUser->userName;
     $userPriv = getUserPrivilegeStatus($authUserId, $db);
   }
 

@@ -103,7 +103,7 @@ function displayLogin() {
 					return $content;
 				}
 			}
-			$content .= "<p class=\"ss-successful\">An email has been sent to you address to recover your account.</p>
+			$content .= "<p class=\"ss-successful\">An email has been sent to your address to recover your account.</p>
 			<form action=\"".$pages["login"]->getAddress()."/?step=verify-recovery\" name=\"login\" method=\"post\">
 			<p class=\"margin-bottom-small\">Please enter your recovery code below or follow the link sent with the email.</p>
 			<p><input type=\"text\" name=\"recovery-code\" /></p>

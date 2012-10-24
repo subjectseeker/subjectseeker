@@ -10,7 +10,7 @@ function displaySlideShow() {
 	</script>";
 	
 	global $imagesUrl;
-  $db = ssDbConnect();
+        $db = ssDbConnect();
 	print "<div class=\"pikachoose\">
 	<ul id=\"pikame\">";
 	$recommendations = getEditorsPicks("images", $db);

@@ -55,7 +55,7 @@ function displayMySites() {
 }
 
 // Input: user ID, DB handle
-// Output: ids of blogs owned by this user
+// Output: ids of blogs owned by this user which are status=pending
 function getUserPendingBlogs ($userId, $db) {
 
   $sql = "select ba.BLOG_ID, user.DISPLAY_NAME from USER user, BLOG_AUTHOR ba, BLOG pa where user.USER_ID=$userId and ba.USER_ID=user.USER_ID and pa.BLOG_STATUS_ID=1 and pa.BLOG_ID=ba.BLOG_ID";

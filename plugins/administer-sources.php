@@ -5,10 +5,10 @@ function adminSources() {
 		$db = ssDbConnect();
 		
 		// User Information
-    $authUser = new auth();
+                $authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
-    $userPriv = getUserPrivilegeStatus($authUserId, $db);
+                $userPriv = getUserPrivilegeStatus($authUserId, $db);
 		
 		if ($userPriv > 0) { // moderator or admin
 			$step = NULL;

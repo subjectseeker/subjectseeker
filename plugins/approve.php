@@ -12,18 +12,18 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 function approveSites() {
 	$step = NULL;
-  if (!empty($_REQUEST["step"])) {
+        if (!empty($_REQUEST["step"])) {
 		$step = $_REQUEST["step"];
 	}
-  $db = ssDbConnect();
+        $db = ssDbConnect();
 
-  if (isLoggedIn()){
+        if (isLoggedIn()){
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
-    $userPriv = getUserPrivilegeStatus($authUserId, $db);
+                $userPriv = getUserPrivilegeStatus($authUserId, $db);
 	
-    if ($userPriv > 0) { // moderator or admin
+                if ($userPriv > 0) { // moderator or admin
 			if (!empty($step)) {
 				confirmEditBlog ($step, $db);
 			}

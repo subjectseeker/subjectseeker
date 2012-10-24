@@ -14,11 +14,11 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 function adminPosts($httpQuery = NULL, $allowOverride = TRUE, $minimal = FALSE, $open = FALSE) {
   $db = ssDbConnect();
-	if (isLoggedIn()) {
+  if (isLoggedIn()) {
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
-    $userPriv = getUserPrivilegeStatus($authUserId, $db);
+                $userPriv = getUserPrivilegeStatus($authUserId, $db);
 		
 		if ($userPriv > 1) { // admin
 			$step = NULL;
