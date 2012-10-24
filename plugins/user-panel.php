@@ -28,7 +28,7 @@ function displayUserPanel() {
 		<li class=\"user-panel-button\"><a href=\"".$pages["my-sites"]->getAddress()."\">My Sites</a></li>
 		<li class=\"user-panel-button\"><a href=\"".$pages["my-posts"]->getAddress()."\">My Posts</a></li>
 		<li class=\"user-panel-button\"><a href=\"".$pages["home"]->getAddress()."user/$authUserName/settings\">Settings</a></li>
-		<li class=\"user-panel-button\"><a href=\"".$pages["login"]->getAddress()."/?logout=true&amp;url=$currentUrl\">Log Out</a></li>";
+		<li class=\"user-panel-button\"><a href=\"".$pages["login"]->getAddress(TRUE)."/?logout=true&amp;url=$currentUrl\">Log Out</a></li>";
 		if ($userPriv > 0) {
 			print "<li class=\"user-panel-button\"><a href=\"".$pages["approve"]->getAddress()."\">Approve Sites</a></li>
 			<li class=\"user-panel-button\"><a href=\"".$pages["administer-sources"]->getAddress()."\">Administer Sites</a></li>";
@@ -44,7 +44,7 @@ function displayUserPanel() {
 			print "<div class=\"sync-link\"><a title=\"Go to Twitter profile\" href=\"https://twitter.com/#!/".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"]."\"><div class=\"twitter-icon\"></div> ".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"]."</a></div>";
 		}
 		else {
-			print "<div class=\"sync-link\"><a title=\"Go to synchronization page\" href=\"".$pages["twitter"]->getAddress()."\"><div class=\"twitter-icon\"></div> Sync Twitter</a></div>";
+			print "<div class=\"sync-link\"><a title=\"Go to synchronization page\" href=\"".$pages["twitter"]->getAddress(TRUE)."\"><div class=\"twitter-icon\"></div> Sync Twitter</a></div>";
 		}
 		print "</div>
 		</div>
@@ -52,7 +52,7 @@ function displayUserPanel() {
 	}
 	else {
 		print "<div id=\"login-box\">
-		<a class=\"login-box-button\" href=\"".$pages["login"]->getAddress()."/?url=$currentUrl\">Log In</a> <a class=\"login-box-button\" href=\"".$pages["register"]->getAddress()."/?url=$currentUrl\">Register</a>
+		<a class=\"login-box-button\" href=\"".$pages["login"]->getAddress(TRUE)."/?url=$currentUrl\">Log In</a> <a class=\"login-box-button\" href=\"".$pages["register"]->getAddress(TRUE)."/?url=$currentUrl\">Register</a>
 		</div>";
 	}
 }
@@ -73,7 +73,7 @@ function displayTextUserPanel () {
 		<li class=\"user-panel-button\"><a href=\"".$pages["my-sites"]->getAddress()."\">My Sites</a></li>
 		<li class=\"user-panel-button\"><a href=\"".$pages["my-posts"]->getAddress()."\">My Posts</a></li>
 		<li class=\"user-panel-button\"><a href=\"".$pages["home"]->getAddress()."user/$authUserName/settings\">Settings</a></li>
-		<li class=\"user-panel-button\"><a href=\"".$pages["login"]->getAddress()."/?logout=true&amp;url=$currentUrl\">Log Out</a></li>";
+		<li class=\"user-panel-button\"><a href=\"".$pages["login"]->getAddress(TRUE)."/?logout=true&amp;url=$currentUrl\">Log Out</a></li>";
 		if ($userPriv > 0) {
 			print "<li class=\"user-panel-button\"><a href=\"".$pages["approve"]->getAddress()."\">Approve Sites</a></li>
 			<li class=\"user-panel-button\"><a href=\"".$pages["administer-sources"]->getAddress()."\">Administer Sites</a></li>";
@@ -89,8 +89,8 @@ function displayTextUserPanel () {
 	else {
 		print "<div id=\"login-box-footer\">
 		<ul>
-		<li><a class=\"login-box-button\" href=\"".$pages["login"]->getAddress()."/?url=$currentUrl\">Log In</a><li> 
-		<li><a class=\"login-box-button\" href=\"".$pages["register"]->getAddress()."/?url=$currentUrl\">Register</a><li>
+		<li><a class=\"login-box-button\" href=\"".$pages["login"]->getAddress(TRUE)."/?url=$currentUrl\">Log In</a><li> 
+		<li><a class=\"login-box-button\" href=\"".$pages["register"]->getAddress(TRUE)."/?url=$currentUrl\">Register</a><li>
 		</ul>
 		</div>";
 	}

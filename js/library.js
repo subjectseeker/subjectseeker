@@ -2,7 +2,7 @@
 
 $(document).ready(function() {
 	
-	var loadingGif = '<div class="center-text"><img src="/images/icons/loading.gif" height="12px" alt="Loading" title="Loading" /></div>'
+	var loadingGif = '<div class="center-text"><img src="images/icons/loading.gif" height="12px" alt="Loading" title="Loading" /></div>'
 	
 	function updateComments (element) {
 		var parent = $(element).parents('.data-carrier');
@@ -12,7 +12,7 @@ $(document).ready(function() {
 		$(insert).html(loadingGif).fadeIn('slow');
 			$.ajax({
 				type: "POST",
-				url: "/scripts/ajax/comment.php",
+				url: "scripts/ajax/comment.php",
 				data: dataString,
 				cache: false,
 				
@@ -146,7 +146,7 @@ $(document).ready(function() {
 		$.ajax({
 			type: "POST",
 			enctype: "multipart/form-data",
-			url: "/scripts/ajax/comment.php",
+			url: "scripts/ajax/comment.php",
 			data: dataString,
 			dataType: "html",
 			cache: false,
@@ -180,7 +180,7 @@ $(document).ready(function() {
 		
 		if (!isLoggedIn(parent)) {
 			$('#notification-area').slideDown();
-			$('#notification-content').html('<p>You must register to be able to recommend posts.</p><a class="ss-button" href="/login">Log In</a> <a class="ss-button" href="/register">Register</a>');
+			$('#notification-content').html('<p>You must register to be able to recommend posts.</p><a class="ss-button" href="login">Log In</a> <a class="ss-button" href="register">Register</a>');
 		}
 		else {
 			$(recWrapper).html(loadingGif).fadeIn('slow');

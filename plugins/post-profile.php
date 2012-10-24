@@ -185,7 +185,7 @@ function displayPostProfile() {
 			}
 			else {
 				$currentUrl = getURL();
-				print " <a class=\"alignright subtle-text\" href=\"".$pages["twitter"]->getAddress()."/?url=$currentUrl\">Sync with Twitter</a>";
+				print " <a class=\"alignright subtle-text\" href=\"".$pages["twitter"]->getAddress(TRUE)."/?url=$currentUrl\">Sync with Twitter</a>";
 			}
 			print "</form>
 			<br />

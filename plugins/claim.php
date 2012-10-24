@@ -47,7 +47,7 @@ function claimSite() {
     }
   } else {
 		$originalUrl = getURL();
-    print "<p class=\"ss-warning\">You must <a href=\"".$pages["login"]->getAddress()."/?url=$originalUrl\">log in</a> to claim your sites.</p>";
+    print "<p class=\"ss-warning\">You must <a href=\"".$pages["login"]->getAddress(TRUE)."/?url=$originalUrl\">log in</a> to claim your sites.</p>";
   }
 }
 

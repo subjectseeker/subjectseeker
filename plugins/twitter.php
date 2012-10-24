@@ -35,7 +35,7 @@ function syncTwitter() {
 			if (!empty($_REQUEST['oauth_token']) && $_SESSION['oauth_token'] !== $_REQUEST['oauth_token']) {
 				$content = "<div class=\"box-title\">Sync</div>
 				<p>Session Expired!</p>
-				<p><a class=\"white-button\" href=\"".$pages["twitter"]->getAddress()."\" title=\"Go to synchronization page\">Retry synchronization</a> <a class=\"white-button\" title=\"Go back to the original page\" href=\"$originalUrl\">Take me back to $sitename</a></p>";
+				<p><a class=\"white-button\" href=\"".$pages["twitter"]->getAddress(TRUE)."\" title=\"Go to synchronization page\">Retry synchronization</a> <a class=\"white-button\" title=\"Go back to the original page\" href=\"$originalUrl\">Take me back to $sitename</a></p>";
 			}
 			else {
 				// Get Twitter Tokens
@@ -57,12 +57,12 @@ function syncTwitter() {
 			if (!empty($userTwitter)) {
 				$content = "<div class=\"box-title\">Sync</div>
 				<p>Are you sure you want to remove your Twitter account from our system?</p>
-				<p><a class=\"white-button\" title=\"Confirm social network account removal\" href=\"".$pages["twitter"]->getAddress()."/?remove=confirmed&amp;url=$originalUrl\">Yes</a> <a class=\"white-button\" title=\"Cancel social network account removal\" href=\"$originalUrl\">No, go back to $sitename</a></p>";
+				<p><a class=\"white-button\" title=\"Confirm social network account removal\" href=\"".$pages["twitter"]->getAddress(TRUE)."/?remove=confirmed&amp;url=$originalUrl\">Yes</a> <a class=\"white-button\" title=\"Cancel social network account removal\" href=\"$originalUrl\">No, go back to $sitename</a></p>";
 			}
 			else {
 				$content = "<div class=\"box-title\">Sync</div>
 				<p>You don't have any Twitter accounts associated with $sitename</p>
-				<p><a class=\"white-button\" href=\"".$pages["twitter"]->getAddress()."\" title=\"Go to synchronization page\">Sync my Twitter account</a>  <a class=\"white-button\" title=\"Cancel social network account removal\" href=\"$originalUrl\">Take me back to $sitename</a></p>";
+				<p><a class=\"white-button\" href=\"".$pages["twitter"]->getAddress(TRUE)."\" title=\"Go to synchronization page\">Sync my Twitter account</a>  <a class=\"white-button\" title=\"Cancel social network account removal\" href=\"$originalUrl\">Take me back to $sitename</a></p>";
 			}
 		} elseif (!empty($_REQUEST["remove"]) && $_REQUEST["remove"] == "confirmed") {
 			if (!empty($userTwitter)) {
@@ -75,10 +75,10 @@ function syncTwitter() {
 			if ($userTwitter == TRUE) {
 				$content = "<div class=\"box-title\">Sync</div>
 				<p>Your Twitter account is already synced with our system, do you want to desync it?.</p>
-				<p><a class=\"white-button\" title=\"Confirm social network account removal\" href=\"".$pages["twitter"]->getAddress()."/?remove=confirmed&amp;url=$originalUrl\">Yes</a> <a class=\"white-button\" title=\"Go back to the original page\" href=\"$originalUrl\">No, go back to $sitename</a></p>";
+				<p><a class=\"white-button\" title=\"Confirm social network account removal\" href=\"".$pages["twitter"]->getAddress(TRUE)."/?remove=confirmed&amp;url=$originalUrl\">Yes</a> <a class=\"white-button\" title=\"Go back to the original page\" href=\"$originalUrl\">No, go back to $sitename</a></p>";
 			}
 			else {
-				$twitterUrl = getTwitterAuthURL ($pages["twitter"]->getAddress()."/?=".$originalUrl, FALSE);
+				$twitterUrl = getTwitterAuthURL ($pages["twitter"]->getAddress(TRUE)."/?=".$originalUrl, FALSE);
 				
 				$content = "<div class=\"box-title\">Sync</div>
 				<p>You will now be directed to Twitter, where you can authorize $sitename to view your tweets and update your status, you can remove this authorization at any time. If you enable the Twitter synchronization, you can share your $sitename notes on Twitter and be added to the $sitename member list.</p>
@@ -86,14 +86,14 @@ function syncTwitter() {
 			}
 		}
 	} elseif (isset($_REQUEST["step"]) && $_REQUEST["step"] == "authUrl") {
-		$twitterUrl = getTwitterAuthURL ($pages["login"]->getAddress()."/?=".$originalUrl, TRUE);
+		$twitterUrl = getTwitterAuthURL ($pages["login"]->getAddress(TRUE)."/?=".$originalUrl, TRUE);
 		header("Location: $twitterUrl");
 		
 	}
 	else {
 		$content = "<div class=\"box-title\">Sync</div>
 		<p>You must have a $sitename account to use this feature.</p>
-		<p><a class=\"white-button\" title=\"Log in page\" href=\"".$pages["login"]->getAddress()."\">Log in</a> <a class=\"white-button\" title=\"Go to register page\" href=\"".$pages["register"]->getAddress()."\">Register</a> <a class=\"white-button\" title=\"Go back to the original page\" href=\"$originalUrl\">Take me back to $sitename</a></p>";
+		<p><a class=\"white-button\" title=\"Log in page\" href=\"".$pages["login"]->getAddress(TRUE)."\">Log in</a> <a class=\"white-button\" title=\"Go to register page\" href=\"".$pages["register"]->getAddress(TRUE)."\">Register</a> <a class=\"white-button\" title=\"Go back to the original page\" href=\"$originalUrl\">Take me back to $sitename</a></p>";
 	}
 	
 	return $content;

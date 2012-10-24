@@ -10,6 +10,7 @@ $dbUser = "databaseUser";
 $dbPass = "password";
 $host = "localhost";
 $debugSite = "false";
+$httpsEnabled = "false";
 
 // URLs
 $homeUrl = "http://example.com";
@@ -48,6 +49,7 @@ $twitterNotesTokenSecret = "****"; // Twitter Secret Token of Twitter account th
 $bitlyUser = "****"; // bitly user
 $bitlyKey = "****"; // bitly API key
 $bitlyApiUrl = "http://api.bit.ly/v3/shorten?login="; // bitly API url
+$twitterListApi = "https://api.twitter.com/1/lists/statuses.json?list_id="; // Twitter list API link
 
 // Parameters
 $numResults = 30;

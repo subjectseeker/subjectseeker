@@ -24,7 +24,7 @@ function addSite() {
     $userPriv = getUserPrivilegeStatus($authUserId, $db);
 	}
 	else {
-		print "<p class=\"ss-warning\">You can claim your site if you <a href=\"".$pages["login"]->getAddress()."\" title=\"Log In Page\">log in</a>.</p>";
+		print "<p class=\"ss-warning\">You can claim your site if you <a href=\"".$pages["login"]->getAddress(TRUE)."\" title=\"Log In Page\">log in</a>.</p>";
 	}
 	
 	$step = NULL;
@@ -49,13 +49,13 @@ function addSite() {
 		doAddBlog($db);
 	} else if ($step === "verify") {
 		if (! $authUserName) {
-			print "<p class=\"ss-error\">Error: You must <a href=\"".$pages["login"]->getAddress()."\" title=\"Log In Page\">log in</a> to claim a blog.</p>\n";
+			print "<p class=\"ss-error\">Error: You must <a href=\"".$pages["login"]->getAddress(TRUE)."\" title=\"Log In Page\">log in</a> to claim a blog.</p>\n";
 			return;
 		}
 		doVerifyClaim($blogId, $authUserName, $db);
 	} else if ($step === "userAuthorLinkForm") {
 		if (! $authUserName) {
-			print "<p class=\"ss-error\">Error: You must <a href=\"".$pages["login"]->getAddress()."\" title=\"Log In Page\">log in</a> to claim a blog.</p>\n";
+			print "<p class=\"ss-error\">Error: You must <a href=\"".$pages["login"]->getAddress(TRUE)."\" title=\"Log In Page\">log in</a> to claim a blog.</p>\n";
 			return;
 		}
 		doLinkUserAndAuthor($authUserId, $authUserName, $db);

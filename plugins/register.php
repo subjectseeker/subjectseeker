@@ -21,7 +21,7 @@ function displayRegistration() {
 	
 	// If logged in, send to log in page to deal with this.
 	if (isLoggedIn()) {
-		header("Location: ".$pages["login"]->getAddress()."/?url=$originalUrl");
+		header("Location: ".$pages["login"]->getAddress(TRUE)."/?url=$originalUrl");
 	}
 	else {
 		$content = "<div class=\"box-title\">Create Account</div>";
@@ -88,7 +88,7 @@ function displayRegistration() {
 				$verificationCode = createSecretCode ($userId, 3, $db);
 				sendVerificationEmail($verificationCode, $userEmail, $userName, $userDisplayName);
 
-				header("Location: ".$pages["login"]->getAddress()."/?step=confirm-verification");
+				header("Location: ".$pages["login"]->getAddress(TRUE)."/?step=confirm-verification");
 			}
 		}
 		
@@ -122,8 +122,8 @@ function displayRegistration() {
 			$content .= "<div class=\"half-box\" style=\"float: right;\"> 
 			<h4>Or...</h4>
 			<div class=\"center-text\">
-			<p><a class=\"twitter-button\" href=\"".$pages["twitter"]->getAddress()."/?step=authUrl&amp;url=".$originalUrl."\">Create account with Twitter</a></p>
-			<p><a class=\"white-button\" style=\"width: 100%; padding: 6px 0px;\" href=\"".$pages["login"]->getAddress()."\">Log in</a></p>
+			<p><a class=\"twitter-button\" href=\"".$pages["twitter"]->getAddress(TRUE)."/?step=authUrl&amp;url=".$originalUrl."\">Create account with Twitter</a></p>
+			<p><a class=\"white-button\" style=\"width: 100%; padding: 6px 0px;\" href=\"".$pages["login"]->getAddress(TRUE)."\">Log in</a></p>
 			</div>";
 		}
 		

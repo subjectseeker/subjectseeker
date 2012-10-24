@@ -199,7 +199,7 @@ User name: ".$userName."
 
 To reset your password, use the following code in the recovery page: ".$recoveryCode."
 
-Or visit this link: ".$pages["login"]->getAddress()."/?step=verify-recovery&recovery-code=".$recoveryCode."
+Or visit this link: ".$pages["login"]->getAddress(TRUE)."/?step=verify-recovery&recovery-code=".$recoveryCode."
 
 The ".$sitename." Team.";
 	sendMail($userEmail, $subject, $message);
@@ -216,7 +216,7 @@ function sendVerificationEmail ($verificationCode, $userEmail, $userName, $userD
 
 To verify your ".$sitename." account, use the following code in the verification page: ".$verificationCode."
 
-Or visit this link: ".$pages["login"]->getAddress()."/?step=verify-email&verification-code=".$verificationCode."
+Or visit this link: ".$pages["login"]->getAddress(TRUE)."/?step=verify-email&verification-code=".$verificationCode."
 
 The ".$sitename." Team.";
 	sendMail($userEmail, $subject, $message);

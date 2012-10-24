@@ -240,8 +240,12 @@ class Page {
     $this->title = $title;
   }
 
-  public function getAddress() {
+  public function getAddress($https = FALSE) {
 		global $homeUrl;
+		global $httpsEnabled;
+		if ($https == TRUE && $httpsEnabled == "true") {
+			return str_replace("http:", "https:", $homeUrl . $this->address);
+		}
     return $homeUrl . $this->address;
   }
 

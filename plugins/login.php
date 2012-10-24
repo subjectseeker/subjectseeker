@@ -30,7 +30,7 @@ function displayLogin() {
 	// If user is logged in, log out or ask.
 	if (isLoggedIn()) {
 		$authUser = new auth();
-		if ($_REQUEST["logout"] == "true") {
+		if (isset($_REQUEST["logout"]) && $_REQUEST["logout"] == "true") {
 			$authUser->logout();
 			header("Location: ".$originalUrl);
 		}
@@ -38,7 +38,7 @@ function displayLogin() {
 			$authUserName = $authUser->userName;
 			$content =  "<div class=\"box-title\">Log In</div>
 			<p>You are logged in as $authUserName</p>
-			<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?logout=true\">Log Out</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
+			<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress(TRUE)."/?logout=true\">Log Out</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 		}
 	}
 	else {
@@ -46,7 +46,7 @@ function displayLogin() {
 		if (!empty($_REQUEST['oauth_token']) && $_SESSION['oauth_token'] !== $_REQUEST['oauth_token']) {
 			$content = "<div class=\"box-title\">Log In</div>
 			<p>Twitter session expired!</p>
-			<p><a class=\"white-button\" href=\"".$pages["twitter"]->getAddress()."/?step=authUrl&amp;url=".$originalUrl."\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
+			<p><a class=\"white-button\" href=\"".$pages["twitter"]->getAddress(TRUE)."/?step=authUrl&amp;url=".$originalUrl."\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 		}
 		elseif (!empty($_REQUEST['oauth_token']) && $_SESSION['oauth_token'] == $_REQUEST['oauth_token']) {
 			// Get User ID from Auth Tokens for log in
@@ -62,7 +62,7 @@ function displayLogin() {
 			}
 			// If user is unverified, send to verification
 			elseif ($userId == TRUE && $authUser->error == 2) {
-				header("Location: ".$pages["login"]->getAddress()."/?step=send-verification");
+				header("Location: ".$pages["login"]->getAddress(TRUE)."/?step=send-verification");
 			}
 			// If user doesn't exist, redirect to registration with settings now imported
 			else {
@@ -71,7 +71,7 @@ function displayLogin() {
 				$_SESSION["screen_name"] = $twitterCredentials["screen_name"];
 				$_SESSION["oauth_token"] = $twitterCredentials['oauth_token'];
 				$_SESSION["oauth_token_secret"] = $twitterCredentials['oauth_token_secret'];
-				header("Location: ".$pages["register"]->getAddress()."/?url=".$originalUrl);
+				header("Location: ".$pages["register"]->getAddress(TRUE)."/?url=".$originalUrl);
 			}
 		}
 		
@@ -79,7 +79,7 @@ function displayLogin() {
 		
 		elseif ($step == "lost-password") {
 			$content = "<div class=\"box-title\">Recover Account</div>
-			<form action=\"".$pages["login"]->getAddress()."/?step=recover-account\" name=\"login\" method=\"post\">
+			<form action=\"".$pages["login"]->getAddress(TRUE)."/?step=recover-account\" name=\"login\" method=\"post\">
 			<p>Please enter your user name or email to recover your account<br />
 			<input type=\"text\" name=\"recovery-data\" size=\"30\" /></p>
 			<p><input class=\"white-button\" type=\"submit\" value=\"Send recovery email\" /></p>
@@ -101,12 +101,12 @@ function displayLogin() {
 				}
 				else {
 					$content .= "<p class=\"ss-error\">The submitted email or user was not found in our database.</p>
-					<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=lost-password\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
+					<a class=\"white-button\" href=\"".$pages["login"]->getAddress(TRUE)."/?step=lost-password\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
 					return $content;
 				}
 			}
 			$content .= "<p class=\"ss-successful\">An email has been sent to your address to recover your account.</p>
-			<form action=\"".$pages["login"]->getAddress()."/?step=verify-recovery\" name=\"login\" method=\"post\">
+			<form action=\"".$pages["login"]->getAddress(TRUE)."/?step=verify-recovery\" name=\"login\" method=\"post\">
 			<p class=\"margin-bottom-small\">Please enter your recovery code below or follow the link sent with the email.</p>
 			<p><input type=\"text\" name=\"recovery-code\" /></p>
 			<p><input class=\"white-button\" type=\"submit\" value=\"Submit\" /></p>
@@ -152,7 +152,7 @@ function displayLogin() {
 							removeSecretCode($userId, 2, $db);
 							
 							$content .= "<p class=\"ss-successful\">Password has been changed.</p>
-							<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."\">Log In</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
+							<a class=\"white-button\" href=\"".$pages["login"]->getAddress(TRUE)."\">Log In</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
 						}
 					}
 				}
@@ -171,12 +171,12 @@ function displayLogin() {
 				}
 				else {
 					$content .= "<p class=\"ss-error\">Recovery code not found.</p>
-					<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=recover-account\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
+					<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress(TRUE)."/?step=recover-account\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 				}
 			}
 			else {
 				$content .= "<p class=\"ss-error\">You must submit a recovery code.</p>
-				<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=recover-account\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
+				<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress(TRUE)."/?step=recover-account\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 			}
 		}
 		
@@ -184,7 +184,7 @@ function displayLogin() {
 		
 		elseif ($step == "send-verification") {
 			$content =  "<div class=\"box-title\">Verify Account</div>
-			<form action=\"".$pages["login"]->getAddress()."/?step=confirm-verification\" method=\"post\">
+			<form action=\"".$pages["login"]->getAddress(TRUE)."/?step=confirm-verification\" method=\"post\">
 			<p class=\"margin-bottom-small\">Please enter your user name or email to send your email verification code.</p>
 			<p><input type=\"text\" name=\"verification-data\"  /></p>
 			<p><input class=\"white-button\" type=\"submit\" value=\"Send verification email\" /></p>
@@ -208,19 +208,19 @@ function displayLogin() {
 					}
 					else {
 						$content .= "<p class=\"ss-warning\">This account ($userName) has already been verified.</p>
-						<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."\">Log In</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
+						<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress(TRUE)."\">Log In</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 						return $content;
 					}
 				}
 				else {
 					$content .= "<p class=\"ss-error\">The submitted email or user was not found in our database.</p>
-					<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=send-verification\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
+					<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress(TRUE)."/?step=send-verification\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 					return $content;
 				}
 			}
 			
 			$content .= "<p class=\"ss-successful\">An email has been sent to you address to verify your account.</p>
-			<form action=\"".$pages["login"]->getAddress()."/?step=verify-email\" name=\"login\" method=\"post\">
+			<form action=\"".$pages["login"]->getAddress(TRUE)."/?step=verify-email\" name=\"login\" method=\"post\">
 			<p class=\"margin-bottom-small\">Please enter your verification code below or follow the link sent with the email.</p>
 			<p><input type=\"text\" name=\"verification-code\" /></p>
 			<p><input class=\"white-button\" type=\"submit\" value=\"Submit\" /></p>
@@ -240,7 +240,7 @@ function displayLogin() {
 				// Check if code has expired
 				if (!empty($verificationStatus["expired"]) && $verificationStatus["expired"] == TRUE) {
 					$content .= "<p class=\"ss-error\">Your verification code has expired.</p>
-					<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=send-verification\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
+					<a class=\"white-button\" href=\"".$pages["login"]->getAddress(TRUE)."/?step=send-verification\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
 				}
 				elseif (!empty($userId)) {
 					editUserStatus ($userId, 0, $db);
@@ -251,12 +251,12 @@ function displayLogin() {
 				}
 				else {
 					$content .= "<p class=\"ss-error\">Verification code not found in our database.</p>
-					<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=send-verification\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
+					<a class=\"white-button\" href=\"".$pages["login"]->getAddress(TRUE)."/?step=send-verification\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
 				}
 			}
 			else {
 				$content .= "<p class=\"ss-error\">Verification code not submitted.</p>
-				<a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=send-verification\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
+				<a class=\"white-button\" href=\"".$pages["login"]->getAddress(TRUE)."/?step=send-verification\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
 			}
 			
 			removeSecretCode($userId, 3, $db);
@@ -295,7 +295,7 @@ function displayLogin() {
 					}
 					elseif ($authUser->error == 2) {
 						$content .= "<p class=\"ss-error\">User email is unverified for $userName.</p>
-						<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress()."/?step=send-verification\">Verify Account</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
+						<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress(TRUE)."/?step=send-verification\">Verify Account</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 					}
 					elseif ($authUser->error == 3) {
 						$content .= "<p class=\"ss-error\">User doesn't exist ($userName).</p>";
@@ -314,7 +314,7 @@ function displayLogin() {
 			<input type=\"text\" name=\"user-name\" size=\"30\" maxlength=\"20\" /></p>
 			<p>Password<br />
 			<input type=\"password\" name=\"pass\" size=\"30\" /><br />
-			<a href=\"".$pages["login"]->getAddress()."/?step=lost-password\">Lost user name / password</a>
+			<a href=\"".$pages["login"]->getAddress(TRUE)."/?step=lost-password\">Lost user name / password</a>
 			</p>
 			<p>Remember me <input type=\"checkbox\" checked=\"checked\" name=\"remember\" value=\"true\" /></p>
 			<input class=\"white-button\" style=\"width: 100%; padding: 6px 0px;\" type=\"submit\" value=\"Log In\" />
@@ -323,8 +323,8 @@ function displayLogin() {
 			<div class=\"half-box\" style=\"float: right;\"> 
 			<h4>Or...</h4>
 			<div class=\"center-text\">
-			<p><a class=\"twitter-button\" href=\"".$pages["twitter"]->getAddress()."/?step=authUrl&amp;url=".$originalUrl."\">Log in with Twitter</a></p>
-			<p><a class=\"white-button\" style=\"width: 100%; padding: 6px 0px;\" href=\"".$pages["register"]->getAddress()."\">Register</a></p>
+			<p><a class=\"twitter-button\" href=\"".$pages["twitter"]->getAddress(TRUE)."/?step=authUrl&amp;url=".$originalUrl."\">Log in with Twitter</a></p>
+			<p><a class=\"white-button\" style=\"width: 100%; padding: 6px 0px;\" href=\"".$pages["register"]->getAddress(TRUE)."\">Register</a></p>
 			</div>";
 		}
 	}

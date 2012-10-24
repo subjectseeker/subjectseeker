@@ -13,19 +13,15 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 function userActivity ($limit = 8) {
 	global $twitterListId;
-	
-	if (!empty($_REQUEST["url"])) {
+	global $homeUrl;
+	$originalUrl = $homeUrl;
+	if (isset($_REQUEST["url"])) {
 		$originalUrl = $_REQUEST["url"];
-	}
-	else {
-		global $homeUrl;
-		$originalUrl = $homeUrl;
 	}
 	
 	$tweets = getTwitterList($twitterListId);
 	
 	print "<div id=\"user-activity\">";
-	
 	$i = 0;
 	if (is_array($tweets)) {
 		foreach ($tweets as $tweet) {
@@ -46,7 +42,8 @@ function userActivity ($limit = 8) {
 }
 
 function getTwitterList($twitterListId) {
-	$url = "https://api.twitter.com/1/lists/statuses.json?list_id=" . $twitterListId;
+	global $twitterListApi;
+	$url = $twitterListApi . $twitterListId;
 	
 	$ch = curl_init();    // initialize curl handle
         curl_setopt($ch, CURLOPT_URL,$url); // set url to post to

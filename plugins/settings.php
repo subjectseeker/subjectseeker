@@ -170,9 +170,9 @@ function userSettings() {
 			
 			if ($userTwitter == TRUE) {
 				$currentUrl = getURL();
-				print "<div class=\"sync-link\"><a title=\"Go to Twitter profile\" href=\"https://twitter.com/#!/".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"]."\"><div class=\"twitter-icon\"></div> ".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"]."</a> | <a title=\"Go to synchronization page\" href=\"".$pages["twitter"]->getAddress()."/?url=$currentUrl&amp;remove=true\">Remove</a></div>";
+				print "<div class=\"sync-link\"><a title=\"Go to Twitter profile\" href=\"https://twitter.com/#!/".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"]."\"><div class=\"twitter-icon\"></div> ".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"]."</a> | <a title=\"Go to synchronization page\" href=\"".$pages["twitter"]->getAddress(TRUE)."/?url=$currentUrl&amp;remove=true\">Remove</a></div>";
 			} else {
-				print "<div class=\"sync-link\"><a title=\"Go to synchronization page\" href=\"".$pages["twitter"]->getAddress()."\"><div class=\"twitter-icon\"></div> Sync Twitter</a></div>";
+				print "<div class=\"sync-link\"><a title=\"Go to synchronization page\" href=\"".$pages["twitter"]->getAddress(TRUE)."\"><div class=\"twitter-icon\"></div> Sync Twitter</a></div>";
 			}
 			
 			print "<br />

@@ -13,7 +13,7 @@ function generateCitations() {
 
 	if ($step == NULL) {
 		if (! isLoggedIn()){
-			print "<p class=\"ss-warning\">You should <a href=\"".$pages["login"]->getAddress()."\" title=\"Log In Page\">log in</a> for your blogs to be automatically scanned for citations.</p>";
+			print "<p class=\"ss-warning\">You should <a href=\"".$pages["login"]->getAddress(TRUE)."\" title=\"Log In Page\">log in</a> for your blogs to be automatically scanned for citations.</p>";
 		}
 		
 		print "<h3>Search Citation</h3>
