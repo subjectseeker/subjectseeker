@@ -1,4 +1,4 @@
 #!/bin/sh
 
-date >> /home/sciseek/public_html/alpha/logs/epicks-email.log
-/home/sciseek/public_html/alpha/cron/epicks-email.php >> /home/sciseek/public_html/alpha/logs/epicks-email.log
+date >> ../logs/epicks-email.log
+./epicks-email.php >> ../logs/epicks-email.log

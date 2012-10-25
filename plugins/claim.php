@@ -12,43 +12,43 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 function claimSite() {
 	global $pages;
 	// Connect to DB.
-	$db  = ssDbConnect();
+	$db	= ssDbConnect();
 	
 	preg_match('/(?<=\/claim\/)(\d+)/', $_SERVER["REQUEST_URI"], $matchResult);
 	$blogId = $matchResult[1];
 
-  if (empty($blogId)) {
-    print "<p class=\"ss-error\">No blog specified to claim.</p>";
-    return;
-  }
+	if (empty($blogId)) {
+		print "<p class=\"ss-error\">No blog specified to claim.</p>";
+		return;
+	}
 
-  if (isLoggedIn()){
+	if (isLoggedIn()){
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
 		$authUserEmail = getUserEmail($authUserId, $db);
 		
 		$step = NULL;
-    if (!empty($_REQUEST["step"])) {
+		if (!empty($_REQUEST["step"])) {
 			$step = $_REQUEST["step"];
 		}
 
-    // If there is already a verified claim, move ahead to linking things
-    if (empty($step) && retrieveVerifiedClaimToken($blogId, $authUserId, $db)) {
-      displayUserAuthorLinkForm($blogId, $authUserId, $authUserName, $db);
-    } else if (empty($step)) {
-      doClaimBlog($blogId, $authUserName, $db);
-    } else if ($step === "verify") {
-      doVerifyClaim($blogId, $authUserName, $db);
-    } else if ($step === "userAuthorLinkForm") {
-      doLinkUserAndAuthor($authUserId, $authUserName, $db);
-    } else {
-      print "ERROR: Unknown step $step.";
-    }
-  } else {
+		// If there is already a verified claim, move ahead to linking things
+		if (empty($step) && retrieveVerifiedClaimToken($blogId, $authUserId, $db)) {
+			displayUserAuthorLinkForm($blogId, $authUserId, $authUserName, $db);
+		} else if (empty($step)) {
+			doClaimBlog($blogId, $authUserName, $db);
+		} else if ($step === "verify") {
+			doVerifyClaim($blogId, $authUserName, $db);
+		} else if ($step === "userAuthorLinkForm") {
+			doLinkUserAndAuthor($authUserId, $authUserName, $db);
+		} else {
+			print "ERROR: Unknown step $step.";
+		}
+	} else {
 		$originalUrl = getURL();
-    print "<p class=\"ss-warning\">You must <a href=\"".$pages["login"]->getAddress(TRUE)."/?url=$originalUrl\">log in</a> to claim your sites.</p>";
-  }
+		print "<p class=\"ss-warning\">You must <a href=\"".$pages["login"]->getAddress(TRUE)."/?url=$originalUrl\">log in</a> to claim your sites.</p>";
+	}
 }
 
 ?>

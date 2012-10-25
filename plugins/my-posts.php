@@ -13,7 +13,7 @@ function displayMyPosts($minimal = FALSE, $open = FALSE) {
 	global $pages;
 	if (isLoggedIn()){
 		// Connect to DB.
-		$db  = ssDbConnect();
+		$db	= ssDbConnect();
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;

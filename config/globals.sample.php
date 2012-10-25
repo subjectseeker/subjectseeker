@@ -11,13 +11,14 @@ $dbPass = "password";
 $host = "localhost";
 $debugSite = "false";
 $httpsEnabled = "false";
+$themeName = "scienceseeker";
 
 // URLs
 $homeUrl = "http://example.com";
 $imagesUrl = $homeUrl . "/images";
 $jsUrl = $homeUrl . "/js";
 $thirdPartyUrl = $homeUrl . "/third-party";
-$themeUrl = $homeUrl . "/theme";
+$themeUrl = $homeUrl . "/themes/scienceseeker";
 $scriptsUrl = $homeUrl . "/scripts";
 $feedUrl = $homeUrl. "/feed/posts/";
 $localStylesheet = "";

@@ -1,5 +1,5 @@
 <?php
-include_once(dirname(__FILE__)."/../scripts/initialize.php");
+include_once(dirname(__FILE__)."/../../scripts/initialize.php");
 
 if (count($currentPage->getLocations()) != 1) {
 ?>

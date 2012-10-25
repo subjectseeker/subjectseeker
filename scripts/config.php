@@ -5,41 +5,33 @@ global $pagesConfig;
 
 $pages = array();
 $modules = array();
+$sections = array("[page-layouts]", "[page-info]", "[navigation-items]", "[sidebar-default]", "[modules]", "[module-titles]");
 $pageTitles;
 $pageAddresses;
 $moduleTitles;
 
+
 // Open config file for reading
 $handle = fopen ($configFile, "r");
 if (! $handle) {
-  exit("Can't open $configFile\n");
+	exit("Can't open $configFile\n");
 }
 
 // Build list of modules
 $section = null;
 $line = 0;
 while (($buffer = fgets($handle, 4096)) !== false) {
-  $line++;
-  $buffer = trim ($buffer);
+	$line++;
+	$buffer = trim ($buffer);
 
-  if (substr ($buffer, 0, 1) === "#" || strlen($buffer) == 0) {
-    continue;
-  }
+	if (substr($buffer, 0, 1) === "#" || strlen($buffer) == 0) {
+		continue;
+	}
 
 	// What section of the config file are we in?
 	if (substr ($buffer, 0, 1) === "[") {
-		if ($buffer === "[page-layouts]") {
-			$section = "page-layouts";
-		} elseif ($buffer == "[page-info]") {
-			$section = "page-info";
-		} elseif ($buffer == "[navigation-items]") {
-			$section = "navigation-items";
-		} elseif ($buffer == "[sidebar-default]") {
-			$section = "sidebar-default";
-		} elseif ($buffer == "[modules]") {
-			$section = "modules";
-		} elseif ($buffer == "[module-titles]") {
-			$section = "module-titles";
+		if (in_array($buffer, $sections)) {
+			$section = str_replace(array("[","]"), "", $buffer);
 		} else {
 			exit ("Unable to parse $configFile line: $buffer ($line)\n");
 		}
@@ -53,10 +45,7 @@ while (($buffer = fgets($handle, 4096)) !== false) {
 			$pageId = array_shift ($args);
 			$pageLocation = array_shift ($args);
 			addPage($pageId, $pageLocation, $args, $pages);
-		}
-		
-		// TODO: enable page-info section to come before page-layout section!
-		elseif ($section === "page-info") {
+		} elseif ($section === "page-info") {
 			// page-id address title
 			list ($pageId, $pageAddress, $pageTitle) = preg_split ("/\s+/", $buffer, 3);
 			if (isset ($pages[$pageId])) {
@@ -114,7 +103,7 @@ while (($buffer = fgets($handle, 4096)) !== false) {
 
 // Handle file reading errors
 if (!feof($handle)) {
-  echo "Error: unexpected fail reading $configFile\n";
+	echo "Error: unexpected fail reading $configFile\n";
 }
 fclose($handle);
 
@@ -123,14 +112,14 @@ fclose($handle);
 /*
 // Sample output
 foreach ($pages as $page) {
-  print "Page title: " . $page->getTitle() . " at " . $page->getAddress() . "\n";
-  foreach ($page->getLocations() as $location => $moduleList) {
-    print "On $location: \n";
-    foreach ($moduleList as $moduleId) {
-      $module = $modules[$moduleId];
-      print "  " . $module["functionName"] . " (" . implode(", ", $module["functionArgs"]) . ")\n";
-    }
-  }
+	print "Page title: " . $page->getTitle() . " at " . $page->getAddress() . "\n";
+	foreach ($page->getLocations() as $location => $moduleList) {
+		print "On $location: \n";
+		foreach ($moduleList as $moduleId) {
+			$module = $modules[$moduleId];
+			print "	" . $module["functionName"] . " (" . implode(", ", $module["functionArgs"]) . ")\n";
+		}
+	}
 }
 */
 
@@ -143,20 +132,20 @@ foreach ($pages as $page) {
 // Output: page object, populated with ID and this location/module pair
 function addPage($pageId, $location, &$moduleIds, &$pages) {
 
-  $page;
-  if (isset($pages[$pageId])) {
-    $page = $pages[$pageId];
-  } else {
-    $page = new Page;
-    $pages[$pageId] = $page;
-  }
+	$page;
+	if (isset($pages[$pageId])) {
+		$page = $pages[$pageId];
+	} else {
+		$page = new Page;
+		$pages[$pageId] = $page;
+	}
 
-  $page->setId($pageId);
+	$page->setId($pageId);
 
-  foreach ($moduleIds as $moduleId) {
-    $page->appendLocation($location, $moduleId);
-  }
-  return $page;
+	foreach ($moduleIds as $moduleId) {
+		$page->appendLocation($location, $moduleId);
+	}
+	return $page;
 }
 
 function displayModules ($moduleList, $noPrint = FALSE) {
@@ -215,62 +204,62 @@ function getPlugin($module, $noPrint = FALSE) {
 //
 
 class Page {
-  public $id;
-  public $locations;
-  public $title;
-  public $address;
+	public $id;
+	public $locations;
+	public $title;
+	public $address;
 
-  function __construct() {
-    $this->locations = array();
-  }
+	function __construct() {
+		$this->locations = array();
+	}
 
-  public function getId() {
-    return $this->id;
-  }
+	public function getId() {
+		return $this->id;
+	}
 
-  public function setId($id) {
-    $this->id = $id;
-  }
+	public function setId($id) {
+		$this->id = $id;
+	}
 
-  public function getTitle() {
-    return $this->title;
-  }
+	public function getTitle() {
+		return $this->title;
+	}
 
-  public function setTitle($title) {
-    $this->title = $title;
-  }
+	public function setTitle($title) {
+		$this->title = $title;
+	}
 
-  public function getAddress($https = FALSE) {
+	public function getAddress($https = FALSE) {
 		global $homeUrl;
 		global $httpsEnabled;
 		if ($https == TRUE && $httpsEnabled == "true") {
 			return str_replace("http:", "https:", $homeUrl . $this->address);
 		}
-    return $homeUrl . $this->address;
-  }
+		return $homeUrl . $this->address;
+	}
 
-  public function setAddress($address) {
-    $this->address = $address;
-  }
+	public function setAddress($address) {
+		$this->address = $address;
+	}
 
-  public function getLocations($location = NULL) {
+	public function getLocations($location = NULL) {
 		if (empty($location)) {
-    	return $this->locations;
+			return $this->locations;
 		} else {
 			return $this->locations["$location"];
 		}
-  }
+	}
 	
 	public function setSidebar($sidebar) {
-    $this->sidebar = $sidebar;
-  }
+		$this->sidebar = $sidebar;
+	}
 
-  public function appendLocation($location, $moduleId) {
-    if (!isset($this->locations[$location])) {
-      $this->locations[$location] = array();
-    }
-    array_push ($this->locations[$location], $moduleId);
-  }
+	public function appendLocation($location, $moduleId) {
+		if (!isset($this->locations[$location])) {
+			$this->locations[$location] = array();
+		}
+		array_push ($this->locations[$location], $moduleId);
+	}
 }
 
 ?>

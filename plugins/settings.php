@@ -194,7 +194,7 @@ function userSettings() {
 			<input type=\"hidden\" name=\"form\" value=\"email\" />
 			<h3>Change Email</h3>
 			<p>Email<br />
-			<input name=\"email\" type=\"text\"  value=\"".htmlspecialchars($userEmail, ENT_QUOTES)."\" /></p>
+			<input name=\"email\" type=\"text\"	value=\"".htmlspecialchars($userEmail, ENT_QUOTES)."\" /></p>
 			<p>Current Password<br />
 			<input name=\"current-pass\" type=\"password\" value=\"\" /></p>
 			<p><input class=\"ss-button\" type=\"submit\" value=\"Change Email\" /></p>

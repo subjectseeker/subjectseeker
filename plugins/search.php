@@ -13,7 +13,8 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 */
 
 function searchForm() {
-	print "<form action=\"/search/\" method=\"get\">
+	global $pages;
+	print "<form action=\"".$pages["search"]->getAddress()."\" method=\"get\">
 	<input class=\"search-input\" type=\"text\" name=\"text\"";
 	if (!empty($_REQUEST["text"])) {
 		print " value=\"".$_REQUEST["text"]."\"";

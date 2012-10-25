@@ -13,25 +13,26 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 */
 
 function adminUsers() {
-  $db = ssDbConnect();
-  if (isLoggedIn()){
+	$db = ssDbConnect();
+	if (isLoggedIn()){
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
-                $userPriv = getUserPrivilegeStatus($authUserId, $db);
+		$userPriv = getUserPrivilegeStatus($authUserId, $db);
 		
 		if ($userPriv > 1) { // moderator or admin
 			$step = NULL;
-			if (!empty($_REQUEST["step"])) {
+			if (isset($_REQUEST["step"])) {
 				$step = $_REQUEST["step"];
 			}
 			
+			// TO DO: Integrate with the API
 			$pagesize = "30";
 			$offset = "0";
-			if (!empty($_REQUEST["n"])) {
+			if (isset($_REQUEST["n"])) {
 				$pagesize = $_REQUEST["n"];
 			}
-			if (!empty($_REQUEST["offset"])) {
+			if (isset($_REQUEST["offset"])) {
 				$offset = $_REQUEST["offset"];
 			}
 			
@@ -47,7 +48,7 @@ function adminUsers() {
 			</div>
 			<br />";
 			
-			if ($step != null) {
+			if ($step != NULL) {
 				$userId = NULL;
 				$userName = NULL;
 				$userDisplayName = NULL;
@@ -82,7 +83,9 @@ function adminUsers() {
 				}
 				$oldUserName = getUserName($userId, $db);
 				
+				// Check that submitted data is valid
 				$errors = checkUserData($authUserId, $userId, NULL, $userDisplayName, $userEmail, NULL, $userPass, $userPass, $db);
+				// Check for missing values.
 				if (empty($userName)) {
 					$errors .= "<p class=\"ss-error\">You must submit a user name.</p>";
 				}
@@ -93,11 +96,11 @@ function adminUsers() {
 				if ($step == 'confirmed' || ($errors == NULL && $step == 'edit')) {			
 					editUser ($userId, $userName, $userDisplayName, $userStatus, $userEmail, $userPrivilege, $userPass, $db);
 					global $debugSite;
-					if ($delete == TRUE && $debugSite == "true" && $userPriv > 0) {
+					if ($delete == TRUE && $debugSite == "true") {
 						deleteUser($userId, $db);
 					}
 					
-					print "<p class=\"ss-successful\">$userName (id $userId) was updated.</p>";  
+					print "<p class=\"ss-successful\">$userName (id $userId) was updated.</p>";	
 				} 
 				elseif ($errors != NULL && $step == 'edit') {
 					print "<div class=\"margin-bottom\"><p>$oldUserName (id $userId)</p>
@@ -184,10 +187,10 @@ function adminUsers() {
 			pageButtons ($pages["administer-users"]->getAddress(), $pagesize, $total);
 			
 		} else { // not moderator or admin
-			print "You are not authorized to administrate users.<br />";
+			print "<p class=\"ss-warning\">You are not authorized to administrate users.</p>";
 		}
-  } else { // not logged in
-    print "Please log in.";
-  }
+	} else { // not logged in
+		print "<p class=\"ss-warning\">Please log in.</p>";
+	}
 }
 ?>

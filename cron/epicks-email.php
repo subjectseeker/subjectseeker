@@ -27,8 +27,8 @@ while ($row = mysql_fetch_array($pendingPosts)) {
 	
 	// If post author has no user, try to find any author for this source
 	if (mysql_num_rows($result) == 0) {
-          $sql = "SELECT BA.USER_ID FROM BLOG_POST AS BP INNER JOIN BLOG_AUTHOR AS BA ON BP.BLOG_ID = BA.BLOG_ID INNER JOIN USER_PREFERENCE AS UP ON BA.USER_ID = UP.USER_ID WHERE BP.BLOG_POST_ID = '$postId' AND EMAIL_EDITOR_PICK = '1'";
-          $result = mysql_query($sql, $db);
+		$sql = "SELECT BA.USER_ID FROM BLOG_POST AS BP INNER JOIN BLOG_AUTHOR AS BA ON BP.BLOG_ID = BA.BLOG_ID INNER JOIN USER_PREFERENCE AS UP ON BA.USER_ID = UP.USER_ID WHERE BP.BLOG_POST_ID = '$postId' AND EMAIL_EDITOR_PICK = '1'";
+		$result = mysql_query($sql, $db);
   }
 	$row = mysql_fetch_array($result);
 	

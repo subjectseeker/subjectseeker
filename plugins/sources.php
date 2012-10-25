@@ -39,8 +39,8 @@ function displayResources() {
 	}
 
 	if (empty($blogsData["result"]) || mysql_num_rows($blogsData["result"]) == 0) {
-    print "<p>No results found for your search parameters.</p>";
-  }
+		print "<p>No results found for your search parameters.</p>";
+	}
 	else {
 		print "<div class=\"entries\">";
 		while ($row = mysql_fetch_array($blogsData["result"])) {

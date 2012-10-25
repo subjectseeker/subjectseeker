@@ -3,7 +3,7 @@
 function generateCitations() {
 	global $pages;
 	global $metadata2coins;
-	$db  = ssDbConnect();
+	$db	= ssDbConnect();
 	$step = NULL;
 	if (isset($_REQUEST["step"])) {
 		$step = $_REQUEST["step"];

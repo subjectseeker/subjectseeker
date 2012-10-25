@@ -15,11 +15,11 @@ function displayLogin() {
 	include_once (dirname(__FILE__)."/../third-party/hasher/phpass.php");
 	
 	$db = ssDbConnect();
+	$content = "";
 	$step = NULL;
 	if (isset($_REQUEST["step"])) {
 		$step = $_REQUEST["step"];
 	}
-	
 	// Get original URL for redirection
 	global $homeUrl;
 	$originalUrl = $homeUrl;
@@ -36,7 +36,7 @@ function displayLogin() {
 		}
 		else {
 			$authUserName = $authUser->userName;
-			$content =  "<div class=\"box-title\">Log In</div>
+			$content .=	"<div class=\"box-title\">Log In</div>
 			<p>You are logged in as $authUserName</p>
 			<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress(TRUE)."/?logout=true\">Log Out</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 		}
@@ -44,7 +44,7 @@ function displayLogin() {
 	else {
 		// Check if user is coming from Twitter
 		if (!empty($_REQUEST['oauth_token']) && $_SESSION['oauth_token'] !== $_REQUEST['oauth_token']) {
-			$content = "<div class=\"box-title\">Log In</div>
+			$content .= "<div class=\"box-title\">Log In</div>
 			<p>Twitter session expired!</p>
 			<p><a class=\"white-button\" href=\"".$pages["twitter"]->getAddress(TRUE)."/?step=authUrl&amp;url=".$originalUrl."\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 		}
@@ -78,7 +78,7 @@ function displayLogin() {
 		/* Recover Account */
 		
 		elseif ($step == "lost-password") {
-			$content = "<div class=\"box-title\">Recover Account</div>
+			$content .= "<div class=\"box-title\">Recover Account</div>
 			<form action=\"".$pages["login"]->getAddress(TRUE)."/?step=recover-account\" name=\"login\" method=\"post\">
 			<p>Please enter your user name or email to recover your account<br />
 			<input type=\"text\" name=\"recovery-data\" size=\"30\" /></p>
@@ -86,7 +86,7 @@ function displayLogin() {
 			</form>";
 		}
 		elseif ($step == "recover-account") {
-			$content = "<div class=\"box-title\">Recover Account</div>";
+			$content .= "<div class=\"box-title\">Recover Account</div>";
 			if (!empty($_POST["recovery-data"])) {
 				$userRecoveryData = $_POST["recovery-data"];
 				
@@ -113,7 +113,7 @@ function displayLogin() {
 			</form>";
 		}
 		elseif ($step == "verify-recovery") {
-			$content = "<div class=\"box-title\">Recover Account</div>";
+			$content .= "<div class=\"box-title\">Recover Account</div>";
 			
 			if (!empty($_REQUEST["recovery-code"])) {
 				$recoveryCode = $_REQUEST["recovery-code"];
@@ -183,15 +183,15 @@ function displayLogin() {
 		/* Verify Email */
 		
 		elseif ($step == "send-verification") {
-			$content =  "<div class=\"box-title\">Verify Account</div>
+			$content .=	"<div class=\"box-title\">Verify Account</div>
 			<form action=\"".$pages["login"]->getAddress(TRUE)."/?step=confirm-verification\" method=\"post\">
 			<p class=\"margin-bottom-small\">Please enter your user name or email to send your email verification code.</p>
-			<p><input type=\"text\" name=\"verification-data\"  /></p>
+			<p><input type=\"text\" name=\"verification-data\"	/></p>
 			<p><input class=\"white-button\" type=\"submit\" value=\"Send verification email\" /></p>
 			</form>";
 		}
 		elseif ($step == "confirm-verification") {
-			$content = "<div class=\"box-title\">Verify Account</div>";
+			$content .= "<div class=\"box-title\">Verify Account</div>";
 			if (!empty($_POST["verification-data"])) {
 				$userVerificationData = $_POST["verification-data"];
 				
@@ -227,7 +227,7 @@ function displayLogin() {
 			</form>";
 		}
 		elseif ($step == "verify-email") {
-			$content =  "<div class=\"box-title\">Verify Account</div>";
+			$content .=	"<div class=\"box-title\">Verify Account</div>";
 			
 			if (!empty($_REQUEST["verification-code"])) {
 				$verificationCode = $_REQUEST["verification-code"];
@@ -265,7 +265,7 @@ function displayLogin() {
 		/* Log In */
 		
 		else {
-			$content =  "<div class=\"box-title\">Log In</div>";
+			$content .=	"<div class=\"box-title\">Log In</div>";
 			
 			if (!empty($_POST["user-name"])) {
 				$userName = mysql_real_escape_string($_POST["user-name"]);
@@ -308,7 +308,7 @@ function displayLogin() {
 			}
 			
 			// Display log in form.
-			$content .=  "<div class=\"half-box\">
+			$content .=	"<div class=\"half-box\">
 			<form name=\"login\" method=\"post\">
 			<p>User<br />
 			<input type=\"text\" name=\"user-name\" size=\"30\" maxlength=\"20\" /></p>

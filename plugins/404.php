@@ -17,11 +17,11 @@ function displayNotFound() {
 	global $imagesUrl;
 	global $pages;
 	?>
-  <div class="center-text">
-  <div class="error-title">404</div>
+	<div class="center-text">
+	<div class="error-title">404</div>
 	<p><img src="<?php echo $imagesUrl ?>/misc/Error.png" /></p>
-  <p><a class="ss-button" href="<?php echo $homeUrl ?>">Go to Home Page</a> <a class="ss-button" href="<?php echo $pages["contact"]->getAddress(); ?>">Contact Us</a></p>
-  </div>
-  <?php
+	<p><a class="ss-button" href="<?php echo $homeUrl ?>">Go to Home Page</a> <a class="ss-button" href="<?php echo $pages["contact"]->getAddress(); ?>">Contact Us</a></p>
+	</div>
+	<?php
 }
 ?>

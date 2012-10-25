@@ -1,9 +1,11 @@
 <?php
 
 include_once (dirname(__FILE__)."/../config/globals.php");
+global $homeUrl;
+global $pages;
+global $debugSite;
 
 // If debug is enabled, show all errors, otherwise, hide them all.
-global $debugSite;
 if ($debugSite == "true") {
 	error_reporting(E_ALL);
 	ini_set("display_errors", 1);
@@ -14,14 +16,10 @@ else {
 }
 
 // Get basic files for all other scripts to use
-global $basedir;
 include_once (dirname(__FILE__)."/util.php");
 include_once (dirname(__FILE__)."/config.php");
 
 session_start();
-
-global $homeUrl;
-global $pages;
 
 // Check if site is in a subfolder
 $prefix = parse_url($homeUrl, PHP_URL_PATH);

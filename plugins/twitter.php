@@ -62,7 +62,7 @@ function syncTwitter() {
 			else {
 				$content = "<div class=\"box-title\">Sync</div>
 				<p>You don't have any Twitter accounts associated with $sitename</p>
-				<p><a class=\"white-button\" href=\"".$pages["twitter"]->getAddress(TRUE)."\" title=\"Go to synchronization page\">Sync my Twitter account</a>  <a class=\"white-button\" title=\"Cancel social network account removal\" href=\"$originalUrl\">Take me back to $sitename</a></p>";
+				<p><a class=\"white-button\" href=\"".$pages["twitter"]->getAddress(TRUE)."\" title=\"Go to synchronization page\">Sync my Twitter account</a>	<a class=\"white-button\" title=\"Cancel social network account removal\" href=\"$originalUrl\">Take me back to $sitename</a></p>";
 			}
 		} elseif (!empty($_REQUEST["remove"]) && $_REQUEST["remove"] == "confirmed") {
 			if (!empty($userTwitter)) {

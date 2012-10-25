@@ -14,14 +14,14 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 function addSite() {
 	// Connect to DB.
-	$db  = ssDbConnect();
+	$db	= ssDbConnect();
 	global $pages;
 	
-  if (isLoggedIn()){
+	if (isLoggedIn()){
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
-    $userPriv = getUserPrivilegeStatus($authUserId, $db);
+		$userPriv = getUserPrivilegeStatus($authUserId, $db);
 	}
 	else {
 		print "<p class=\"ss-warning\">You can claim your site if you <a href=\"".$pages["login"]->getAddress(TRUE)."\" title=\"Log In Page\">log in</a>.</p>";
@@ -69,22 +69,22 @@ function displayShortBlogForm ($errormsg, $db) {
 	
 	$submitUrl = NULL;
 	if (!empty($_REQUEST["submitUrl"])) $submitUrl = $_REQUEST["submitUrl"];
-  $authUserId;
+	$authUserId;
 
 	if (isLoggedIn()){
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
-                $userPriv = getUserPrivilegeStatus($authUserId, $db);
-  }
+								$userPriv = getUserPrivilegeStatus($authUserId, $db);
+	}
 
 	print "<form method=\"post\">";
 
-   if ($errormsg !== null) {
-     print "$errormsg\n";
-   }
+	 if ($errormsg !== null) {
+		 print "$errormsg\n";
+	 }
 
-  print "<div class=\"center-text\">
+	print "<div class=\"center-text\">
 	<p class=\"margin-bottom-small\">Enter either the URL of the site or the URL of the site's feed (RSS or Atom):</p>
 	<div class=\"margin-bottom-small\"><input class=\"big-input\" type=\"text\" name=\"submitUrl\" size=\"40\" value=\"$submitUrl\" /></div>
 	<p class=\"subtle-text\">(Must start with \"http://\", e.g., <em>http://blogname.blogspot.com/</em>.)</p>\n
@@ -100,25 +100,25 @@ function displayBlogForm ($errormsg, $db) {
 	$blogUri = NULL;
 	$blogSyndicationUri = NULL;
 	$blogDescription = NULL;
-  if (isset($_REQUEST["blogname"])) $blogName = $_REQUEST["blogname"];
-  if (isset($_REQUEST["blogurl"])) $blogUri = htmlspecialchars($_REQUEST["blogurl"]);
-  if (isset($_REQUEST["blogsyndicationuri"])) $blogSyndicationUri = htmlspecialchars($_REQUEST["blogsyndicationuri"]);
-  if (isset($_REQUEST["blogdescription"])) $blogDescription = $_REQUEST["blogdescription"];
+	if (isset($_REQUEST["blogname"])) $blogName = $_REQUEST["blogname"];
+	if (isset($_REQUEST["blogurl"])) $blogUri = htmlspecialchars($_REQUEST["blogurl"]);
+	if (isset($_REQUEST["blogsyndicationuri"])) $blogSyndicationUri = htmlspecialchars($_REQUEST["blogsyndicationuri"]);
+	if (isset($_REQUEST["blogdescription"])) $blogDescription = $_REQUEST["blogdescription"];
 
 	$authUserId = NULL;
-  if (isLoggedIn()){
-    $authUser = new auth();
-    $authUserId = $authUser->userId;
-    $authUserName = $authUser->userName;
-    $userPriv = getUserPrivilegeStatus($authUserId, $db);
-  }
+	if (isLoggedIn()){
+		$authUser = new auth();
+		$authUserId = $authUser->userId;
+		$authUserName = $authUser->userName;
+		$userPriv = getUserPrivilegeStatus($authUserId, $db);
+	}
 
 	// TODO: Looks like we are not using this error area, remove it?
 	if ($errormsg !== null) {
 		print "<p class=\"ss-error\">$errormsg</p>\n";
 	}
 
-  // Attempt to prepopulate from URL if submitUrl param set
+	// Attempt to prepopulate from URL if submitUrl param set
 	if (!empty($_REQUEST["submitUrl"])) {
 		$submitUri = $_REQUEST["submitUrl"];
 	}
@@ -126,25 +126,25 @@ function displayBlogForm ($errormsg, $db) {
 		$feed = getSimplePie($submitUri);
 		$blogName; $blogUri; $blogDescription; $blogSyndicationUri;
 
-   if ($feed->error()) {
-     print "<p class=\"ss-error\">Unable to find feed for $submitUri. You can enter the address manually below.</p>\n";
-   } else {
-     $blogName = $feed->get_title();
-     $blogUri = $feed->get_link();
-     $blogDescription = $feed->get_description();
-     $blogSyndicationUri = $feed->subscribe_url();
+	 if ($feed->error()) {
+		 print "<p class=\"ss-error\">Unable to find feed for $submitUri. You can enter the address manually below.</p>\n";
+	 } else {
+		 $blogName = $feed->get_title();
+		 $blogUri = $feed->get_link();
+		 $blogDescription = $feed->get_description();
+		 $blogSyndicationUri = $feed->subscribe_url();
 
-     $blogId = getBlogByAltUri($blogUri, $db);
-     if (!empty($blogId)) {
-       print "<p class=\"ss-error\">This site is already in the system.</p>\n";
-     } else {
-       $blogId = getBlogByAltSyndicationUri($blogSyndicationUri, $db);
-       if ($blogId != null) {
-         print "<p class=\"ss-error\">This feed is already in the system.</p>\n";
-       }
-     }
+		 $blogId = getBlogByAltUri($blogUri, $db);
+		 if (!empty($blogId)) {
+			 print "<p class=\"ss-error\">This site is already in the system.</p>\n";
+		 } else {
+			 $blogId = getBlogByAltSyndicationUri($blogSyndicationUri, $db);
+			 if ($blogId != null) {
+				 print "<p class=\"ss-error\">This feed is already in the system.</p>\n";
+			 }
+		 }
 		 // TODO: if blog/feed already found, take us to the profile page for the blog -- once we have one
-   }
+	 }
  }
  
  submitBlogForm ($blogName, $blogUri, $blogDescription, $blogSyndicationUri, NULL, $authUserId, $db);
@@ -165,17 +165,17 @@ function submitBlogForm ($blogName, $blogUri, $blogDescription, $blogSyndication
 	<textarea name=\"blogDescription\" rows=\"5\" cols=\"60\">$blogDescription</textarea></p>\n
 	<p>Categories: <select name='topic1'>\n
 	<option value='-1'>None</option>\n";
-  $topicList = getTopicList(true, $db);
-  while ($row = mysql_fetch_array($topicList)) {
-    print "<option value='" . $row["TOPIC_ID"] . "'>" . $row["TOPIC_NAME"] . "</option>\n";
-  }
-  print "</select>&nbsp;<select name='topic2'>\n";
-  print "<option value='-1'> None</option>\n";
-  $topicList = getTopicList(true, $db);
-  while ($row = mysql_fetch_array($topicList)) {
-    print "<option value='" . $row["TOPIC_ID"] . "'> " . $row["TOPIC_NAME"] . "</option>\n";
-  }
-  print "</select></p>\n<p>";
+	$topicList = getTopicList(true, $db);
+	while ($row = mysql_fetch_array($topicList)) {
+		print "<option value='" . $row["TOPIC_ID"] . "'>" . $row["TOPIC_NAME"] . "</option>\n";
+	}
+	print "</select>&nbsp;<select name='topic2'>\n";
+	print "<option value='-1'> None</option>\n";
+	$topicList = getTopicList(true, $db);
+	while ($row = mysql_fetch_array($topicList)) {
+		print "<option value='" . $row["TOPIC_ID"] . "'> " . $row["TOPIC_NAME"] . "</option>\n";
+	}
+	print "</select></p>\n<p>";
 	if (!empty($authUserId)) {
 		print "<p><input type=\"checkbox\" name=\"userIsAuthor\" /> I want to be identified as an author of this blog.</p>";
 	}
@@ -199,14 +199,14 @@ function doAddBlog ($db) {
 	$topic2 = NULL;
 	$twitterHandle = NULL;
 	$userIsAuthor = NULL;
-  if (!empty($_REQUEST["blogName"])) $blogName = $_REQUEST["blogName"];
-  if (!empty($_REQUEST["blogUri"])) $blogUri = $_REQUEST["blogUri"];
-  if (!empty($_REQUEST["blogSyndicationUri"])) $blogSyndicationUri = $_REQUEST["blogSyndicationUri"];
-  if (!empty($_REQUEST["blogDescription"])) $blogDescription = $_REQUEST["blogDescription"];
-  if (!empty($_REQUEST["topic1"])) $topic1 = $_REQUEST["topic1"];
-  if (!empty($_REQUEST["topic2"])) $topic2 = $_REQUEST["topic2"];
-  if (!empty($_REQUEST["twitterHandle"])) $twitterHandle = str_replace("@", "", $_REQUEST["twitterHandle"]);
-  if (!empty($_REQUEST["userIsAuthor"])) $userIsAuthor = $_REQUEST["userIsAuthor"];
+	if (!empty($_REQUEST["blogName"])) $blogName = $_REQUEST["blogName"];
+	if (!empty($_REQUEST["blogUri"])) $blogUri = $_REQUEST["blogUri"];
+	if (!empty($_REQUEST["blogSyndicationUri"])) $blogSyndicationUri = $_REQUEST["blogSyndicationUri"];
+	if (!empty($_REQUEST["blogDescription"])) $blogDescription = $_REQUEST["blogDescription"];
+	if (!empty($_REQUEST["topic1"])) $topic1 = $_REQUEST["topic1"];
+	if (!empty($_REQUEST["topic2"])) $topic2 = $_REQUEST["topic2"];
+	if (!empty($_REQUEST["twitterHandle"])) $twitterHandle = str_replace("@", "", $_REQUEST["twitterHandle"]);
+	if (!empty($_REQUEST["userIsAuthor"])) $userIsAuthor = $_REQUEST["userIsAuthor"];
 	
 	// Only get user info if logged in
 	if (isLoggedIn()){
@@ -214,7 +214,7 @@ function doAddBlog ($db) {
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
 		$userEmail = getUserEmail($authUserId, $db);
-    $userPriv = getUserPrivilegeStatus($authUserId, $db);
+		$userPriv = getUserPrivilegeStatus($authUserId, $db);
 	}
 	
 	$errors = checkBlogData(NULL, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, NULL, $topic1, $topic2, $twitterHandle, $authUserId, $db);

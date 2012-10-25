@@ -15,45 +15,45 @@ function editImage() {
 	$db = ssDbConnect();
 	$content = "<script type=\"text/javascript\" src=\"".$thirdPartyUrl."/jcrop/jquery.Jcrop.js\" ?>\"></script>
 	<script type=\"text/javascript\">
-  function updateCoords(c) {
-    $('#x').val(c.x);
-    $('#y').val(c.y);
-    $('#w').val(c.w);
-    $('#h').val(c.h);
-    
-    $('#crop-button').removeAttr('disabled');
-  };
-  $(document).ready(function() {
-    $('#crop-form').submit(function() {
-      if(! $('#w').val()) {
-        $('#notification-area').slideDown();
-        $('#notification-content').html('<p>You must select an area of the image to upload.</p>');
-        $('#crop-button').attr('disabled', true);
-        return false;
-      }
-    });
-    
-    $('#jcrop-avatar').Jcrop({
-      minSize: [ 80, 80 ],
-      setSelect: [ 0, 0, 80, 80 ],
-      boxWidth: 600,
-      aspectRatio: 1/1,
-      onSelect: updateCoords,
-    },function() { 
-      $('#crop-button').removeAttr('disabled');
-    });
-    
-    $('#jcrop-header').Jcrop({
-      minSize: [ 580, 200 ],
-      setSelect: [ 0, 0, 580, 200 ],
-      boxWidth: 600,
-      aspectRatio: 59/20,
-      onSelect: updateCoords,
-    },function() { 
-      $('#crop-button').removeAttr('disabled');
-    });
-  });
-  </script>";
+	function updateCoords(c) {
+		$('#x').val(c.x);
+		$('#y').val(c.y);
+		$('#w').val(c.w);
+		$('#h').val(c.h);
+		
+		$('#crop-button').removeAttr('disabled');
+	};
+	$(document).ready(function() {
+		$('#crop-form').submit(function() {
+			if(! $('#w').val()) {
+				$('#notification-area').slideDown();
+				$('#notification-content').html('<p>You must select an area of the image to upload.</p>');
+				$('#crop-button').attr('disabled', true);
+				return false;
+			}
+		});
+		
+		$('#jcrop-avatar').Jcrop({
+			minSize: [ 80, 80 ],
+			setSelect: [ 0, 0, 80, 80 ],
+			boxWidth: 600,
+			aspectRatio: 1/1,
+			onSelect: updateCoords,
+		},function() { 
+			$('#crop-button').removeAttr('disabled');
+		});
+		
+		$('#jcrop-header').Jcrop({
+			minSize: [ 580, 200 ],
+			setSelect: [ 0, 0, 580, 200 ],
+			boxWidth: 600,
+			aspectRatio: 59/20,
+			onSelect: updateCoords,
+		},function() { 
+			$('#crop-button').removeAttr('disabled');
+		});
+	});
+	</script>";
 	if (isLoggedIn()){
 		$authUser = new auth();
 		$authUserId = $authUser->userId;

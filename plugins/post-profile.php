@@ -19,16 +19,16 @@ function displayPostProfile() {
 	if (isset($_REQUEST["step"])) {
 		$step = $_REQUEST["step"];
 	}
-  $db = ssDbConnect();
-  if (isLoggedIn()){
-    $authUser = new auth();
-    $authUserId = $authUser->userId;
-    $authUserName = $authUser->userName;
-    $userPriv = getUserPrivilegeStatus($authUserId, $db);
-    $twitterStatus = getUserSocialAccount(1, $authUserId, $db);
-  }
-  preg_match('/(?<=\/post\/)\d+/', $_SERVER["REQUEST_URI"], $matchResult);
-  $postId = $matchResult[0];
+	$db = ssDbConnect();
+	if (isLoggedIn()){
+		$authUser = new auth();
+		$authUserId = $authUser->userId;
+		$authUserName = $authUser->userName;
+		$userPriv = getUserPrivilegeStatus($authUserId, $db);
+		$twitterStatus = getUserSocialAccount(1, $authUserId, $db);
+	}
+	preg_match('/(?<=\/post\/)\d+/', $_SERVER["REQUEST_URI"], $matchResult);
+	$postId = $matchResult[0];
 	
 	// Use Search API to find Blog ID and Post URL
 	$queryList = httpParamsToSearchQuery("type=post&filter0=identifier&value0=$postId");
@@ -111,7 +111,7 @@ function displayPostProfile() {
 		<textarea onClick=\"this.focus();this.select()\" style=\"overflow: hidden; height: 62px;\" readonly=\"readonly\"><a title=\"Go to profile page\" href=\"$homeUrl/post/$postId\"><img src=\"$homeUrl/post/$postId/badge\" /></a></textarea>
 		</div>";
 		
-		if ($postHasCitation == TRUE  || $editorsPicksStatus == TRUE ) {
+		if ($postHasCitation == TRUE	|| $editorsPicksStatus == TRUE ) {
 			print "<div class=\"center-text\">";
 			if ($editorsPicksStatus == TRUE) {
 				print "<div class=\"editors-mark-content\" title=\"Recommended by our editors\">Editor's Pick</div>";

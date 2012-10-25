@@ -1,14 +1,14 @@
 <?php
 
 function adminSources() {
-  if (isLoggedIn()){
+	if (isLoggedIn()){
 		$db = ssDbConnect();
 		
 		// User Information
-                $authUser = new auth();
+								$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
-                $userPriv = getUserPrivilegeStatus($authUserId, $db);
+								$userPriv = getUserPrivilegeStatus($authUserId, $db);
 		
 		if ($userPriv > 0) { // moderator or admin
 			$step = NULL;
@@ -100,9 +100,9 @@ function adminSources() {
 		} else { // not moderator or admin
 			print "<p>You are not authorized to administrate blogs.</p>";
 		}
-  } else { // not logged in
-    print "<p>Please log in.</p>";
-  }
+	} else { // not logged in
+		print "<p>Please log in.</p>";
+	}
 }
 
 ?>
