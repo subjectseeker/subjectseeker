@@ -2391,8 +2391,8 @@ function displayPosts ($postsData, $minimal = FALSE, $open = FALSE, $db) {
 		$postHasCitation = $row["BLOG_POST_HAS_CITATION"];
 		$formatDay = date("F d, Y", $postDate);
 		
-		if (empty($blogDescription)) {
-			$blogDescription = "No summary available for this post.";
+		if (empty($postSummary)) {
+			$postSummary = "No summary available for this post.";
 		}
 		
 		// Check if this post should be grouped with other posts of the same day.
@@ -2629,8 +2629,33 @@ function confirmEditBlog ($step, $db) {
 			return;
 		}
 		elseif (!empty($crawl)) {
+			// Find new posts
 			$blog = array("syndicationuri"=>$blogSyndicationUri, "id"=>$blogId, "name"=>$blogName);
 			$result = crawlBlogs($blog, $db);
+			
+			// Get posts and find citations
+			$queryList = httpParamsToSearchQuery("type=post&filter0=blog&modifier0=identifier&value0=$blogId&n=10", FALSE);
+			$settings = httpParamsToExtraQuery("type=post&filter0=blog&modifier0=identifier&value0=$blogId&n=10", FALSE);
+			$settings["type"] = "post";
+			$postsData = generateSearchQuery ($queryList, $settings, 1, $db);
+			while ($row = mysql_fetch_array($postsData["result"])) {
+				$postId = $row["BLOG_POST_ID"];
+				$postUri = $row["BLOG_POST_URI"];
+				$postTitle = $row["BLOG_POST_TITLE"];
+				$citations = checkCitations($postUri, $postId, $db);
+				if (is_array($citations)) {
+					$result .= "<p class=\"ss-successful\">We found the following citation(s) on $blogName: <a href=\"$postUri\">$postTitle</a></p>";
+					foreach ($citations as $citation) {
+						$articleData = parseCitation($citation);
+						if (!empty($articleData)) {
+							$generatedCitation = storeCitation ($articleData, $postId, $db);
+							// Display citation
+							$result .= "<p>$generatedCitation</p>";
+						}
+					}
+				}
+			}
+			
 			print $result;
 		}
 		elseif ($step == "confirmed" || ($errors == NULL && $step == "edit")) {
@@ -2825,6 +2850,8 @@ function editPostForm ($postsData, $userPriv, $open, $db) {
 	print "</div>";
 }
 
+// Input: Step of editing, DB handle
+// Action: Check and edit post data
 function confirmEditPost($step, $db) {
 	global $pages;
 	if ($step != NULL) {
