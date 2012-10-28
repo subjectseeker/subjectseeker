@@ -45,12 +45,12 @@ function ssDbClose($dbConnection) {
 
 // Used to get and manage current user info
 class auth {
-	
+
 	// If logged in, set user ID and user name
 	function __construct() {
 		if (isset($_SESSION["logged"])) {	
 			$db = ssDbConnect();
-		
+
 			$this->userId = $_SESSION["authUserId"];
 			$this->userName = getUserName($this->userId, $db);
 		}
@@ -66,23 +66,23 @@ class auth {
 			session_regenerate_id(TRUE);
 			$_SESSION["logged"] = TRUE;
 			$_SESSION["authUserId"] = $userId;
-			
+
 			return TRUE;
 		} elseif ($userStatusId == 1 || $userStatusId == 2) { // Check if user account has been disabled
 			$this->error = 1;
-			
+
 			return FALSE;
 		} elseif ($userStatusId == 3) { // Check if user account is unverified
 			$this->error = 2;
-			
+
 			return FALSE;
 		} else { // User doesn't have a valid status
 			$this->error = 3;
-			
+
 			return FALSE;
 		}
 	}
-	
+
 	public function logout() {
 		$_SESSION = array();
 		setcookie ("ss-login", "", time() - 3600, "/");
@@ -105,13 +105,13 @@ function isLoggedIn() {
 function validateCookie($userId, $cookieCode, $db) {
 	$userId = mysql_real_escape_string($userId);
 	$cookieCode = mysql_real_escape_string($cookieCode);
-	
+
 	$sql = "SELECT USER_ID FROM USER_SECRET_CODE WHERE USER_ID = '$userId' AND USER_SECRET_CODE_TEXT = '$cookieCode' AND USER_SECRET_CODE_SOURCE_ID = '1' AND DATE_ADD(USER_SECRET_CODE_DATE_TIME, INTERVAL 3 MONTH) > NOW()";
 	$result = mysql_query($sql, $db);
-	
+
 	// Remove used cookie
 	removeCookie($userId, $cookieCode, $db);
-	
+
 	if (!$result || mysql_num_rows($result) == 0) {
 		return FALSE;
 	}
@@ -125,7 +125,7 @@ function validateCookie($userId, $cookieCode, $db) {
 function createCookie($userId, $db) {
 	$cookieCode = md5(uniqid());
 	setcookie("ss-login", "$userId/$cookieCode", strtotime("+90 day"), "/");
-	
+
 	$sql = "REPLACE INTO USER_SECRET_CODE (USER_ID, USER_SECRET_CODE_TEXT, USER_SECRET_CODE_DATE_TIME, USER_SECRET_CODE_SOURCE_ID) VALUES ('$userId', '$cookieCode', NOW(), '1')";
 	mysql_query($sql, $db);
 }
@@ -135,7 +135,7 @@ function createCookie($userId, $db) {
 function removeCookie($userId, $cookieCode, $db) {
 	$userId = mysql_real_escape_string($userId);
 	$cookieCode = mysql_real_escape_string($cookieCode);
-	
+
 	$sql = "DELETE FROM USER_SECRET_CODE WHERE USER_ID = '$userId' AND USER_SECRET_CODE_TEXT = '$cookieCode' AND USER_SECRET_CODE_SOURCE_ID = '1';
 	DELETE FROM USER_SECRET_CODE WHERE USER_SECRET_CODE_SOURCE_ID = '1' AND DATE_ADD(USER_SECRET_CODE_DATE_TIME, INTERVAL 3 MONTH) < NOW();";
 	mysql_query($sql, $db);
@@ -145,10 +145,10 @@ function removeCookie($userId, $cookieCode, $db) {
 // Action: Create login cookie on browser and database
 function createSecretCode ($userId, $codeSourceId, $db) {
 	$recoveryCode = md5(uniqid());
-	
+
 	$sql = "REPLACE INTO USER_SECRET_CODE (USER_ID, USER_SECRET_CODE_TEXT, USER_SECRET_CODE_DATE_TIME, USER_SECRET_CODE_SOURCE_ID) VALUES ('$userId', '$recoveryCode', NOW(), '$codeSourceId')";
 	mysql_query($sql, $db);
-	
+
 	return $recoveryCode;
 }
 
@@ -156,26 +156,26 @@ function createSecretCode ($userId, $codeSourceId, $db) {
 // Output: User ID or NULL
 function secretCodeToUserId($codeText, $codeSourceId, $db) {
 	$recoveryCode = mysql_real_escape_string($codeText);
-	
+
 	$sql = "SELECT USER_ID, USER_SECRET_CODE_DATE_TIME FROM USER_SECRET_CODE WHERE USER_SECRET_CODE_TEXT='$codeText' AND USER_SECRET_CODE_SOURCE_ID = '$codeSourceId'";
 	$result = mysql_query($sql, $db);
 	if ($result == null || mysql_num_rows($result) == 0) {
 		return null;
 	}
 	$row = mysql_fetch_array($result);
-	
-	$codeDate = strtotime($row["USER_SECRET_CODE_DATE_TIME"]);
-	$expirationDate = strtotime("-1 day");
-	
-	$codeStatus = array();
-	if ($codeDate < $expirationDate) {
-		$codeStatus["userId"] = $row["USER_ID"];
-		$codeStatus["expired"] = TRUE;
-		return $codeStatus;
-	}
-	
-	$codeStatus["userId"] = $row["USER_ID"];
-	
+
+  $codeDate = strtotime($row["USER_SECRET_CODE_DATE_TIME"]);
+  $expirationDate = strtotime("-1 day");
+
+  $codeStatus = array();
+  if ($codeDate < $expirationDate) {
+    $codeStatus["userId"] = $row["USER_ID"];
+    $codeStatus["expired"] = TRUE;
+    return $codeStatus;
+  }
+
+  $codeStatus["userId"] = $row["USER_ID"];
+
 	return $codeStatus;
 }
 
@@ -195,7 +195,7 @@ function sendRecoveryEmail ($recoveryCode, $userEmail, $userName, $userDisplayNa
 	$subject = $sitename. " Account Recovery";
 	$message = "Hello, ".$userDisplayName.".
 
-A request was made to recover your ".$sitename." account, if you didn't make this request, please ignore this email.
+A request was made to recover your ".$sitename." account. If you didn't make this request, please ignore this email.
 
 User name: ".$userName."
 
@@ -212,7 +212,7 @@ The ".$sitename." Team.";
 function sendVerificationEmail ($verificationCode, $userEmail, $userName, $userDisplayName) {
 	global $pages;
 	global $sitename;
-	
+
 	$subject = $sitename. " Email Verification";
 	$message = "Hello, ".$userDisplayName.".
 
@@ -336,7 +336,7 @@ function generateSearchQuery ($queryList, $settings, $userPriv, $db) {
 	$order = NULL;
 	$limit = NULL;
 	$offset = NULL;
-	
+
 	if ($type == "") {
 		array_push ($errormsgs, "No search type specified.");
 		return;
@@ -385,7 +385,7 @@ function generateSearchQuery ($queryList, $settings, $userPriv, $db) {
 		$result["errors"] = $errormsgs;
 		return $result;
 	}
-	
+
 	$limitNumber = $numResults;
 	// Construct LIMIT part of query
 	if (isset($settings["limit"]) && is_numeric($settings["limit"]) && ($settings["limit"] > 0 && $settings["limit"] <= $maximumResults) ) {
@@ -921,8 +921,6 @@ function httpParamsToSearchQuery($query = NULL, $allowOverride = TRUE) {
 	}
 	
 	$i = 0;
-	// TODO JPH use this list
-	$params = array("filter", "value", "modifier");
 	$searchObjs = array();
 
 	while (array_key_exists ("filter$i", $parsedQuery)) {
@@ -1023,14 +1021,14 @@ function getUrlParamString($ignoreParams) {
  */
 function sanitize( $htmlString ) {
 	return str_replace( array( '&', '<' ),
-											array( '&amp;', '&lt;' ),
-											$htmlString );
+                            array( '&amp;', '&lt;' ),
+                            $htmlString );
 }
 
 function insanitize( $htmlString ) {
 	return str_replace( array( '&amp;', '&lt;' ),
-											array( '&', '<' ),
-											$htmlString );
+                            array( '&', '<' ),
+                            $htmlString );
 }
 
 /*
@@ -3350,11 +3348,11 @@ function checkUserPreferences($url, $bio) {
 	$result = "";
 	
 	if ($url && !filter_var($url, FILTER_VALIDATE_URL)) {
-		$result .= "Invalid URL submitted ($url), URL must start with \"http://\", e.g., <span class=\"italics\">http://blogname.blogspot.com/</span>.";
+		$result .= "Invalid URL submitted ($url); URL must start with \"http://\", e.g., <span class=\"italics\">http://blogname.blogspot.com/</span>.";
 	}
 	
 	if (strlen($bio) > 3000) {
-		$result .= "Biography is too long, a maximum of 3000 characters is allowed.";
+		$result .= "Biography is too long; a maximum of 3000 characters is allowed.";
 	}
 	
 	return $result;

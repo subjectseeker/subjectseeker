@@ -55,7 +55,7 @@ while (($buffer = fgets($handle, 4096)) !== false) {
 				print "Error: info for unknown page $pageId, line $line\n";
 			}
 		}
-		
+
 		// Get items of the navigation bar.
 		elseif ($section === "navigation-items") {
 			// title class address
@@ -65,7 +65,7 @@ while (($buffer = fgets($handle, 4096)) !== false) {
 			$naviItem["title"] = $components[2];
 			$naviItems[] = $naviItem;
 		}
-		
+
 		// Get items of the navigation bar.
 		elseif ($section === "sidebar-default") {
 			// title class address
@@ -186,7 +186,7 @@ function getPlugin($module, $noPrint = FALSE) {
 		}
 		$output .= call_user_func_array($module["functionName"], $module["functionArgs"]);
 		$output .= "</div>";
-		
+
 		return $output;
 	}
 	else {
@@ -246,11 +246,11 @@ class Page {
 		if (empty($location)) {
 			return $this->locations;
 		} else {
-			return $this->locations["$location"];
+                  return $this->locations["$location"];
 		}
 	}
-	
-	public function setSidebar($sidebar) {
+
+  public function setSidebar($sidebar) {
 		$this->sidebar = $sidebar;
 	}
 
