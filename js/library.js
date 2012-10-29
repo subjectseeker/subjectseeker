@@ -237,12 +237,14 @@ $(document).ready(function() {
 		var area = $(this);
 		var parent = $(this).parents('.data-carrier');
 		var comment = $(parent).find('.note-area').val();
+		var counter = $(parent).find('.char-count');
+		var limit = $(counter).data('limit');
 		var tweetPreview = comment;
 		var count = area.val().length
-		if(count > 102) {
-			area.val(area.val().substr(0, 102));
+		if(count > limit) {
+			area.val(area.val().substr(0, limit));
 		}
-		parent.find('.charsLeft').html(102 - area.val().length);
+		counter.html(limit - area.val().length);
 		parent.find('.tweet-message').html(comment);
 	});
 	

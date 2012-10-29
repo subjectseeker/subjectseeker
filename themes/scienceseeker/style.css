@@ -1453,6 +1453,10 @@ background: #4BD336;
 	padding: 0px 8px 15px 8px;
 }
 
+.char-count {
+	color: #383838;
+}
+
 .padding-content {
   padding: 5px 10px 0px 10px;;
 }

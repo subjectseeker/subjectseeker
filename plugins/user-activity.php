@@ -29,7 +29,7 @@ function userActivity ($limit = 8) {
 			$tweetContent = $tweet->text;
 			$tweetAvatar = $tweet->user->profile_image_url;
 			
-			$tweetContent = preg_replace('/(http|https|ftp|ftps)\:\/\/[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(\/\S*)?/i', '<a href="$0">$0</a>', $tweetContent);
+			$tweetContent = preg_replace('`\b(?:(?:https?|ftp|file)://|www\.|ftp\.)[-A-Z0-9+&@#/%=~_|$?!:,.]*[A-Z0-9+&@#/%=~_|$]`i', '<a href="$0">$0</a>', $tweetContent);
 			$tweetContent = preg_replace('/(^|\s)@([a-z0-9_]+)/i', '$1<a href="http://www.twitter.com/$2">@$2</a>', $tweetContent);
 			$tweetContent = preg_replace('/#([\\d\\w]+)/', '<a href="http://twitter.com/#search?q=%23$1">$0</a>', $tweetContent);
 			

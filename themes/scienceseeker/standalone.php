@@ -6,7 +6,7 @@ global $localStylesheet;
 $content = displayModules($currentPage->getLocations("center"), TRUE);
 ?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 <head>
 <?php include_once("head.php"); ?>
 <link rel="stylesheet" type="text/css" href="<?php echo $themeUrl; ?>/standalone.css" media="all">
@@ -21,7 +21,7 @@ if (!empty($localStylesheet)) {
 <body>
 <div id="wrapper">
 <div class="medium-logo">
-<a href="<?php echo $homeUrl ?>" title="Home page"><img src="<?php echo $imagesUrl ?>/logos/SSMediumLogo.png" /></a>
+<a href="<?php echo $homeUrl ?>" title="Home"><img src="<?php echo $imagesUrl ?>/logos/SSMediumLogo.png" alt="Site logo" /></a>
 </div>
 <div id="content-box">
 <?php

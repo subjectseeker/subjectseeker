@@ -1,4 +1,0 @@
-#!/bin/sh
-
-date >> ../logs/crawler.log
-./crawler.php >> ../logs/crawler.log

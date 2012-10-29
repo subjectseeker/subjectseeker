@@ -36,25 +36,25 @@ function userSettings() {
 		}
 		elseif ($userId == $authUserId || $userPriv > 1) { // Check if user or admin
 			// Check which of the forms have been submitted, if any
-			if (!empty($_POST["form"]) && $_POST["form"] == "personal") {
+			if (isset($_POST["form"]) && $_POST["form"] == "personal") {
 				$newDisplayName = NULL;
 				$newUrl = NULL;
 				$newBio = NULL;
 				$emailEdPicks = NULL;
 				$emailAnnouncements = NULL;
-				if (!empty($_POST["display-name"])) {
+				if (isset($_POST["display-name"])) {
 					$newDisplayName = $_POST["display-name"];
 				}
-				if (!empty($_POST["url"])) {
+				if (isset($_POST["url"])) {
 					$newUrl = $_POST["url"];
 				}
-				if (!empty($_POST["bio"])) {
+				if (isset($_POST["bio"])) {
 					$newBio = $_POST["bio"];
 				}
-				if (!empty($_POST["email-edpicks"])) {
+				if (isset($_POST["email-edpicks"])) {
 					$emailEdPicks = $_POST["email-edpicks"];
 				}
-				if (!empty($_POST["email-announcements"])) {
+				if (isset($_POST["email-announcements"])) {
 					$emailAnnouncements = $_POST["email-announcements"];
 				}
 				
@@ -71,13 +71,13 @@ function userSettings() {
 					
 					print "<p class=\"ss-successful\">You settings have been updated.</p>";
 				}
-			} elseif (!empty($_POST["form"]) && $_POST["form"] == "email") {
+			} elseif (isset($_POST["form"]) && $_POST["form"] == "email") {
 				$newEmail = NULL;
 				$userPass = NULL;
-				if (!empty($_POST["email"])) {
+				if (isset($_POST["email"])) {
 					$newEmail = $_POST["email"];
 				}
-				if (!empty($_POST["current-pass"])) {
+				if (isset($_POST["current-pass"])) {
 					$userPass = $_POST["current-pass"];
 				}
 				
@@ -94,17 +94,17 @@ function userSettings() {
 					
 					print "<p class=\"ss-successful\">You settings have been updated.</p>";
 				}
-			} elseif (!empty($_POST["form"]) && $_POST["form"] == "password") {
+			} elseif (isset($_POST["form"]) && $_POST["form"] == "password") {
 				$userPass = NULL;
 				$newUserPass1 = NULL;
 				$newUserPass2 = NULL;
-				if (!empty($_POST["current-pass"])) {
+				if (isset($_POST["current-pass"])) {
 					$userPass = $_POST["current-pass"];
 				}
-				if (!empty($_POST["new-pass"])) {
+				if (isset($_POST["new-pass"])) {
 					$newUserPass1 = $_POST["new-pass"];
 				}
-				if (!empty($_POST["new-pass2"])) {
+				if (isset($_POST["new-pass2"])) {
 					$newUserPass2 = $_POST["new-pass2"];
 				}
 				
@@ -166,13 +166,14 @@ function userSettings() {
 			<p>Display Name<br />
 			<input name=\"display-name\" type=\"text\" value=\"".htmlspecialchars($userDisplayName, ENT_QUOTES)."\" /></p>
 			<p>URL<br /><input name=\"url\" type=\"text\" value=\"".htmlspecialchars($userUrl, ENT_QUOTES)."\" /></p>
-			<p>Biography<br /><textarea name=\"bio\">$userBio</textarea></p>";
+			<p>Biography<br />
+			<textarea name=\"bio\">$userBio</textarea></p>";
 			
 			if ($userTwitter == TRUE) {
 				$currentUrl = getURL();
-				print "<div class=\"sync-link\"><a title=\"Go to Twitter profile\" href=\"https://twitter.com/#!/".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"]."\"><div class=\"twitter-icon\"></div> ".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"]."</a> | <a title=\"Go to synchronization page\" href=\"".$pages["twitter"]->getAddress(TRUE)."/?url=$currentUrl&amp;remove=true\">Remove</a></div>";
+				print "<div class=\"sync-link\"><a title=\"Twitter account\" href=\"https://twitter.com/#!/".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"]."\"><div class=\"twitter-icon\"></div> ".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"]."</a> | <a title=\"Synchronization page\" href=\"".$pages["twitter"]->getAddress(TRUE)."/?url=$currentUrl&amp;remove=true\">Remove</a></div>";
 			} else {
-				print "<div class=\"sync-link\"><a title=\"Go to synchronization page\" href=\"".$pages["twitter"]->getAddress(TRUE)."\"><div class=\"twitter-icon\"></div> Sync Twitter</a></div>";
+				print "<div class=\"sync-link\"><a title=\"Synchronization page\" href=\"".$pages["twitter"]->getAddress(TRUE)."\"><div class=\"twitter-icon\"></div> Sync Twitter</a></div>";
 			}
 			
 			print "<br />

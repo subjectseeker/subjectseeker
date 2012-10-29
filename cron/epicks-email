@@ -1,4 +1,0 @@
-#!/bin/sh
-
-date >> ../logs/epicks-email.log
-./epicks-email.php >> ../logs/epicks-email.log

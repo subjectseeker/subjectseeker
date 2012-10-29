@@ -176,7 +176,7 @@ function displayPostProfile() {
 			}
 			print "<div class=\"text-area\">
 			<form method=\"post\" enctype=\"multipart/form-data\">
-			<div class=\"subtle-text margin-bottom-small\"><span class=\"ss-bold\">Leave a note!</span><span class=\"alignright\"><span style=\"color: #383838;\" class=\"charsLeft\">102</span> characters left.</span></div>
+			<div class=\"subtle-text margin-bottom-small\"><b>Leave a note!</b><span class=\"alignright\"><span class=\"char-count\" data-limit=\"102\">102</span> characters left.</span></div>
 			<p><textarea class=\"note-area\" name=\"comment\"></textarea></p>
 			<div style=\"display: none;\" class=\"tweet-preview-area margin-bottom\"><div class=\"subtle-text margin-bottom-small ss-bold\">Tweet Preview</div><div class=\"tweet-preview\"><span class=\"tweet-message\"></span><span class=\"tweet-extras\"></span></div></div>
 			<input id=\"submit-comment\" class=\"submit-comment ss-button\" type=\"button\" data-step=\"store\" value=\"Submit\" />";

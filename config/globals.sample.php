@@ -51,6 +51,7 @@ $bitlyUser = "****"; // bitly user
 $bitlyKey = "****"; // bitly API key
 $bitlyApiUrl = "http://api.bit.ly/v3/shorten?login="; // bitly API url
 $twitterListApi = "https://api.twitter.com/1/lists/statuses.json?list_id="; // Twitter list API link
+$twitterUserApi = "http://api.twitter.com/1/users/lookup.json?user_id="; // Twitter user details API link
 
 // Parameters
 $numResults = 30;
