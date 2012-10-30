@@ -208,6 +208,9 @@ function doAddBlog ($db) {
 	if (!empty($_REQUEST["twitterHandle"])) $twitterHandle = str_replace("@", "", $_REQUEST["twitterHandle"]);
 	if (!empty($_REQUEST["userIsAuthor"])) $userIsAuthor = $_REQUEST["userIsAuthor"];
 	
+	$authUserId = NULL;
+	$authUserName = NULL;
+	$userPriv = NULL;
 	// Only get user info if logged in
 	if (isLoggedIn()){
 		$authUser = new auth();

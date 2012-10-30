@@ -2099,18 +2099,20 @@ function addBlog($blogname, $bloguri, $blogsyndicationuri, $blogdescription, $to
 		$retval["id"] = $blogId;
 		return $retval;
 	}
-
-	$userPriv = getUserPrivilegeStatus($userId, $db);
-	if ($userPriv > 0) { // moderator or admin
-		$status = 0; // active
-	}
-	else {
-		$status = 1; // pending
-		# Send email to site admin with notification that a blog is waiting for approval
-		$mailSent = mail ($siteApprovalEmail, "[$sitename admin] Pending blog submission", "Pending blog submission at $approveUrl");
-		
-		if (! $mailSent) {
-			# TODO log this
+	
+	if (!empty($userId)) {
+		$userPriv = getUserPrivilegeStatus($userId, $db);
+		if ($userPriv > 0) { // moderator or admin
+			$status = 0; // active
+		}
+		else {
+			$status = 1; // pending
+			# Send email to site admin with notification that a blog is waiting for approval
+			$mailSent = mail ($siteApprovalEmail, "[$sitename admin] Pending blog submission", "Pending blog submission at $approveUrl");
+			
+			if (! $mailSent) {
+				# TODO log this
+			}
 		}
 	}
 
