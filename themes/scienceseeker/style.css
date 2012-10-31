@@ -1095,7 +1095,7 @@ box-shadow:  1px 3px 10px 1px rgba(0, 0, 0, 0.3);
 }
 
 .arrow-up, .arrow-down, .arrow-left, .arrow-right {
-  background-image: url("../../images/icons/ss-sprite.png");
+  background-image: url("../../images/icons/ss-sprite.png?v=1?v=1");
   height: 16px;
   width: 14px;
   background-repeat: no-repeat;
@@ -1119,7 +1119,7 @@ box-shadow:  1px 3px 10px 1px rgba(0, 0, 0, 0.3);
 }
 
 .rss-icon, .twitter-t, .facebook-icon {
-	background-image: url("../../images/icons/ss-sprite.png");
+	background-image: url("../../images/icons/ss-sprite.png?v=1");
   background-repeat: no-repeat;
 }
 
@@ -1145,7 +1145,7 @@ box-shadow:  1px 3px 10px 1px rgba(0, 0, 0, 0.3);
 }
 
 .note-icon {
-	background-image: url("../../images/icons/ss-sprite.png");
+	background-image: url("../../images/icons/ss-sprite.png?v=1");
 	height: 16px;
 	width: 16px;
 	background-repeat: no-repeat;
@@ -1158,7 +1158,7 @@ box-shadow:  1px 3px 10px 1px rgba(0, 0, 0, 0.3);
 }
 
 .recommended, .recommend {
-background-image: url("../../images/icons/ss-sprite.png");
+background-image: url("../../images/icons/ss-sprite.png?v=1");
 height: 16px;
 width: 16px;
 background-repeat: no-repeat;
@@ -1183,7 +1183,7 @@ top: 0px;
 }
 
 .twitter-icon {
-	background-image: url("../../images/icons/ss-sprite.png");
+	background-image: url("../../images/icons/ss-sprite.png?v=1");
 	background-position: 0px -52px;
 	height: 14px;
 	background-repeat: no-repeat;

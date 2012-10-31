@@ -4,6 +4,12 @@ global $homeUrl;
 global $themeUrl;
 global $localStylesheet;
 $content = displayModules($currentPage->getLocations("center"), TRUE);
+
+if ($httpsEnabled == "true") {
+	$themeUrl = str_replace("http:", "https:", $themeUrl);
+	$imagesUrl = str_replace("http:", "https:", $imagesUrl);
+	$localStylesheet = str_replace("http:", "https:", $localStylesheet);
+}
 ?>
 <!DOCTYPE html>
 <html>

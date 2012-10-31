@@ -4947,54 +4947,85 @@ function smartyTruncate($string, $length)
 	return( $ret );
 }
 
+/*
+By Matt Mullenweg > http://photomatt.net
+Inspired by Dan Benjamin > http://hiveware.com/imagerotator.php
+Latest version always at:
+
+http://photomatt.net/scripts/randomimage
+*/
+function rotateImageUrl($directory) {
+	// Make this the relative path to the images, like "../img" or "random/images/".
+	// If the images are in the same directory, leave it blank.
+	$folder = $directory;
+	
+	// Space seperated list of extensions, you probably won't have to change this.
+	$exts = 'jpg jpeg png gif';
+	
+	$files = array(); $i = -1; // Initialize some variables
+	if ('' == $folder) $folder = './';
+	
+	$handle = opendir($folder);
+	$exts = explode(' ', $exts);
+	while (false !== ($file = readdir($handle))) {
+		foreach($exts as $ext) { // for each extension check the extension
+			if (preg_match('/\.'.$ext.'$/i', $file, $test)) { // faster than ereg, case insensitive
+				$files[] = $file; // it's good
+				++$i;
+			}
+		}
+	}
+	closedir($handle); // We're not using it anymore
+	mt_srand((double)microtime()*1000000); // seed for PHP < 4.2
+	$rand = mt_rand(0, $i); // $i was incremented as we went along
+	
+	return $files[$rand]; // Voila!
+}
+
 // Caching
 // http://www.depiction.net/tutorials/php/cachingphp.php
 class cache {
 	// TODO save cache_time in ss-globals.php
-	var $cache_time = 1800;//How much time will keep the cache files in seconds.
+	var $cache_time = 3600;//How much time will keep the cache files in seconds.
 	var $cache_dir = '';
 	var $caching = false;
 	var $file = '';
 	
-	function cache()
-	{
+	function cache() {
 		global $cachedir;
 		$this->cache_dir = $cachedir;
 		// Constructor of the class
-		$this->file = $this->cache_dir . "/" . urlencode( $_SERVER['REQUEST_URI'] );
-		if ( file_exists ( $this->file ) && ( fileatime ( $this->file ) + $this->cache_time ) > time() )
-			{
-				//Grab the cache:
-				$handle = fopen( $this->file , "r");
-				do {
-		$data = fread($handle, 8192);
-		if (strlen($data) == 0) {
-			break;
+		$this->file = $this->cache_dir . "/" . urlencode( $_SERVER['REQUEST_URI'] ) . ".txt";
+		if ( file_exists ( $this->file ) && ( filemtime ( $this->file ) + $this->cache_time ) > time() ) {
+			//Grab the cache:
+			$handle = fopen( $this->file , "r");
+			do {
+				$data = fread($handle, 8192);
+				if (strlen($data) == 0) {
+					break;
+				}
+				echo $data;
+			} while (true);
+			fclose($handle);
+			return NULL;
+		} else {
+			//create cache :
+			$this->caching = true;
+			ob_start();
 		}
-		echo $data;
-				} while (true);
-				fclose($handle);
-			}
-		else
-			{
-				//create cache :
-				$this->caching = true;
-				ob_start();
-			}
 	}
 	
 	function close()
 	{
 		//You should have this at the end of each page
-		if ( $this->caching )
-			{
-				//You were caching the contents so display them, and write the cache file
-				$data = ob_get_clean();
-				echo $data;
-				$fp = fopen( $this->file , 'w' );
-				fwrite ( $fp , $data );
-				fclose ( $fp );
-			}
+		if ( $this->caching ) {
+			//You were caching the contents so display them, and write the cache file
+			$data = ob_get_clean();
+			echo $data;
+			$fp = fopen( $this->file , 'w' );
+			fwrite ( $fp , $data );
+			fclose ( $fp );
+		}
 	}
 }
 
