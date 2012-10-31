@@ -4379,7 +4379,7 @@ function getTwitterAuthURL ($returnUrl, $authorize = FALSE) {
 
 // Input: User Auth Token, User Secret Auth Token
 // Output: Connection to Twitter User Account
-function getTwitterAuthTokens ($oauthToken, $oauthSecret) {
+function getTwitterAuthTokens ($oauthToken = NULL, $oauthSecret = NULL) {
 	global $twitterConsumerKey;
 	global $twitterConsumerSecret;
 	include_once (dirname(__FILE__)."/../third-party/twitteroauth/twitteroauth.php");

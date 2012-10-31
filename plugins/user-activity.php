@@ -43,21 +43,8 @@ function userActivity ($limit = 8) {
 
 function getTwitterList($twitterListId) {
 	global $twitterListApi;
-	$url = $twitterListApi . $twitterListId;
-	$ch = curl_init();		// initialize curl handle
-				curl_setopt($ch, CURLOPT_URL,$url); // set url to post to
-				curl_setopt($ch, CURLOPT_FAILONERROR, 1);
-				curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
-				curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
-				curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 8s
-
-				$result = curl_exec($ch);
-				$cerror = curl_error($ch);
-	if (($cerror != null && strlen($cerror) > 0)) {
-		return print "ERROR: $cerror\n";
- 	}
-	
-	$twitterListResults = json_decode($result);
+	$connection = getTwitterAuthTokens ();
+	$twitterListResults = $connection->get("lists/statuses", array('list_id' => $twitterListId));
 	
 	return $twitterListResults;
 }
