@@ -12,6 +12,7 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 */
 
 function userActivity ($limit = 8) {
+	$cache = new cache();
 	global $twitterListId;
 	global $homeUrl;
 	$originalUrl = $homeUrl;
@@ -39,6 +40,7 @@ function userActivity ($limit = 8) {
 		}
 	}
 	print "</div>";
+	$cache->close();
 }
 
 function getTwitterList($twitterListId) {

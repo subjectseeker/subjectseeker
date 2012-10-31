@@ -4951,7 +4951,7 @@ function smartyTruncate($string, $length)
 // http://www.depiction.net/tutorials/php/cachingphp.php
 class cache {
 	// TODO save cache_time in ss-globals.php
-	var $cache_time = 2000;//How much time will keep the cache files in seconds.
+	var $cache_time = 1800;//How much time will keep the cache files in seconds.
 	var $cache_dir = '';
 	var $caching = false;
 	var $file = '';
@@ -4961,7 +4961,7 @@ class cache {
 		global $cachedir;
 		$this->cache_dir = $cachedir;
 		// Constructor of the class
-		$this->file = $this->cache_dir . urlencode( $_SERVER['REQUEST_URI'] );
+		$this->file = $this->cache_dir . "/" . urlencode( $_SERVER['REQUEST_URI'] );
 		if ( file_exists ( $this->file ) && ( fileatime ( $this->file ) + $this->cache_time ) > time() )
 			{
 				//Grab the cache:
