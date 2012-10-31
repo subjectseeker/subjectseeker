@@ -43,9 +43,7 @@ function userActivity ($limit = 8) {
 
 function getTwitterList($twitterListId) {
 	global $twitterListApi;
-	global $twitterListId;
 	$url = $twitterListApi . $twitterListId;
-	
 	$ch = curl_init();		// initialize curl handle
 				curl_setopt($ch, CURLOPT_URL,$url); // set url to post to
 				curl_setopt($ch, CURLOPT_FAILONERROR, 1);
