@@ -23,50 +23,72 @@ function searchForm() {
 	</form>";
 }
 
-function searchPage($text = NULL, $minimal = FALSE, $open = FALSE) {
+function searchPage($text = NULL, $limit = 30, $minimal = FALSE, $open = FALSE) {
 	$db = ssDbConnect();
 	
-	global $numResults;
-	$limit = $numResults;
 	$offset = 0;
-	if (empty($text) && !empty($_REQUEST["text"])) {
+	if (empty($text) && isset($_REQUEST["text"])) {
 		$text = $_REQUEST["text"];
 	}
 	if (!empty($_REQUEST["n"])) {
-		$limit = $numResults;
+		$limit = $_REQUEST["n"];
 	}
 	if (!empty($_REQUEST["offset"])) {
 		$offset = $_REQUEST["offset"];
 	}
 	
-	// Use optimal query for best results
-	// TO DO: Use API for this
-	$searchValue = mysql_real_escape_string(preg_replace("/[^A-Za-z0-9\s]/", "%", $text));
-	$sql = "SELECT SQL_CALC_FOUND_ROWS * FROM (SELECT post.BLOG_POST_ID, post.BLOG_POST_URI, post.BLOG_POST_DATE_TIME, post.BLOG_POST_SUMMARY, post.BLOG_POST_TITLE, post.BLOG_POST_HAS_CITATION, blog.BLOG_ID, blog.BLOG_NAME, blog.BLOG_URI FROM BLOG_POST post INNER JOIN BLOG blog ON blog.BLOG_ID = post.BLOG_ID INNER JOIN BLOG_AUTHOR author ON blog.BLOG_ID = author.BLOG_ID AND post.BLOG_AUTHOR_ID = author.BLOG_AUTHOR_ID WHERE BLOG_POST_STATUS_ID = 0 AND BLOG_STATUS_ID = 0 AND ( (BLOG_POST_TITLE LIKE '%".$searchValue."%') OR (BLOG_POST_SUMMARY LIKE '%".$searchValue."%') OR (BLOG_AUTHOR_ACCOUNT_NAME LIKE '%".$searchValue."%') OR (BLOG_NAME LIKE '%".$searchValue."%') ) 
-UNION
-SELECT post.BLOG_POST_ID, post.BLOG_POST_URI, post.BLOG_POST_DATE_TIME, post.BLOG_POST_SUMMARY, post.BLOG_POST_TITLE, post.BLOG_POST_HAS_CITATION, blog.BLOG_ID, blog.BLOG_NAME, blog.BLOG_URI FROM BLOG_POST post INNER JOIN BLOG blog ON blog.BLOG_ID = post.BLOG_ID INNER JOIN BLOG_AUTHOR author ON blog.BLOG_ID = author.BLOG_ID AND post.BLOG_AUTHOR_ID = author.BLOG_AUTHOR_ID INNER JOIN POST_TOPIC pt ON post.BLOG_POST_ID=pt.BLOG_POST_ID INNER JOIN TOPIC t ON t.TOPIC_ID=pt.TOPIC_ID WHERE BLOG_POST_STATUS_ID = 0 AND BLOG_STATUS_ID = 0 AND TOPIC_NAME='".$searchValue."' ) as a ORDER BY BLOG_POST_DATE_TIME DESC LIMIT ".$limit." OFFSET ".$offset."";
-	$postsData = mysql_query($sql, $db);
-	$total = array_shift(mysql_fetch_array(mysql_query("SELECT FOUND_ROWS()", $db)));
-	
-	if ($postsData && mysql_num_rows($postsData) != 0) {
-		displayPosts ($postsData, $minimal, $open, $db);
+	$cache = new cache("search", TRUE, TRUE);
+	if ($cache->caching == TRUE) {
+		// Use optimal query for best results
+		// TO DO: Use API for this
+		$searchValue = mysql_real_escape_string(preg_replace("/[^A-Za-z0-9\s]/", "%", $text));
+		$sql = "SELECT SQL_CALC_FOUND_ROWS * FROM (SELECT post.BLOG_POST_ID, post.BLOG_POST_URI, post.BLOG_POST_DATE_TIME, post.BLOG_POST_SUMMARY, post.BLOG_POST_TITLE, post.BLOG_POST_HAS_CITATION, blog.BLOG_ID, blog.BLOG_NAME, blog.BLOG_URI FROM BLOG_POST post INNER JOIN BLOG blog ON blog.BLOG_ID = post.BLOG_ID INNER JOIN BLOG_AUTHOR author ON blog.BLOG_ID = author.BLOG_ID AND post.BLOG_AUTHOR_ID = author.BLOG_AUTHOR_ID WHERE BLOG_POST_STATUS_ID = 0 AND BLOG_STATUS_ID = 0 AND ( (BLOG_POST_TITLE LIKE '%".$searchValue."%') OR (BLOG_POST_SUMMARY LIKE '%".$searchValue."%') OR (BLOG_AUTHOR_ACCOUNT_NAME LIKE '%".$searchValue."%') OR (BLOG_NAME LIKE '%".$searchValue."%') ) 
+	UNION
+	SELECT post.BLOG_POST_ID, post.BLOG_POST_URI, post.BLOG_POST_DATE_TIME, post.BLOG_POST_SUMMARY, post.BLOG_POST_TITLE, post.BLOG_POST_HAS_CITATION, blog.BLOG_ID, blog.BLOG_NAME, blog.BLOG_URI FROM BLOG_POST post INNER JOIN BLOG blog ON blog.BLOG_ID = post.BLOG_ID INNER JOIN BLOG_AUTHOR author ON blog.BLOG_ID = author.BLOG_ID AND post.BLOG_AUTHOR_ID = author.BLOG_AUTHOR_ID INNER JOIN POST_TOPIC pt ON post.BLOG_POST_ID=pt.BLOG_POST_ID INNER JOIN TOPIC t ON t.TOPIC_ID=pt.TOPIC_ID WHERE BLOG_POST_STATUS_ID = 0 AND BLOG_STATUS_ID = 0 AND TOPIC_NAME='".$searchValue."' ) as a ORDER BY BLOG_POST_DATE_TIME DESC LIMIT ".$limit." OFFSET ".$offset."";
+		$postsData = mysql_query($sql, $db);
+		$sql = "SELECT FOUND_ROWS()";
+		$sqlTotal = mysql_fetch_array(mysql_query($sql, $db));
+		$total = array_shift($sqlTotal);
+		
+		$posts = array();
+		while ($row = mysql_fetch_array($postsData)) {
+			$post["postId"] = $row["BLOG_POST_ID"];
+			$post["postTitle"] = $row["BLOG_POST_TITLE"];
+			$post["postUrl"] = htmlspecialchars($row["BLOG_POST_URI"]);
+			$post["postSummary"] = $row["BLOG_POST_SUMMARY"];
+			$post["blogName"] = $row["BLOG_NAME"];
+			$post["blogUrl"] = htmlspecialchars($row["BLOG_URI"]);
+			$post["postDate"] = $row["BLOG_POST_DATE_TIME"];
+			$post["hasCitation"] = $row["BLOG_POST_HAS_CITATION"];
+			
+			array_push($posts, $post);
+		}
+		$cacheVars["posts"] = $posts;
+		$cacheVars["total"] = $total;
+		
+		$cache->storeVars($cacheVars);
+	} else {
+		$cacheVars = $cache->varCache();
+		$posts = $cacheVars["posts"];
+		$total = $cacheVars["total"];
 	}
-	else {
+		
+	if (!empty($posts)) {
+		displayPosts ($posts, $minimal, $open, $db);
+	} else {
 		print "<p>No results found for your search parameters.</p>";
 	}
 	global $pages;
 	if ($minimal == TRUE) {
-		parse_str($httpQuery, $queryResults);
-		unset($queryResults["n"]);
-		unset($queryResults["offset"]);
-		$linkQuery = http_build_query($queryResults);
 		print "<div class=\"page-buttons\">
-		<a class=\"ss-button\" href=\"".$pages["search"]->getAddress()."/?$linkQuery\">More Posts</a>
+		<a class=\"ss-button\" href=\"".$pages["search"]->getAddress()."/?text=$text\">More</a>
 		</div>";
 	}
 	else {
 		$limit = NULL;
-		if (!empty($_REQUEST["n"])) $limit = $_REQUEST["n"];
+		if (isset($_REQUEST["n"])) {
+			$limit = $_REQUEST["n"];
+		}
 		pageButtons ($pages["search"]->getAddress(), $limit, $total);
 	}
 }

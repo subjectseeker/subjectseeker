@@ -259,6 +259,86 @@ function crawlBlogs($blog, $db) {
 }
 
 /*
+ * Cache
+ */
+
+class cache {
+	// TODO save cache_time in ss-globals.php
+	var $cacheTime = 3600;//How much time will keep the cache files in seconds.
+	var $cacheDir = "";
+	var $caching = FALSE;
+	var $file = "";
+	
+	function __construct($name, $varCache = FALSE, $useUrl = TRUE) {
+		global $cachedir;
+		global $cacheTime;
+		$this->cacheDir = $cachedir;
+		$this->cacheTime = $cacheTime;
+		
+		$fileName = $name;
+		if ($useUrl == TRUE) {
+			$fileName = $name . urlencode($_SERVER["REQUEST_URI"]);
+		}
+		
+		// Constructor of the class
+		$this->file = $this->cacheDir . "/$fileName.txt";
+		if (file_exists($this->file) && (filemtime($this->file) + $this->cacheTime) > time()) {
+			if ($varCache != TRUE) {
+				$this->htmlCache();
+			}
+		} else {
+			// Create cache
+			$this->caching = true;
+			if ($varCache != TRUE)
+				ob_start();
+		}
+	}
+	
+	private function htmlCache() {
+		//Grab the cache:
+		$handle = fopen($this->file , "r");
+		do {
+			$data = fread($handle, 8192);
+			if (strlen($data) == 0) {
+				break;
+			}
+			echo $data;
+		} while (true);
+		fclose($handle);
+	}
+	
+	public function storeHtml() {
+		// You should have this at the end of each page
+		if ($this->caching) {
+			// You were caching the contents so display them, and write the cache file
+			$data = ob_get_clean();
+			echo $data;
+			$fp = fopen($this->file, "w");
+			fwrite ($fp , $data);
+			fclose ($fp);
+		}
+	}
+	
+	public function storeVars($vars) {
+		if (!is_array($vars))
+			$vars = array($vars);
+		foreach ($vars as $key => $var) {
+			$contentCache["$key"] = $var;
+		}
+		$contentCache = serialize($contentCache);
+		$fp = fopen($this->file,"w"); // open file with Write permission
+		fputs($fp, $contentCache);
+		fclose($fp);
+	}
+	
+	public function varCache() {
+		$cacheContent = unserialize(implode('',file($this->file)));
+		
+		return $cacheContent;
+	}
+}
+
+/*
  * Curl functions
  */
 
@@ -2361,7 +2441,7 @@ function editBlogForm ($blogData, $userPriv, $open, $db) {
 
 // Input: Lists of posts from the DB, Minimalistic option, Slider option
 // Action: Display a list of posts.
-function displayPosts ($postsData, $minimal = FALSE, $open = FALSE, $db) {
+function displayPosts ($posts, $minimal = FALSE, $open = FALSE, $db) {
 	global $homeUrl;
 	global $pages;
 	if (isLoggedIn()){
@@ -2374,17 +2454,17 @@ function displayPosts ($postsData, $minimal = FALSE, $open = FALSE, $db) {
 	
 	$previousDay = NULL;
 	print "<div class=\"posts\">";
-	while ($row = mysql_fetch_array($postsData)) {
-		$postId = $row["BLOG_POST_ID"];
-		$blogName = $row[ "BLOG_NAME"];
-		$blogUri = htmlspecialchars($row["BLOG_URI"]);
-		$postDate = strtotime($row["BLOG_POST_DATE_TIME"]);
+	foreach ($posts as $post) {
+		$postId = $post["postId"];
+		$blogName = $post["blogName"];
+		$blogUri = htmlspecialchars($post["blogUrl"]);
+		$postDate = strtotime($post["postDate"]);
 		$formatHour = date("g:i A", $postDate);
-		$postSummary = strip_tags($row["BLOG_POST_SUMMARY"]);
-		$postTitle = $row[ "BLOG_POST_TITLE"];
-		$postUri = htmlspecialchars($row[ "BLOG_POST_URI"]);
+		$postSummary = strip_tags($post["postSummary"]);
+		$postTitle = $post["postTitle"];
+		$postUri = htmlspecialchars($post["postUrl"]);
 		$postProfile = $homeUrl . "/post/" . $postId;
-		$postHasCitation = $row["BLOG_POST_HAS_CITATION"];
+		$postHasCitation = $post["hasCitation"];
 		$formatDay = date("F d, Y", $postDate);
 		
 		if (empty($postSummary)) {
@@ -4980,53 +5060,6 @@ function rotateImageUrl($directory) {
 	$rand = mt_rand(0, $i); // $i was incremented as we went along
 	
 	return $files[$rand]; // Voila!
-}
-
-// Caching
-// http://www.depiction.net/tutorials/php/cachingphp.php
-class cache {
-	// TODO save cache_time in ss-globals.php
-	var $cache_time = 3600;//How much time will keep the cache files in seconds.
-	var $cache_dir = '';
-	var $caching = false;
-	var $file = '';
-	
-	function cache() {
-		global $cachedir;
-		$this->cache_dir = $cachedir;
-		// Constructor of the class
-		$this->file = $this->cache_dir . "/" . urlencode( $_SERVER['REQUEST_URI'] ) . ".txt";
-		if ( file_exists ( $this->file ) && ( filemtime ( $this->file ) + $this->cache_time ) > time() ) {
-			//Grab the cache:
-			$handle = fopen( $this->file , "r");
-			do {
-				$data = fread($handle, 8192);
-				if (strlen($data) == 0) {
-					break;
-				}
-				echo $data;
-			} while (true);
-			fclose($handle);
-			return NULL;
-		} else {
-			//create cache :
-			$this->caching = true;
-			ob_start();
-		}
-	}
-	
-	function close()
-	{
-		//You should have this at the end of each page
-		if ( $this->caching ) {
-			//You were caching the contents so display them, and write the cache file
-			$data = ob_get_clean();
-			echo $data;
-			$fp = fopen( $this->file , 'w' );
-			fwrite ( $fp , $data );
-			fclose ( $fp );
-		}
-	}
 }
 
 ?>

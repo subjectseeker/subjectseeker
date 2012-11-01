@@ -12,8 +12,8 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 */
 
 function userActivity ($limit = 8) {
-	$cache = new cache();
-	if ($cache->caching) {
+	$cache = new cache("tweets", FALSE, FALSE);
+	if ($cache->caching == TRUE) {
 		global $twitterListId;
 		global $homeUrl;
 		$originalUrl = $homeUrl;
@@ -42,7 +42,7 @@ function userActivity ($limit = 8) {
 		}
 		print "</div>";
 	}
-	$cache->close();
+	$cache->storeHtml();
 }
 
 function getTwitterList($twitterListId) {
