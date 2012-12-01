@@ -29,6 +29,11 @@ $imageName = rotateImageUrl($imagedir."/logos/rotate");
   </div>
 </div>
 <div id="navigation-bar">
+	<div id="site-logo">
+    <a href="http://scienceonline.com/">
+      <img src="<?php echo $imagesUrl . "/logos/rotate/" . $imageName ?>" alt="ScienceOnline Logo" />
+    </a>
+  </div>
 	<ul id="navigation-list">
   	<?php
     foreach ($naviItems as $naviItem) {

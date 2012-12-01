@@ -30,6 +30,7 @@ $blogId = $row["BLOG_ID"];
 $blogSocialAccount = getBlogSocialAccount(1, $blogId, $db);
 $blogTwitterHandle = $blogSocialAccount["SOCIAL_NETWORKING_ACCOUNT_NAME"];
 
+global $bitlyUser, $biltyKey;
 $shortUrl = get_bitly_short_url($postUri,$bitlyUser,$bitlyKey);
 
 if (!empty($blogTwitterHandle)) {

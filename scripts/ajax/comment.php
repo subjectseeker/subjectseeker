@@ -73,19 +73,19 @@ if ($step == "store" || $step == "confirm") {
 	
 	if ($debugSite != "true") {
 		// Use Search API to find Blog ID and Post URL
-		$errormsgs = array();
 		$queryList = httpParamsToSearchQuery("type=post&filter0=identifier&value0=$postId");
 		$settings = httpParamsToExtraQuery("type=post&filter0=identifier&value0=$postId");
-		$postData = generateSearchQuery ($queryList, $settings, 0, $errormsgs, $db);
-		$row = mysql_fetch_array($postData);
+		$postData = generateSearchQuery ($queryList, $settings, 0, $db);
+		$row = mysql_fetch_array($postData["result"]);
 		$postUri = $row["BLOG_POST_URI"];
 		$blogId = $row["BLOG_ID"];
-		
+			
 		// Get Blog social info
 		$blogSocialAccount = getBlogSocialAccount(1, $blogId, $db);
 		$blogTwitterHandle = $blogSocialAccount["SOCIAL_NETWORKING_ACCOUNT_NAME"];
 		
 		// Tweet note to our Twitter account.
+		global $bitlyUser, $biltyKey;
 		$shortUrl = get_bitly_short_url($postUri,$bitlyUser,$bitlyKey);
 		
 		$noteAuthor = $authUserName;

@@ -12,53 +12,13 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 */
 
-class API {
-	var $posts = array();
-	var $total = "";
-	var $errors = array();
-	
-	public function searchDatabase($httpQuery = NULL, $allowOverride = TRUE, $type = NULL, $userPriv = 0) {
-		$db = ssDbConnect();
-		$queryList = httpParamsToSearchQuery($httpQuery, $allowOverride);
-		$querySettings = httpParamsToExtraQuery($httpQuery, $allowOverride);
-		if (!empty($type)) {
-			$querySettings["type"] = $type;
-		}
-		$queryResult = generateSearchQuery ($queryList, $querySettings, $userPriv, $db);
-		
-		if (!empty($queryResult["errors"])) {
-			foreach ($queryResult["errors"] as $error) {
-				$this->errors[] = $error;
-			}
-			
-			return FALSE;
-		}
-		
-		$posts = array();
-		while ($row = mysql_fetch_array($queryResult["result"])) {
-			$post["postId"] = $row["BLOG_POST_ID"];
-			$post["postTitle"] = $row["BLOG_POST_TITLE"];
-			$post["postUrl"] = htmlspecialchars($row["BLOG_POST_URI"]);
-			$post["postSummary"] = $row["BLOG_POST_SUMMARY"];
-			$post["blogName"] = $row["BLOG_NAME"];
-			$post["blogUrl"] = htmlspecialchars($row["BLOG_URI"]);
-			$post["postDate"] = $row["BLOG_POST_DATE_TIME"];
-			$post["hasCitation"] = $row["BLOG_POST_HAS_CITATION"];
-			
-			array_push($posts, $post);
-		}
-		$this->posts = $posts;
-		$this->total = $queryResult["total"];
-	}
-}
-
 function displayFeed($httpQuery = NULL, $allowOverride = TRUE, $minimal = FALSE, $open = FALSE) {
 	$db = ssDbConnect();
 	
 	$cache = new cache("posts-$httpQuery", TRUE, TRUE);
 	if ($cache->caching == TRUE) {
 		$api = new API;
-		$api->searchDatabase($httpQuery, $allowOverride, "post");
+		$api->searchDb($httpQuery, $allowOverride, "post");
 		$cacheVars["posts"] = $posts = $api->posts;
 		$cacheVars["total"] = $total = $api->total;
 		$cacheVars["errors"] = $errors = $api->errors;

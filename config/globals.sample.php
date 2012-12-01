@@ -21,7 +21,7 @@ $thirdPartyUrl = $homeUrl . "/third-party";
 $themeUrl = $homeUrl . "/themes/scienceseeker";
 $scriptsUrl = $homeUrl . "/scripts";
 $feedUrl = $homeUrl. "/feed/posts/";
-$localStylesheet = "";
+$customHead = "";
 
 // Files and directories
 $basedir = "/home/username/public_html";

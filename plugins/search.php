@@ -37,6 +37,9 @@ function searchPage($text = NULL, $limit = 30, $minimal = FALSE, $open = FALSE) 
 		$offset = $_REQUEST["offset"];
 	}
 	
+	global $imagesUrl;
+	print "<div id=\"loading-message\" class=\"center-text\"><img src=\"$imagesUrl/icons/loading.gif\" alt=\"Loading\" title=\"Loading\" /></div>";
+	
 	$cache = new cache("search", TRUE, TRUE);
 	if ($cache->caching == TRUE) {
 		// Use optimal query for best results
