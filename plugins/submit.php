@@ -232,7 +232,12 @@ function doAddBlog ($db) {
 		$blogId = $addBlog["id"];
 		
 		if (!empty($twitterHandle)) {
-			addBlogSocialAccount($twitterHandle, 1, $blogId, $db);
+			$twitterUser = getTwitterUserDetails($twitterHandle);
+				
+			if (isset($twitterUser->id)) {
+				unlinkSocialNetworkSite(1, $blogId, $db);
+				addSocialNetworkUser(1, $twitterUser->id, $twitterUser->screen_name, $twitterUser->profile_image_url, NULL, $blogId, NULL, NULL, NULL, $db);
+			}
 		}
 	
 		if (empty($addBlog["errormsg"])) {

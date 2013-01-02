@@ -27,87 +27,57 @@ if (isLoggedIn()){
 	$authUser = new auth();
 	$authUserId = $authUser->userId;
 	$authUserName = $authUser->userName;
-	$userTwitter = getUserSocialAccount(1, $authUserId, $db);
+	$userTwitter = getSocialNetworkUser(1, $authUserId, "userId", $db);
 }
 	
-$postId = str_replace("post-", "", $_REQUEST["postId"]);
-if (!empty($_REQUEST["step"])) {
-	$step = $_REQUEST["step"];
-}
-if (!empty($_REQUEST["tweet"])) {
-	$tweet = $_REQUEST["tweet"];
-}
-if (!empty($_REQUEST["comment"])) {
-	$note = $_REQUEST["comment"];
-}
-if (!empty($_REQUEST["tweetContent"])) {
-	$tweetContent = $_REQUEST["tweetContent"];
-}
-$overwriteStatus = FALSE;
+$id = $_REQUEST["id"];
+$type = $_REQUEST["type"];
+$step = $_REQUEST["step"];
+$tweet = $_REQUEST["tweet"];
+$commentText = $_REQUEST["comment"];
+$tweetContent = $_REQUEST["tweetContent"];
 
-// Check if a comment must be stored
-if ($step == "store" || $step == "confirm") {
-	if ($step != "confirm") {
-		foreach (getComments($postId, $db) as $item) {
-			$commentUserId = $item["userId"];
-			if ($commentUserId == $authUserId) {
-				$overwriteStatus = TRUE;
-			}
-		}
-	}
-	if ($overwriteStatus == TRUE) {
-		print "<h3>Confirmation Message</h3>
-		<form method=\"post\">
-		<p>You already have a note on this post. Are you sure you want to overwrite it?</p>
-		<p><input id=\"submit-comment\" class=\"submit-comment ss-button\" type=\"button\" data-step=\"confirm\" value=\"Yes\" /> <input id=\"submit-comment\" class=\"submit-comment ss-button\" type=\"button\" data-step=\"dont-update\" value=\"No\" /></p>
-		</form>";
-		return;
-	}
-	else {
-		$comment = mysql_real_escape_string(strip_tags($note));
-		$sql = "UPDATE POST_RECOMMENDATION SET REC_COMMENT = '$comment' WHERE BLOG_POST_ID = '$postId' AND USER_ID = '$authUserId'";
-		mysql_query($sql, $db);
-	}
+$typeId = "";
+if ($type == "post")
+	$typeId = "1";
+elseif ($type == "user")
+	$typeId = "2";
+
+$commentDate = dateStringToSql("now");
+$commentId = addComment($id, $typeId, 1, $authUserId, $commentText, $commentDate, $db);
+$comment = getComment($commentId, $db);
+displayComment($comment, $authUserId, $db);
+
+global $debugSite;
+if ($debugSite != "true") {
+	// Use Search API to find Blog ID and Post URL
+	$api = new API;
+	$api->searchDb("type=post&filter0=identifier&value0=$postId", FALSE, "post");
+	$post = array_shift($api->posts);
+	$postUrl = $post["postId"];
+	$blogId = $post["siteId"];
+		
+	// Get Blog social info
+	$socialNetworkUser = getSocialNetworkUser(1, $blogId, "siteId", $db);
+	$blogTwitterHandle = $socialNetworkUser["socialNetworkUserName"];
 	
-	global $debugSite;
+	// Tweet note to our Twitter account.
+	$shortUrl = get_bitly_short_url($postUri);
 	
-	if ($debugSite != "true") {
-		// Use Search API to find Blog ID and Post URL
-		$queryList = httpParamsToSearchQuery("type=post&filter0=identifier&value0=$postId");
-		$settings = httpParamsToExtraQuery("type=post&filter0=identifier&value0=$postId");
-		$postData = generateSearchQuery ($queryList, $settings, 0, $db);
-		$row = mysql_fetch_array($postData["result"]);
-		$postUri = $row["BLOG_POST_URI"];
-		$blogId = $row["BLOG_ID"];
-			
-		// Get Blog social info
-		$blogSocialAccount = getBlogSocialAccount(1, $blogId, $db);
-		$blogTwitterHandle = $blogSocialAccount["SOCIAL_NETWORKING_ACCOUNT_NAME"];
-		
-		// Tweet note to our Twitter account.
-		global $bitlyUser, $biltyKey;
-		$shortUrl = get_bitly_short_url($postUri,$bitlyUser,$bitlyKey);
-		
-		$noteAuthor = $authUserName;
-		if (!empty($userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"])) {
-			$noteAuthor = "@".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"];
-		}
-		$ssNote = "$note $shortUrl —$noteAuthor";
-		
-		$connection = getTwitterAuthTokens ($twitterNotesToken, $twitterNotesTokenSecret);
-		$connection->post('statuses/update', array('status' => $ssNote));
+	$noteAuthor = $authUserName;
+	if (!empty($userTwitter["socialNetworkUserName"])) {
+		$noteAuthor = "@".$userTwitter["socialNetworkUserName"];
 	}
-		
-	// If the option is checked, tweet from user's account.
-	if ($tweet == "true") {
-		$connection = getTwitterAuthTokens ($userSocialAccount['OAUTH_TOKEN'], $userSocialAccount['OAUTH_SECRET_TOKEN']);
-		$result = $connection->post('statuses/update', array('status' => $tweetContent));
-		
-		print "<iframe style=\"display: none;\" src=\"/sync/twitter/?note=".urlencode($note)."\"></iframe>";
-	}
+	$ssNote = "$note $shortUrl —$noteAuthor";
+	
+	$connection = getTwitterAuthTokens($twitterNotesToken, $twitterNotesTokenSecret);
+	$connection->post("statuses/update", array("status" => $ssNote));
+}
+	
+// If the option is checked, tweet from user's account.
+if ($tweet == "true") {
+	$connection = getTwitterAuthTokens ($userSocialAccount["OAUTH_TOKEN"], $userSocialAccount["OAUTH_SECRET_TOKEN"]);
+	$result = $connection->post("statuses/update", array("status" => $tweetContent));
 }
 
-if ($step == "showComments") {
-	displayNotes ($postId, $db);
-}
 ?>

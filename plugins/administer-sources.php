@@ -5,10 +5,10 @@ function adminSources() {
 		$db = ssDbConnect();
 		
 		// User Information
-								$authUser = new auth();
+		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
-								$userPriv = getUserPrivilegeStatus($authUserId, $db);
+		$userPriv = getUserPrivilegeStatus($authUserId, $db);
 		
 		if ($userPriv > 0) { // moderator or admin
 			$step = NULL;
@@ -79,24 +79,24 @@ function adminSources() {
 			if (!empty($step)) {
 				confirmEditBlog ($step, $db);
 			}
-			$queryList = httpParamsToSearchQuery();
-			$settings = httpParamsToExtraQuery();
-			$settings["show-all"] = "true";
-			$settings["type"] = "blog";
-			$blogData = generateSearchQuery ($queryList, $settings, 1, $db);
 			
-			if (empty($blogData["result"])) {
-				print "<p>There are no more blogs in the system.</p>";
+			$api = new API;
+			$api->searchDb("show-all=true", TRUE, "blog", $userPriv);
+			$sites = $api->sites;
+			
+			if (empty($api->sites)) {
+				print "<p>There are no more sites in the system.</p>";
+				return NULL;
 			}
-			else {
-				print "<div class=\"entries\">";
-				while ($row = mysql_fetch_array($blogData["result"])) {
-					editBlogForm ($row, $userPriv, FALSE, $db);
-				}
-				print "</div>";
+			
+			print "<div class=\"entries\">";
+			foreach ($sites as $site) {
+				editBlogForm ($site, $userPriv, FALSE, $db);
 			}
+			print "</div>";
+			
 			global $pages;
-			pageButtons ($pages["administer-sources"]->getAddress(), $pagesize, $blogData["total"]);
+			pageButtons ($pages["administer-sources"]->getAddress(), $pagesize, $api->total);
 		} else { // not moderator or admin
 			print "<p>You are not authorized to administrate blogs.</p>";
 		}

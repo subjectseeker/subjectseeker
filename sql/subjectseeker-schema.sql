@@ -1,12 +1,3 @@
--- phpMyAdmin SQL Dump
--- version 3.4.9
--- http://www.phpmyadmin.net
---
--- Host: localhost
--- Generation Time: Oct 18, 2012 at 07:05 AM
--- Server version: 5.0.95
--- PHP Version: 5.2.6
-
 SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
 
@@ -17,7 +8,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8 */;
 
 --
--- Database: `sciseek_backend_alpha`
+-- Database: `subjectseeker`
 --
 
 -- --------------------------------------------------------
@@ -343,6 +334,38 @@ CREATE TABLE IF NOT EXISTS `CLAIM_BLOG_STATUS` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `COMMENT`
+--
+
+DROP TABLE IF EXISTS `COMMENT`;
+CREATE TABLE IF NOT EXISTS `COMMENT` (
+  `COMMENT_ID` int(10) unsigned NOT NULL auto_increment COMMENT 'Unique identifier of a comment.',
+  `OBJECT_ID` int(10) unsigned NOT NULL COMMENT 'Unique identifier of an entry associated with a comment.',
+  `USER_ID` int(10) unsigned NOT NULL COMMENT 'Unique identifier of a user author of a comment.',
+  `OBJECT_TYPE_ID` int(11) NOT NULL COMMENT 'Unique identifier of a type of comment.',
+  `COMMENT_SOURCE_ID` int(11) NOT NULL COMMENT 'Unique identifier of the source of a comment.',
+  `COMMENT_TEXT` text collate utf8_unicode_ci NOT NULL COMMENT 'Comment text.',
+  `COMMENT_DATE_TIME` datetime NOT NULL COMMENT 'Date and time a comment was made',
+  PRIMARY KEY  (`COMMENT_ID`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Comments associated with rows in the database';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `FOLLOWER`
+--
+
+DROP TABLE IF EXISTS `FOLLOWER`;
+CREATE TABLE IF NOT EXISTS `FOLLOWER` (
+  `USER_ID` int(10) unsigned NOT NULL COMMENT 'Unique identifier of a follower user.',
+  `FOLLOW_TYPE_ID` int(11) NOT NULL COMMENT 'Unique identifier of a type.',
+  `FOLLOWED_ID` int(10) unsigned NOT NULL COMMENT 'Unique identifier of a followed user.',
+  UNIQUE KEY `FOLLOWER_TO_FOLLOWEE` (`USER_ID`,`FOLLOWED_ID`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='User IDs of followers a followees.';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `LANGUAGE`
 --
 
@@ -355,6 +378,19 @@ CREATE TABLE IF NOT EXISTS `LANGUAGE` (
   PRIMARY KEY  (`LANGUAGE_ID`),
   UNIQUE KEY `AK_LANGUAGE_IETF_CODE` (`LANGUAGE_IETF_CODE`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='A human language (actually a locale), as defined in IETF BCP';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `OBJECT_TYPE`
+--
+
+DROP TABLE IF EXISTS `OBJECT_TYPE`;
+CREATE TABLE IF NOT EXISTS `OBJECT_TYPE` (
+  `OBJECT_TYPE_ID` int(15) NOT NULL COMMENT 'Unique identifier of type of object.',
+  `OBJECT_TYPE_NAME` varchar(127) collate utf8_unicode_ci NOT NULL COMMENT 'Name of a type of object.',
+  PRIMARY KEY  (`OBJECT_TYPE_ID`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Types of objects in the database.';
 
 -- --------------------------------------------------------
 
@@ -388,24 +424,6 @@ CREATE TABLE IF NOT EXISTS `POST_CITATION` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `POST_RECOMMENDATION`
---
-
-DROP TABLE IF EXISTS `POST_RECOMMENDATION`;
-CREATE TABLE IF NOT EXISTS `POST_RECOMMENDATION` (
-  `USER_ID` int(15) NOT NULL default '0' COMMENT 'Reference to an user associated with this recommendation.',
-  `BLOG_POST_ID` int(15) NOT NULL COMMENT 'Reference to a post recommended by this persona.',
-  `REC_DATE_TIME` datetime NOT NULL COMMENT 'The date and time at which this recommendation was made.',
-  `REC_COMMENT` text collate utf8_unicode_ci NOT NULL COMMENT 'Comment from the persona, associated with this recommendation.',
-  `REC_IMAGE` varchar(255) collate utf8_unicode_ci default NULL COMMENT 'The system identifier for a graphical image associated with a recommendation.',
-  `REC_NOTIFICATION` tinyint(1) NOT NULL default '0' COMMENT 'Indicator whether this recommendation should be notified to the author.',
-  PRIMARY KEY  (`USER_ID`,`BLOG_POST_ID`),
-  KEY `FK_RECOMMENDATIONS` (`BLOG_POST_ID`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Recommendations of particular posts.';
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `POST_TOPIC`
 --
 
@@ -431,6 +449,25 @@ CREATE TABLE IF NOT EXISTS `PRIMARY_BLOG_TOPIC` (
   PRIMARY KEY  (`TOPIC_ID`,`BLOG_ID`),
   KEY `FK_BLOG_PRIMARY_TOPICS` (`BLOG_ID`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='The main subjects of a blog of interest.';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `RECOMMENDATION`
+--
+
+DROP TABLE IF EXISTS `RECOMMENDATION`;
+CREATE TABLE IF NOT EXISTS `RECOMMENDATION` (
+  `RECOMMENDATION_ID` int(11) NOT NULL auto_increment COMMENT 'Unique identifier of recommendation.',
+  `OBJECT_ID` int(11) NOT NULL COMMENT 'ID of the row that is being recommended.',
+  `USER_ID` int(11) NOT NULL COMMENT 'ID of the user who made the recommendation.',
+  `OBJECT_TYPE_ID` int(11) NOT NULL COMMENT 'ID of the type of recommendation.',
+  `REC_DATE_TIME` datetime NOT NULL COMMENT 'Date and time the recommendation was made.',
+  `REC_IMAGE` varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'Name of an image associated with a recommendation.',
+  `REC_NOTIFICATION` tinyint(4) NOT NULL default '0' COMMENT 'Indicator of pending notification.',
+  PRIMARY KEY  (`RECOMMENDATION_ID`),
+  UNIQUE KEY `AK_USER_TO_TYPE` (`USER_ID`,`OBJECT_TYPE_ID`,`OBJECT_ID`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Recommendations of elements in the database.';
 
 -- --------------------------------------------------------
 
@@ -473,6 +510,29 @@ CREATE TABLE IF NOT EXISTS `SOCIAL_NETWORK` (
   PRIMARY KEY  (`SOCIAL_NETWORK_ID`),
   UNIQUE KEY `AK_SOCIAL_NETWORK_NAME` (`SOCIAL_NETWORK_NAME`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='A social network system with well-defined unique user IDs, t';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `SOCIAL_NETWORK_USER`
+--
+
+DROP TABLE IF EXISTS `SOCIAL_NETWORK_USER`;
+CREATE TABLE IF NOT EXISTS `SOCIAL_NETWORK_USER` (
+  `SOCIAL_NETWORK_USER_ID` int(10) unsigned NOT NULL auto_increment COMMENT 'Machine-generated unique identifier for a social networking account.',
+  `SOCIAL_NETWORK_ID` int(15) NOT NULL COMMENT 'Reference to the social network on which this account is hosted.',
+  `SOCIAL_NETWORK_USER_EXT_ID` varchar(100) collate utf8_unicode_ci NOT NULL COMMENT 'Unique identifier social network user on the network.',
+  `SOCIAL_NETWORK_USER_NAME` varchar(127) collate utf8_unicode_ci NOT NULL COMMENT 'The account name of a social network user.',
+  `SOCIAL_NETWORK_USER_AVATAR` varchar(2083) collate utf8_unicode_ci NOT NULL COMMENT 'Uri linking to an image representing a user.',
+  `USER_ID` int(11) default NULL COMMENT 'Unique identifier of a user.',
+  `BLOG_ID` int(11) default NULL COMMENT 'Unique identifier of a blog.',
+  `OAUTH_TOKEN` varchar(255) collate utf8_unicode_ci default NULL COMMENT 'OAuth token for the social network API.',
+  `OAUTH_SECRET_TOKEN` varchar(255) collate utf8_unicode_ci default NULL COMMENT 'OAuth secret token for the social network API.',
+  `OAUTH_REFRESH_TOKEN` varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'OAuth refresh token for the social network API.',
+  `CRAWLED_DATE_TIME` datetime default NULL COMMENT 'The date and time on which this user was last checked by the aggregator.',
+  PRIMARY KEY  (`SOCIAL_NETWORK_USER_ID`),
+  UNIQUE KEY `AK_SOCIAL_NETWORK_USER_ID` (`SOCIAL_NETWORK_ID`,`SOCIAL_NETWORK_USER_EXT_ID`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='User of a social network.';
 
 -- --------------------------------------------------------
 
@@ -548,6 +608,23 @@ CREATE TABLE IF NOT EXISTS `TOPIC_SPECIFICITY` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `TWEET`
+--
+
+DROP TABLE IF EXISTS `TWEET`;
+CREATE TABLE IF NOT EXISTS `TWEET` (
+  `TWEET_ID` int(11) NOT NULL auto_increment COMMENT 'Unique identifier of a tweet.',
+  `TWEET_TWITTER_ID` varchar(100) collate utf8_unicode_ci NOT NULL COMMENT 'Unique identifier of a tweet on twitter.',
+  `TWEET_TEXT` varchar(500) collate utf8_unicode_ci NOT NULL COMMENT 'Tweet content.',
+  `SOCIAL_NETWORK_USER_ID` int(10) unsigned NOT NULL COMMENT 'Unique identifier of a user on a social network.',
+  `TWEET_DATE_TIME` datetime NOT NULL COMMENT 'Timestamp of a tweet.',
+  PRIMARY KEY  (`TWEET_ID`),
+  UNIQUE KEY `TWEET_TWITTER_ID` (`TWEET_TWITTER_ID`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Tweets from Twitter.';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `USER`
 --
 
@@ -561,6 +638,7 @@ CREATE TABLE IF NOT EXISTS `USER` (
   `EMAIL_ADDRESS` varchar(127) collate utf8_unicode_ci NOT NULL COMMENT 'E-mail address associated with a user account.',
   `DISPLAY_NAME` varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'Human-readable name associated with this user.',
   `USER_AVATAR_LOCATOR` varchar(255) collate utf8_unicode_ci default NULL COMMENT 'The system identifier for a graphical image associated with a user.',
+  `REGISTRATION_DATE_TIME` datetime NOT NULL COMMENT 'Date and time a user registered.',
   PRIMARY KEY  (`USER_ID`),
   UNIQUE KEY `AK_USER_NAME` (`USER_NAME`),
   KEY `FK_USER_PRIVILEGE_LEVEL` (`USER_PRIVILEGE_ID`),
@@ -594,6 +672,7 @@ CREATE TABLE IF NOT EXISTS `USER_PREFERENCE` (
   `USER_BIOGRAPHY` text collate utf8_unicode_ci NOT NULL COMMENT 'Personal biography of a user.',
   `EMAIL_EDITOR_PICK` tinyint(1) NOT NULL default '0' COMMENT 'Allow emails for editor''s picks.',
   `EMAIL_ANNOUNCEMENTS` tinyint(1) NOT NULL default '0' COMMENT 'Allow emails for announcements.',
+  `USER_LOCATION` varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'Location of a user.',
   PRIMARY KEY  (`USER_ID`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='User preferences for their accounts.';
 
@@ -655,25 +734,6 @@ CREATE TABLE IF NOT EXISTS `USER_SECRET_CODE_SOURCE` (
   PRIMARY KEY  (`USER_SECRET_CODE_SOURCE_ID`),
   UNIQUE KEY `AK_SECRET_CODE_SOURCE_NAME` (`USER_SECRET_CODE_SOURCE_NAME`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Sources for secret codes.';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `USER_SOCIAL_ACCOUNT`
---
-
-DROP TABLE IF EXISTS `USER_SOCIAL_ACCOUNT`;
-CREATE TABLE IF NOT EXISTS `USER_SOCIAL_ACCOUNT` (
-  `SOCIAL_NETWORKING_ACCOUNT_ID` int(10) unsigned NOT NULL auto_increment COMMENT 'Machine-generated unique identifier for a social networking account.',
-  `SOCIAL_NETWORK_ID` int(15) NOT NULL COMMENT 'Reference to the social network on which this account is hosted.',
-  `SOCIAL_NETWORKING_ACCOUNT_NAME` varchar(127) collate utf8_unicode_ci NOT NULL COMMENT 'The account identifier a persona uses on a particular social network.',
-  `USER_ID` int(10) unsigned default NULL COMMENT 'The ID of a user associated with this account.',
-  `OAUTH_TOKEN` varchar(255) collate utf8_unicode_ci default NULL COMMENT 'OAuth token for the social network API.',
-  `OAUTH_SECRET_TOKEN` varchar(255) collate utf8_unicode_ci default NULL COMMENT 'OAuth secret token for the social network API.',
-  PRIMARY KEY  (`SOCIAL_NETWORKING_ACCOUNT_ID`),
-  UNIQUE KEY `AK_SOCIAL_NETWORK_USER_LOCATOR` (`SOCIAL_NETWORK_ID`,`SOCIAL_NETWORKING_ACCOUNT_NAME`),
-  UNIQUE KEY `FK_USER_ID` (`USER_ID`,`SOCIAL_NETWORK_ID`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Social account to be associated with a user';
 
 -- --------------------------------------------------------
 

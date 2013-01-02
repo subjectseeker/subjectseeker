@@ -17,8 +17,8 @@ function displayMySites() {
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
 		$userPriv = getUserPrivilegeStatus($authUserId, $db);
+		
 		$step = NULL;
-	
 		if (!empty($_REQUEST["step"])) {
 			$step = $_REQUEST["step"];
 		}
@@ -30,23 +30,11 @@ function displayMySites() {
 			confirmEditBlog ($step, $db);
 		}
 		
-		$blogIds = getBlogIdsByUserId($authUserId, $db);
-		if (sizeof($blogIds) == 0) {
-			$pendingBlogs = getUserPendingBlogs ($authUserId, $db);
-			if (!empty($pendingBlogs)) {
-				global $sitename;
-				print "<p class=\"ss-warning\">You have no sites available for viewing. One site awaiting approval by a $sitename Editor. You will receive an email message when your site has been approved.</p>";
-				return;
-			} else {
-				print "<p class=\"ss-warning\">You have no sites available for viewing.</p>";
-				return;
-			}
-		}
-	
-		$blogData = blogIdsToBlogData($blogIds, $db);
-		
-		while ($row = mysql_fetch_array($blogData)) {
-			editBlogForm($row, $userPriv, TRUE, $db);
+		$api = new API;
+		$api->searchDb("filter0=author&modifier0=user-name&value0=$authUserName", FALSE, "blog", $userPriv);
+		$sites = $api->sites;
+		foreach($sites as $site) {
+			editBlogForm($site, $userPriv, TRUE, $db);
 		}
 
 	} else {

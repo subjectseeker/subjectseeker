@@ -11,46 +11,8 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 */
 
-function userActivity ($limit = 8) {
-	$cache = new cache("tweets", FALSE, FALSE);
-	if ($cache->caching == TRUE) {
-		global $twitterListId;
-		global $homeUrl;
-		$originalUrl = $homeUrl;
-		if (isset($_REQUEST["url"])) {
-			$originalUrl = $_REQUEST["url"];
-		}
-		
-		$tweets = getTwitterList($twitterListId);
-		
-		print "<div id=\"user-activity\">";
-		$i = 0;
-		if (is_array($tweets)) {
-			foreach ($tweets as $tweet) {
-				$tweetAuthor = $tweet->user->screen_name;
-				$tweetContent = $tweet->text;
-				$tweetAvatar = $tweet->user->profile_image_url;
-				
-				$tweetContent = preg_replace('`\b(?:(?:https?|ftp|file)://|www\.|ftp\.)[-A-Z0-9+&@#/%=~_|$?!:,.]*[A-Z0-9+&@#/%=~_|$]`i', '<a href="$0">$0</a>', $tweetContent);
-				$tweetContent = preg_replace('/(^|\s)@([a-z0-9_]+)/i', '$1<a href="http://www.twitter.com/$2">@$2</a>', $tweetContent);
-				$tweetContent = preg_replace('/#([\\d\\w]+)/', '<a href="http://twitter.com/#search?q=%23$1">$0</a>', $tweetContent);
-				
-				print "<div class=\"tweet\"><div class=\"tweet-avatar\"><a href=\"http://twitter.com/$tweetAuthor\"><img src=\"$tweetAvatar\" alt=\"Twitter Avatar\" /></a></div><a class=\"tweet-author\" href=\"http://twitter.com/$tweetAuthor\">$tweetAuthor</a>: $tweetContent</div>";
-				
-				if ($i++ == 8) break;
-			}
-		}
-		print "</div>";
-	}
-	$cache->storeHtml();
+function displayUserActivity ($userId = NULL, $limit = 8) {
+	$db = ssDbConnect();
+	userActivity (NULL, NULL, $userId, NULL, $limit, $db);
 }
-
-function getTwitterList($twitterListId) {
-	global $twitterListApi;
-	$connection = getTwitterAuthTokens ();
-	$twitterListResults = $connection->get("lists/statuses", array('list_id' => $twitterListId));
-	
-	return $twitterListResults;
-}
-
 ?>

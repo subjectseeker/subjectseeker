@@ -13,7 +13,7 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 */
 
 function userSettings() {
-	global $pages;
+	global $homeUrl, $pages;
 	
 	$db = ssDbConnect();
 	if (isLoggedIn()) {
@@ -23,7 +23,7 @@ function userSettings() {
 		$userPriv = getUserPrivilegeStatus($authUserId, $db);
 		
 		$step = NULL;
-		if (!empty($_REQUEST["step"])) {
+		if (isset($_REQUEST["step"])) {
 			$step = $_REQUEST["step"];
 		}
 		// Read name on URL
@@ -33,23 +33,26 @@ function userSettings() {
 		
 		if (empty($userId)) {
 			print "<p class=\"ss-error\">User not found.</p>";
-		}
-		elseif ($userId == $authUserId || $userPriv > 1) { // Check if user or admin
+			
+		} elseif ($userId == $authUserId || $userPriv > 1) { // Check if user or admin
 			// Check which of the forms have been submitted, if any
 			if (isset($_POST["form"]) && $_POST["form"] == "personal") {
-				$newDisplayName = NULL;
-				$newUrl = NULL;
-				$newBio = NULL;
+				$displayName = NULL;
+				$url = NULL;
+				$bio = NULL;
 				$emailEdPicks = NULL;
 				$emailAnnouncements = NULL;
 				if (isset($_POST["display-name"])) {
-					$newDisplayName = $_POST["display-name"];
+					$displayName = $_POST["display-name"];
 				}
 				if (isset($_POST["url"])) {
-					$newUrl = $_POST["url"];
+					$url = $_POST["url"];
 				}
 				if (isset($_POST["bio"])) {
-					$newBio = $_POST["bio"];
+					$bio = $_POST["bio"];
+				}
+				if (isset($_POST["location"])) {
+					$location = $_POST["location"];
 				}
 				if (isset($_POST["email-edpicks"])) {
 					$emailEdPicks = $_POST["email-edpicks"];
@@ -58,21 +61,21 @@ function userSettings() {
 					$emailAnnouncements = $_POST["email-announcements"];
 				}
 				
-				$errors = checkUserPreferences($newUrl, $newBio);
-				$errors .= checkUserData($authUserId, $userId, NULL, $newDisplayName, NULL, NULL, NULL, NULL, $db);
+				$errors = checkUserPreferences($url, $bio);
+				$errors .= checkUserData($authUserId, $userId, NULL, $displayName, NULL, NULL, NULL, NULL, $db);
 				if (!empty($errors)) {
 					print "$errors";
 				} else {
-					if (empty($newDisplayName)) {
-						$newDisplayName = $userName;
+					if (empty($displayName)) {
+						$displayName = $userName;
 					}
-					editUserPreferences($userId, $newUrl, $newBio, $emailEdPicks, $emailAnnouncements, $db);
-					editDisplayName ($userId, $newDisplayName, $db);
+					editUserPreferences($userId, $url, $bio, $location, $emailEdPicks, $emailAnnouncements, $db);
+					editDisplayName ($userId, $displayName, $db);
 					
 					print "<p class=\"ss-successful\">You settings have been updated.</p>";
 				}
 			} elseif (isset($_POST["form"]) && $_POST["form"] == "email") {
-				$newEmail = NULL;
+				$email = NULL;
 				$userPass = NULL;
 				if (isset($_POST["email"])) {
 					$newEmail = $_POST["email"];
@@ -81,16 +84,16 @@ function userSettings() {
 					$userPass = $_POST["current-pass"];
 				}
 				
-				$errors = checkUserData($authUserId, $userId, NULL, NULL, $newEmail, $userPass, NULL, NULL, $db);
+				$errors = checkUserData($authUserId, $userId, NULL, NULL, $email, $userPass, NULL, NULL, $db);
 				
-				if (empty($userPass) || empty($newEmail)) {
+				if (empty($userPass) || empty($email)) {
 					$errors .= "<p class=\"ss-error\">Missing value, please submit your current password and your desired new email.</p>";
 				}
 				
 				if (!empty($errors)) {
 					print "$errors";
 				} else {
-					editEmail($userId, $newEmail, $db);
+					editEmail($userId, $email, $db);
 					
 					print "<p class=\"ss-successful\">You settings have been updated.</p>";
 				}
@@ -126,31 +129,17 @@ function userSettings() {
 			}
 			
 			// Get user info
-			$userPriv = getUserPrivilegeStatus($userId, $db);
-			$userEmail = getUserEmail($userId, $db);
-			$userDisplayName = getDisplayName($userId, $db);
 			$userAvatar = getUserAvatar($userId, $db);
-			$userPreferences = getUserPreferences($userId, $db);
-			$userTwitter = getUserSocialAccount(1, $userId, $db);
-			
-			// Create avatar URL
-			global $imagesUrl;
-			if (!empty($userAvatar)) {
-				$avatarSrc = $imagesUrl."/users/$userId/avatars/$userAvatar";
-			} else {
-				$avatarSrc = $imagesUrl."/icons/default-avatar.jpg";
-			}
-			
-			$userUrl = NULL;
-			$userBio = NULL;
-			$emailEditorsPicks = NULL;
-			$emailAnnouncements = NULL;
-			while ($row = mysql_fetch_array($userPreferences)) {
-				$userUrl = $row["USER_URL"];
-				$userBio = $row["USER_BIOGRAPHY"];
-				$emailEditorsPicks = $row["EMAIL_EDITOR_PICK"];
-				$emailAnnouncements = $row["EMAIL_ANNOUNCEMENTS"];
-			}
+			$userData = getUserData($userId, $db);
+			$userTwitter = getSocialNetworkUser(1, $userId, "userId", $db);
+			$userGoogle = getSocialNetworkUser(3, $userId, "userId", $db);
+			$userDisplayName = $userData["userDisplayName"];
+			$userEmail = $userData["userEmail"];
+			$userUrl = $userData["userUrl"];
+			$userBio = $userData["userBio"];
+			$userLocation = $userData["userLocation"];
+			$emailEditorsPicks = $userData["emailEditorsPicks"];
+			$emailAnnouncements = $userData["emailAnnouncements"];
 			
 			$originalUrl = getURL();
 			
@@ -158,7 +147,7 @@ function userSettings() {
 			<h3>Personal Information</h3>
 			<form class=\"avatar-form\" method=\"post\" action=\"".$pages["crop"]->getAddress()."/?url=$originalUrl \" enctype=\"multipart/form-data\">
 			<input type=\"hidden\" name=\"userId\" value=\"$userId\" />
-			<p class=\"margin-bottom-small\"><img src=\"$avatarSrc\" title=\"User avatar\" /></p>
+			<p class=\"margin-bottom-small\"><img src=\"".$userAvatar["big"]."\" title=\"User avatar\" /></p>
 			<p><input type=\"file\" name=\"image\" accept=\"image/*\" /><br /><input class=\"ss-button\" type=\"submit\" value=\"Upload\" /></p>
 			</form>
 			<form method=\"post\">
@@ -166,17 +155,27 @@ function userSettings() {
 			<p>Display Name<br />
 			<input name=\"display-name\" type=\"text\" value=\"".htmlspecialchars($userDisplayName, ENT_QUOTES)."\" /></p>
 			<p>URL<br /><input name=\"url\" type=\"text\" value=\"".htmlspecialchars($userUrl, ENT_QUOTES)."\" /></p>
+			<p>Location<br />
+			<input name=\"location\" type=\"text\" value=\"".htmlspecialchars($userLocation, ENT_QUOTES)."\" /></p>
 			<p>Biography<br />
-			<textarea name=\"bio\">$userBio</textarea></p>";
+			<textarea name=\"bio\">$userBio</textarea></p>
+			<ul>";
 			
-			if ($userTwitter == TRUE) {
-				$currentUrl = getURL();
-				print "<div class=\"sync-link\"><a title=\"Twitter account\" href=\"https://twitter.com/#!/".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"]."\"><div class=\"twitter-icon\"></div> ".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"]."</a> | <a title=\"Synchronization page\" href=\"".$pages["twitter"]->getAddress(TRUE)."/?url=$currentUrl&amp;remove=true\">Remove</a></div>";
+			$currentUrl = getURL();
+			if ($userTwitter) {
+				print "<li class=\"sync-link\"><a title=\"Twitter account\" href=\"https://twitter.com/#!/".$userTwitter["socialNetworkUserName"]."\"><div class=\"twitter-icon\"></div> ".$userTwitter["socialNetworkUserName"]."</a> | <a title=\"Synchronization page\" href=\"".$pages["sync"]->getAddress(TRUE)."/?url=$currentUrl&amp;remove=true&amp;network=twitter\">Remove</a></li>";
 			} else {
-				print "<div class=\"sync-link\"><a title=\"Synchronization page\" href=\"".$pages["twitter"]->getAddress(TRUE)."\"><div class=\"twitter-icon\"></div> Sync Twitter</a></div>";
+				print "<li class=\"sync-link\"><a title=\"Synchronization page\" href=\"".$pages["sync"]->getAddress(TRUE)."/?url=$currentUrl\"><div class=\"twitter-icon\"></div> Sync Twitter</a></li>";
 			}
 			
-			print "<br />
+			if ($userGoogle) {
+				print "<li class=\"sync-link\"><a title=\"Google account\" href=\"https://plus.google.com/".$userGoogle["socialNetworkUserExtId"]."\"><div class=\"googleplus-icon\"></div> ".$userGoogle["socialNetworkUserName"]."</a> | <a title=\"Synchronization page\" href=\"".$pages["sync"]->getAddress(TRUE)."/?url=$currentUrl&amp;remove=true&amp;network=google\">Remove</a></li>";
+			} else {
+				print "<li class=\"sync-link\"><a title=\"Synchronization page\" href=\"".$pages["sync"]->getAddress(TRUE)."/?url=$currentUrl\"><div class=\"googleplus-icon\"></div> Sync Google+</a></li>";
+			}
+			
+			print "</ul>
+			<br />
 			<h3>Notifications</h3>
 			<p><input name=\"email-edpicks\" type=\"checkbox\" value=\"True\" ";
 			if ($emailEditorsPicks == "1") {
@@ -196,7 +195,7 @@ function userSettings() {
 			<h3>Change Email</h3>
 			<p>Email<br />
 			<input name=\"email\" type=\"text\"	value=\"".htmlspecialchars($userEmail, ENT_QUOTES)."\" /></p>
-			<p>Current Password<br />
+			<p>Confirmation Password<br />
 			<input name=\"current-pass\" type=\"password\" value=\"\" /></p>
 			<p><input class=\"ss-button\" type=\"submit\" value=\"Change Email\" /></p>
 			</form>

@@ -12,7 +12,7 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 */
 
-function displayResources() {
+function displayResources($httpQuery = NULL, $allowOverride = TRUE) {
 	global $homeUrl;
 	global $pages;
 	
@@ -23,71 +23,62 @@ function displayResources() {
 		$pagesize = $_REQUEST["n"];
 	}
 	
-	$queryList = httpParamsToSearchQuery();
-	$settings = httpParamsToExtraQuery();
-	$settings["type"] = "blog";
-	$settings["limit"] = $pagesize;
-	$blogsData = generateSearchQuery ($queryList, $settings, 0, $db);
+	$api = new API;
+	$api->searchDb($httpQuery, $allowOverride, "blog");
 	
-	if (! empty($blogsData["errors"])) {
-		print "<div class=\"padding-content\">";
-		foreach ($blogsData["errors"] as $error) {
-			print "<p class=\"ss-error\">$error</p>";
+	if (!empty($api->errors)) {
+		foreach ($api->errors as $error) {
+			print "<p class='ss-error'>$error</p>";
 		}
-		print "</div>";
-		return;
+		
+		return NULL;
 	}
 
-	if (empty($blogsData["result"]) || mysql_num_rows($blogsData["result"]) == 0) {
+	if (empty($api->total)) {
 		print "<p>No results found for your search parameters.</p>";
+		
+		return NULL;
 	}
-	else {
-		print "<div class=\"entries\">";
-		while ($row = mysql_fetch_array($blogsData["result"])) {
-			$blogId = $row["BLOG_ID"];
-			$blogName = $row["BLOG_NAME"];
-			$blogUri = $row["BLOG_URI"];
-			$blogSyndication = $row[ "BLOG_SYNDICATION_URI"];
-			$blogDescription = $row[ "BLOG_DESCRIPTION"];
-			$blogTopics = getBlogTopics($blogId, $db);
-			
-			// The blog category may not be present.
-			$sql = "SELECT T.TOPIC_NAME FROM TOPIC AS T INNER JOIN PRIMARY_BLOG_TOPIC AS BT ON T.TOPIC_ID = BT.TOPIC_ID WHERE BT.BLOG_ID = '$blogId';";
-			$result = mysql_query($sql, $db);
-			
-			$categories = array();
-			while ($row = mysql_fetch_array($result)) {
-				array_push($categories, $row["TOPIC_NAME"]);
-			}
-			
-			if (empty($blogDescription)) {
-				$blogDescription = "No summary available for this site.";
-			}
-			
-			print "<div class=\"ss-entry-wrapper\">
-			<div class=\"entry-indicator\">+</div>
-			<div class=\"post-header\">
-			<a class=\"entry-title\" href=\"".$blogUri."\">".$blogName."</a>
-			<div class=\"index-categories\">";
-			foreach ($categories as $i => $category) {
-				if ($i != 0) print " | ";
-				print "<a href=\"".$pages["sources"]->getAddress()."/?type=blog&amp;filter0=topic&amp;value0=".urlencode($category)."\" title=\"View all posts in $category\">$category</a>";
-			}
-			print "</div>
-			</div>
-			<div class=\"ss-slide-wrapper\">
-				<div class=\"padding-content\">
-				<div class=\"margin-bottom\">".$blogDescription."</div>
-				<div>
-				<a class=\"ss-button\" href=\"".$blogSyndication."\">Feed</a> <a class=\"ss-button\" href=\"$homeUrl/claim/".$blogId."\">Claim this site</a>
-				</div>
-				</div>
-			</div>
-			</div>";
+	
+	print "<div class=\"entries\">";
+	foreach ($api->sites as $site) {
+		$blogId = $site["siteId"];
+		$blogName = $site["siteName"];
+		$blogUri = $site["siteUrl"];
+		$blogSyndication = $site["siteFeedUrl"];
+		$blogDescription = $site["siteSummary"];
+		$blogTopics = getBlogTopics($blogId, $db);
+		
+		if (empty($blogDescription)) {
+			$blogDescription = "No summary available for this site.";
 		}
-		print "</div>";
+		
+		print "<div class=\"ss-entry-wrapper\">
+		<div class=\"entry-indicator\">+</div>
+		<div class=\"post-header\">
+		<a class=\"entry-title\" href=\"".$blogUri."\">".$blogName."</a>
+		<div class=\"index-categories\">";
+		foreach ($blogTopics as $i => $topic) {
+			$topicName = $topic["topicName"];
+			if ($i != 0)
+				print " | ";
+			print "<a href=\"".$pages["sources"]->getAddress()."/?type=blog&amp;filter0=topic&amp;value0=".urlencode($topicName)."\" title=\"View all posts in $topicName\">$topicName</a>";
+		}
+		print "</div>
+		</div>
+		<div class=\"ss-slide-wrapper\">
+			<div class=\"padding-content\">
+			<div class=\"margin-bottom\">".$blogDescription."</div>
+			<div>
+			<a class=\"ss-button\" href=\"".$blogSyndication."\">Feed</a> <a class=\"ss-button\" href=\"$homeUrl/claim/".$blogId."\">Claim this site</a>
+			</div>
+			</div>
+		</div>
+		</div>";
 	}
-	pageButtons ($pages["sources"]->getAddress(), $pagesize, $blogsData["total"]);
+	print "</div>";
+	
+	pageButtons ($pages["sources"]->getAddress(), $pagesize, $api->total);
 }
 
 ?>

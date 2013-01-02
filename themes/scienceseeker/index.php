@@ -1,7 +1,10 @@
 <?php
 include_once(dirname(__FILE__)."/../../scripts/initialize.php");
 
-if (count($currentPage->getLocations()) != 1) {
+if ($currentPage->id == "login" || $currentPage->id == "register" || $currentPage->id == "sync" || $currentPage->id == "crop") {
+include_once("standalone.php");
+}
+else {
 ?>
 <!DOCTYPE html>
 <html>
@@ -19,8 +22,5 @@ include_once("footer.php");
 </body>
 </html>
 <?php
-}
-else {
-include_once("standalone.php");
 }
 ?>

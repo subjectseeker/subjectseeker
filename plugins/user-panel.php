@@ -3,28 +3,25 @@
 function displayUserPanel() {
 	$db = ssDbConnect();
 	$currentUrl = getURL();
-	global $pages;
+	global $homeUrl, $imagesUrl, $pages;
 	if (isLoggedIn()){
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
 		$userPriv = getUserPrivilegeStatus($authUserId, $db);
-		$userTwitter = getUserSocialAccount(1, $authUserId, $db);
+		$userTwitter = getSocialNetworkUser(1, $authUserId, "userId", $db);
 		$userAvatar = getUserAvatar($authUserId, $db);
 		
-		global $imagesUrl;
-		if (!empty($userAvatar)) {
-			$avatarSrc = $imagesUrl."/users/$authUserId/avatars/small-$userAvatar";
-		}
-		else {
-			$avatarSrc = $imagesUrl."/icons/small-default-avatar.jpg";
-		}
 		print "<div id=\"user-box\" data-user=\"$authUserId\">
-		<div class=\"user-panel-avatar\"><img src=\"$avatarSrc\" /></div><div class=\"user-panel-options\"><div class=\"user-name\">$authUserName</div>
-		<a class=\"user-panel-button\" href=\"".$pages["my-sites"]->getAddress()."\">My Sites</a> <a class=\"user-panel-button\" href=\"".$pages["my-posts"]->getAddress()."\">My Posts</a></div>
+		<div class=\"user-panel-avatar\"><img src='".$userAvatar["small"]."' /></div>
+		<div class='alignleft'>
+		<div class=\"user-name\"><a href='$homeUrl/user/$authUserName'>$authUserName</a></div>
+		<div class=\"user-panel-options\"><a class=\"user-panel-button\" href=\"".$pages["my-sites"]->getAddress()."\">My Sites</a> <a class=\"user-panel-button\" href=\"".$pages["my-posts"]->getAddress()."\">My Posts</a></div>
+		</div>
 		<div class=\"drop-down\">
 		<div class=\"drop-down-title\">My Account</div>
 		<ul class=\"user-panel\">
+		<li class=\"user-panel-button\"><a href='$homeUrl/user/$authUserName'>My Profile</a></li>
 		<li class=\"user-panel-button\"><a href=\"".$pages["my-sites"]->getAddress()."\">My Sites</a></li>
 		<li class=\"user-panel-button\"><a href=\"".$pages["my-posts"]->getAddress()."\">My Posts</a></li>
 		<li class=\"user-panel-button\"><a href=\"".$pages["home"]->getAddress()."user/$authUserName/settings\">Settings</a></li>
@@ -38,19 +35,9 @@ function displayUserPanel() {
 			}
 		}
 		print "</ul>
-		<div class=\"ss-div center-text\">";
-		if ($userTwitter == TRUE) {
-			$currentUrl = getURL();
-			print "<div class=\"sync-link\"><a title=\"Go to Twitter profile\" href=\"https://twitter.com/#!/".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"]."\"><div class=\"twitter-icon\"></div> ".$userTwitter["SOCIAL_NETWORKING_ACCOUNT_NAME"]."</a></div>";
-		}
-		else {
-			print "<div class=\"sync-link\"><a title=\"Go to synchronization page\" href=\"".$pages["twitter"]->getAddress(TRUE)."\"><div class=\"twitter-icon\"></div> Sync Twitter</a></div>";
-		}
-		print "</div>
 		</div>
 		</div>";
-	}
-	else {
+	} else {
 		print "<div id=\"login-box\">
 		<a class=\"login-box-button\" href=\"".$pages["login"]->getAddress(TRUE)."/?url=$currentUrl\">Log In</a> <a class=\"login-box-button\" href=\"".$pages["register"]->getAddress(TRUE)."/?url=$currentUrl\">Register</a>
 		</div>";
@@ -66,7 +53,6 @@ function displayTextUserPanel () {
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
 		$userPriv = getUserPrivilegeStatus($authUserId, $db);
-		$userTwitter = getUserSocialAccount(1, $authUserId, $db);
 		
 		print "<div id=\"user-box-footer\">
 		<ul>

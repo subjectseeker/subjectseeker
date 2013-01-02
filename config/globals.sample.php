@@ -38,6 +38,9 @@ $pubMedIdUrl = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubm
 $arxivUrl = "http://export.arxiv.org/api/query?max_results=6&search_query=all:";
 
 // Social Network Integration
+$googleClientId = "****"; // Google API client ID
+$googleClientSecret = "*****"; // Google API client secret code
+$googleApiKey = "****"; // Google API key
 $recaptchaPublicKey = "****"; // Recaptcha Public Key
 $recaptchaPrivateKey = "****"; // Recaptcha Private Key
 $twitterConsumerKey = "****"; // Twitter Consumer Key

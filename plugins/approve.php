@@ -12,34 +12,34 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 function approveSites() {
 	$step = NULL;
-				if (!empty($_REQUEST["step"])) {
+	if (!empty($_REQUEST["step"])) {
 		$step = $_REQUEST["step"];
 	}
-				$db = ssDbConnect();
+	$db = ssDbConnect();
 
-				if (isLoggedIn()){
+	if (isLoggedIn()){
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
-								$userPriv = getUserPrivilegeStatus($authUserId, $db);
+		$userPriv = getUserPrivilegeStatus($authUserId, $db);
 	
-								if ($userPriv > 0) { // moderator or admin
+		if ($userPriv > 0) { // moderator or admin
 			if (!empty($step)) {
 				confirmEditBlog ($step, $db);
 			}
-			$queryList = httpParamsToSearchQuery("type=blog&filter0=status&value0=1&sort=added-date&order=desc");
-			$settings = httpParamsToExtraQuery("type=blog&filter0=status&value0=1&sort=added-date&order=desc");
-			$settings["type"] = "blog";
-			$blogData = generateSearchQuery ($queryList, $settings, $userPriv, $db);
+			$api = new API;
+			$api->searchDb("type=blog&filter0=status&value0=1&sort=added-date&order=desc", FALSE, "blog", $userPriv);
+			$sites = $api->sites;
 			
-			if (!empty($blogData["result"])) {
-				while ($row = mysql_fetch_array($blogData["result"])) {
-					editBlogForm ($row, $userPriv, TRUE, $db);
-				}
-			}
-			else {
+			if (empty($sites)) {
 				print "<div class=\"padding-content\">There are no sites pending approval.</div>";
+				return NULL;
 			}
+			
+			foreach($sites as $site) {
+				editBlogForm($site, $userPriv, TRUE, $db);
+			}
+			
 		} else { # not moderator or admin
 			print "<p class=\"ss-warning\">You are not authorized to view the list of blogs for approval.</p>";
 		}

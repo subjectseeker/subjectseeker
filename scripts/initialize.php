@@ -9,8 +9,7 @@ global $debugSite;
 if ($debugSite == "true") {
 	error_reporting(E_ALL);
 	ini_set("display_errors", 1);
-}
-else {
+} else {
 	error_reporting(E_NONE);
 	ini_set("display_errors", 0);
 }
@@ -45,10 +44,12 @@ if (!isLoggedIn() && isset($_COOKIE["ss-login"])) {
 	$userId = $cookieArray[0];
 	$cookieCode = $cookieArray[1];
 	$validCookie = validateCookie($userId, $cookieCode, $db);
-	$authUser = new auth();
 	
-	if ($validCookie == TRUE && $authUser->validateUser($userId, $db) == TRUE) {
-		createCookie($userId, $db);
+	$userName = getUserName($userId, $db);
+	$authUser = new auth();
+	$userId = $authUser->validateUser($userName);
+	if ($validCookie == TRUE && !$authUser->errors) {
+		$authUser->loginUser($userId, TRUE);
 	}
 }
 ?>

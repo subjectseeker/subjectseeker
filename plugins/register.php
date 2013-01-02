@@ -33,7 +33,7 @@ function displayRegistration() {
 		$userPass2 = NULL;
 		
 		// Check if user has submitted information
-		if (!empty($_POST['user-name'])) {
+		if (isset($_POST['user-name'])) {
 			$userName = mysql_escape_string($_POST['user-name']);
 			$userEmail = mysql_escape_string($_POST['email']);
 			$userPass1 = $_POST["pass1"];
@@ -55,8 +55,7 @@ function displayRegistration() {
 				$resp = recaptcha_check_answer ($recaptchaPrivateKey, $_SERVER["REMOTE_ADDR"], $_POST["recaptcha_challenge_field"], $_POST["recaptcha_response_field"]);
 				if (!$resp->is_valid) {
 					$errors .= "<p class=\"ss-error\">Submitted captcha code is invalid, please try again.</p>";
-				}
-				else {
+				} else {
 					$_SESSION["validCaptcha"] = "true";
 				}
 			}
@@ -66,22 +65,54 @@ function displayRegistration() {
 					$_SESSION["regStep"] = "one";
 				}
 				$content .= "$errors";
-			}
-			else {
+			} else {
 				$hashedPass = hashPassword($userPass1);
 				$userId = addUser($userName, $userEmail, $hashedPass, $db);
 				editUserStatus ($userId, 3, $db);
 				$userDisplayName = $userName;
 				
 				// Check if Twitter details have been imported
-				if (isset($_SESSION["oauth_token"], $_SESSION["oauth_token_secret"], $_SESSION["regStep"]) && $_SESSION["regStep"] == "two") {
-					addToTwitterList($_SESSION['user_id']);
-					addUserSocialAccount (1, $_SESSION['screen_name'], $_SESSION['oauth_token'], $_SESSION['oauth_token_secret'], $userId, $db);
-					$twitterUserDetails = getTwitterUserDetails($_SESSION['user_id']);
-					editUserPreferences($userId, $twitterUserDetails->url, $twitterUserDetails->description, 1, 1, $db);
-					if (!empty( $twitterUserDetails->name)) {
-						$userDisplayName = $twitterUserDetails->name;
+				if ($_SESSION["regStep"] == "two") {
+					$socialNetworkId = $_SESSION["socialNetworkId"];
+					$socialNetworkUserExtId = $_SESSION["userId"];
+					$socialNetworkUserName = $_SESSION["userName"];
+					$oauthToken = $_SESSION["oauthToken"];
+					$oauthSecretToken = $_SESSION["oauthSecretToken"];
+					$oauthRefreshToken = $_SESSION["oauthRefreshToken"];
+					
+					if ($socialNetworkId == 1) {
+						addToTwitterList($socialNetworkUserExtId);
+						$twitterUser = getTwitterUserDetails($socialNetworkUserExtId);
+						$socialNetworkUserAvatar = $twitterUser->profile_image_url;
+						editUserPreferences($userId, $twitterUser->url, $twitterUser->description, $twitterUser->location, 1, 1, $db);
+						
+					} elseif ($socialNetworkId == 3) {
+						$googleUser = getGoogleUser($oauthToken);
+						$socialNetworkUserExtId = $googleUser->id;
+						$socialNetworkUserName = $googleUser->name;
+						$socialNetworkUserAvatar = $googleUser->picture;
+						$userEmail = $googleUser->email;
+						$userUrl = NULL;
+						$userBio = NULL;
+						$userLocation = NULL;
+						
+						$googlePlusUser = getGooglePlusUser($socialNetworkUserExtId);
+						if(isset($googlePlusUser->urls[0]->value))
+							$userUrl = $googlePlusUser->urls[0]->value;
+						if(isset($googlePlusUser->aboutMe))
+							$userBio = $googlePlusUser->aboutMe;
+						if(isset($googlePlusUser->currentLocation))
+							$userLocation = $googlePlusUser->currentLocation;
+							
+						editUserPreferences($userId, $userUrl, $userBio, $userLocation, 1, 1, $db);
+						
+						if ($googlePlusUser->displayName) {
+							$userDisplayName = $googlePlusUser->displayName;
+						}
+		
 					}
+					
+					addSocialNetworkUser($socialNetworkId, $socialNetworkUserExtId, $socialNetworkUserName, $socialNetworkUserAvatar, $userId, NULL, $oauthToken, $oauthSecretToken, $oauthRefreshToken, $db);
 					editDisplayName ($userId, $userDisplayName, $db);
 				}
 				
@@ -94,7 +125,12 @@ function displayRegistration() {
 		
 		// Check if user is coming from Twitter
 		if (isset($_SESSION["regStep"]) && $_SESSION["regStep"] == "one") {
-			$userName = $_SESSION["screen_name"];
+			$userName = str_replace(" ", "_", $_SESSION["userName"]);
+			if ($_SESSION["socialNetworkId"] == 3) {
+				$oauthToken = $_SESSION["oauthToken"];
+				$googleUser = json_decode(getPage("https://www.googleapis.com/oauth2/v1/userinfo?access_token=".$oauthToken));
+				$userEmail = $googleUser->email;
+			}
 		
 			$content .= "<p class=\"ss-successful\">You settings have been imported.</p>
 			<p>To complete your registration, please fill this form:</p>";
@@ -112,19 +148,18 @@ function displayRegistration() {
 		<input type=\"password\" name=\"pass1\" /></p>
 		<p>Re-type Password<br />
 		<input type=\"password\". name=\"pass2\" /></p>";
-		if ((isset($_SESSION["validCaptcha"]) == FALSE || (isset($_SESSION["validCaptcha"]) && $_SESSION["validCaptcha"] != "true")) && (isset($_SESSION["regStep"]) == FALSE || (isset($_SESSION["regStep"]) && $_SESSION["regStep"] != "one"))) {
+		if ((empty($_SESSION["validCaptcha"]) || (isset($_SESSION["validCaptcha"]) && $_SESSION["validCaptcha"] != "true")) && (isset($_SESSION["regStep"]) == FALSE || (isset($_SESSION["regStep"]) && $_SESSION["regStep"] != "one"))) {
 			$content .= "<p>".recaptcha_get_html($recaptchaPublicKey)."</p>";
 		}
 		$content .= "<p><input class=\"white-button\" style=\"width: 100%; padding: 6px 0px;\" type=\"submit\" value=\"Register\" /></p>
 		</form>
 		</div>";
-		if (isset($_SESSION["regStep"]) == FALSE || $_SESSION["regStep"] != "one") {
+		if (empty($_SESSION["regStep"]) || $_SESSION["regStep"] != "one") {
 			$content .= "<div class=\"half-box\" style=\"float: right;\"> 
 			<h4>Or...</h4>
-			<div class=\"center-text\">
-			<p><a class=\"twitter-button\" href=\"".$pages["twitter"]->getAddress(TRUE)."/?step=authUrl&amp;url=".$originalUrl."\">Create account with Twitter</a></p>
-			<p><a class=\"white-button\" style=\"width: 100%; padding: 6px 0px;\" href=\"".$pages["login"]->getAddress(TRUE)."\">Log in</a></p>
-			</div>";
+			<p><a class=\"twitter-button\" href=\"".$pages["sync"]->getAddress(TRUE)."/?step=twitterAuth&amp;callback=".$pages["login"]->getAddress(TRUE)."&amp;url=".$originalUrl."\">Create account with Twitter</a></p>
+			<p><a class=\"google-button\" href=\"".$pages["sync"]->getAddress(TRUE)."/?step=googleAuth&amp;callback=".$pages["login"]->getAddress(TRUE)."&amp;url=".$originalUrl."\">Create account with Google</a></p>
+			<p><a class=\"white-button\" style=\"width: 100%; padding: 6px 0px;\" href=\"".$pages["login"]->getAddress(TRUE)."\">Log in</a></p>";
 		}
 		
 		if (!empty($_SESSION["regStep"]) && $_SESSION["regStep"] == "one") {

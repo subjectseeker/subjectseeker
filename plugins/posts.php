@@ -30,35 +30,37 @@ function displayFeed($httpQuery = NULL, $allowOverride = TRUE, $minimal = FALSE,
 		$errors = $cacheVars["errors"];
 	}
 	
-	if (!empty($api->errors)) {
-		foreach ($api->errors as $error) {
+	if ($errors) {
+		foreach ($errors as $error) {
 			print "<p class=\"ss-error\">$error</p>";
 		}
+		
+		return NULL;
 	}
-	else {
-		if ($total != 0) {
-			displayPosts ($posts, $minimal, $open, $db);
-			
-			global $pages;
-			if ($minimal == TRUE) {
-				parse_str($httpQuery, $queryResults);
-				unset($queryResults["n"]);
-				unset($queryResults["offset"]);
-				$linkQuery = http_build_query($queryResults);
-				print "<div class=\"page-buttons\">
-				<a class=\"ss-button\" href=\"".$pages["posts"]->address."/?".htmlspecialchars($linkQuery)."\">More</a>
-				</div>";
-			}
-			else {
-				$limit = NULL;
-				if (isset($_REQUEST["n"])) {
-					$limit = $_REQUEST["n"];
-				}
-				pageButtons ($pages["posts"]->getAddress(), $limit, $total);
-			}
+	
+	if ($total != 0) {
+		print "<div class=\"posts\">";
+		displayPosts ($posts, $minimal, $open, $db);
+		print "</div>";
+		
+		global $pages;
+		if ($minimal == TRUE) {
+			parse_str($httpQuery, $queryResults);
+			unset($queryResults["n"]);
+			unset($queryResults["offset"]);
+			$linkQuery = http_build_query($queryResults);
+			print "<div class=\"page-buttons\">
+			<a class=\"ss-button\" href=\"".$pages["posts"]->address."/?".htmlspecialchars($linkQuery)."\">More</a>
+			</div>";
 		} else {
-			print "<p>No results found for your search parameters.</p>";
+			$limit = NULL;
+			if (isset($_REQUEST["n"])) {
+				$limit = $_REQUEST["n"];
+			}
+			pageButtons ($pages["posts"]->getAddress(), $limit, $total);
 		}
+	} else {
+		print "<p>No results found for your search parameters.</p>";
 	}
 }
 

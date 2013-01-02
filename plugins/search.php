@@ -59,8 +59,8 @@ function searchPage($text = NULL, $limit = 30, $minimal = FALSE, $open = FALSE) 
 			$post["postTitle"] = $row["BLOG_POST_TITLE"];
 			$post["postUrl"] = htmlspecialchars($row["BLOG_POST_URI"]);
 			$post["postSummary"] = $row["BLOG_POST_SUMMARY"];
-			$post["blogName"] = $row["BLOG_NAME"];
-			$post["blogUrl"] = htmlspecialchars($row["BLOG_URI"]);
+			$post["siteName"] = $row["BLOG_NAME"];
+			$post["siteUrl"] = htmlspecialchars($row["BLOG_URI"]);
 			$post["postDate"] = $row["BLOG_POST_DATE_TIME"];
 			$post["hasCitation"] = $row["BLOG_POST_HAS_CITATION"];
 			

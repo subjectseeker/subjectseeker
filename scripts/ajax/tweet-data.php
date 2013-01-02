@@ -17,23 +17,20 @@ include_once (dirname(__FILE__)."/../initialize.php");
 $db = ssDbConnect();
 	
 $postId = str_replace("post-", "", $_REQUEST["postId"]);
-	
-// Use Search API to find Blog ID and Post URL
-$queryList = httpParamsToSearchQuery("type=post&filter0=identifier&value0=$postId");
-$settings = httpParamsToExtraQuery("type=post&filter0=identifier&value0=$postId");
-$postData = generateSearchQuery ($queryList, $settings, 0, $db);
-$row = mysql_fetch_array($postData["result"]);
-$postUri = $row["BLOG_POST_URI"];
-$blogId = $row["BLOG_ID"];
+
+$api = new API;
+$api->searchDb("filter0=identifier&value0=$postId", FALSE, "post");
+$post = array_shift($api->posts);
+$postUri = $post["postUrl"];
+$blogId = $post["siteId"];
 
 // Get Blog social info
-$blogSocialAccount = getBlogSocialAccount(1, $blogId, $db);
-$blogTwitterHandle = $blogSocialAccount["SOCIAL_NETWORKING_ACCOUNT_NAME"];
+$blogSocialAccount = getSocialNetworkUser (1, $blogId, "siteId", $db);
+$blogTwitterHandle = $blogSocialAccount["socialNetworkUserName"];
 
-global $bitlyUser, $biltyKey;
-$shortUrl = get_bitly_short_url($postUri,$bitlyUser,$bitlyKey);
+$shortUrl = get_bitly_short_url($postUri);
 
-if (!empty($blogTwitterHandle)) {
+if ($blogTwitterHandle) {
 	$blogTwitterHandle = " @".$blogTwitterHandle;
 }
 

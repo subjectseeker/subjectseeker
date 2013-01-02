@@ -8,7 +8,8 @@ $imageName = rotateImageUrl($imagedir."/logos/rotate");
 ?>
 
 <div id="notification-area">
-<span class="alignright"><span class="close-parent remove-parent">X</span></span><br /><span id="notification-content"></span>
+	<div class="close-parent">X</div>
+	<div id="notification-content"></div>
 </div>
 
 <div id="header">
@@ -29,11 +30,6 @@ $imageName = rotateImageUrl($imagedir."/logos/rotate");
   </div>
 </div>
 <div id="navigation-bar">
-	<div id="site-logo">
-    <a href="http://scienceonline.com/">
-      <img src="<?php echo $imagesUrl . "/logos/rotate/" . $imageName ?>" alt="ScienceOnline Logo" />
-    </a>
-  </div>
 	<ul id="navigation-list">
   	<?php
     foreach ($naviItems as $naviItem) {

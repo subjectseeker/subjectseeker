@@ -20,34 +20,38 @@ if (! $handle) {
 // Build list of modules
 $section = null;
 $line = 0;
-while (($buffer = fgets($handle, 4096)) !== false) {
+while (($data = fgetcsv($handle, 4096, ",", '"')) !== false) {
 	$line++;
-	$buffer = trim ($buffer);
-
-	if (substr($buffer, 0, 1) === "#" || strlen($buffer) == 0) {
+	
+	$firstValue = $data[0];
+	if (substr($firstValue, 0, 1) === "#" || strlen($firstValue) == 0) {
 		continue;
 	}
 
 	// What section of the config file are we in?
-	if (substr ($buffer, 0, 1) === "[") {
-		if (in_array($buffer, $sections)) {
-			$section = str_replace(array("[","]"), "", $buffer);
+	if (substr($firstValue, 0, 1) === "[") {
+		if (in_array($firstValue, $sections)) {
+			$section = str_replace(array("[","]"), "", $firstValue);
 		} else {
-			exit ("Unable to parse $configFile line: $buffer ($line)\n");
+			exit ("Unable to parse $configFile line: $firstValue ($line)\n");
 		}
-
 	} else {
-
 		// Construct list of objects with info about pages
 		if ($section === "page-layouts") {
 			// page-id location-on-page module-id
-			$args = preg_split("/\s+/", $buffer);
-			$pageId = array_shift ($args);
-			$pageLocation = array_shift ($args);
-			addPage($pageId, $pageLocation, $args, $pages);
-		} elseif ($section === "page-info") {
+			$pageId = array_shift($data);
+			$pageLocation = array_shift ($data);
+			$tabIndex = array_shift ($data);
+			$tabName = array_shift ($data);
+			$tabDisplay = array_shift ($data);
+			$modules = $data;
+			addPage($pageId, $pageLocation, $tabIndex, $tabName, $tabDisplay, $modules, $pages);
+		}
+		
+		// Set page info.
+		elseif ($section === "page-info") {
 			// page-id address title
-			list ($pageId, $pageAddress, $pageTitle) = preg_split ("/\s+/", $buffer, 3);
+			list ($pageId, $pageAddress, $pageTitle) = $data;
 			if (isset ($pages[$pageId])) {
 				$pages[$pageId]->setTitle($pageTitle);
 				$pages[$pageId]->setAddress($pageAddress);
@@ -59,40 +63,30 @@ while (($buffer = fgets($handle, 4096)) !== false) {
 		// Get items of the navigation bar.
 		elseif ($section === "navigation-items") {
 			// title class address
-			$components = preg_split("/\s+/", $buffer, 3);
-			$naviItem["address"] = $components[0];
-			$naviItem["class"] = $components[1];
-			$naviItem["title"] = $components[2];
+			$naviItem["address"] = array_shift($data);
+			$naviItem["class"] = array_shift($data);
+			$naviItem["title"] = array_shift($data);
 			$naviItems[] = $naviItem;
-		}
-
-		// Get items of the navigation bar.
-		elseif ($section === "sidebar-default") {
-			// title class address
-			list ($pageId, $pageSidebar) = preg_split ("/\s+/", $buffer, 2);
-			$pages[$pageId]->setSidebar($pageSidebar);
 		}
 
 		// Construct list of objects with info about modules
 		elseif ($section == "modules") {
 			// module-id file-name php-function parameters...
-			$args = preg_split("/\s+/", $buffer);
 			$module;
 			// first two args are id and function name
-			$module["id"] = array_shift($args);
-			$moduleId = $module["id"];
-			$module["fileName"] = array_shift($args);
-			$module["functionName"] = array_shift($args);
-			$module["functionArgs"] = $args;
+			$moduleId = array_shift($data);
+			$module["id"] = $moduleId;
+			$module["fileName"] = array_shift($data);
+			$module["functionName"] = array_shift($data);
+			$module["functionArgs"] = $data;
 			$modules[$moduleId] = $module;
 		}
 
 		// Add module title to module object
 		elseif ($section === "module-titles") {
 			// module-id title
-			$components = preg_split ("/\s+/", $buffer, 2);
-			$moduleId = $components[0];
-			$modules[$moduleId]["title"] = $components[1];
+			$moduleId = $data[0];
+			$modules[$moduleId]["title"] = $data[1];
 		}
 
 		else {
@@ -106,8 +100,6 @@ if (!feof($handle)) {
 	echo "Error: unexpected fail reading $configFile\n";
 }
 fclose($handle);
-
-
 
 /*
 // Sample output
@@ -123,14 +115,13 @@ foreach ($pages as $page) {
 }
 */
 
-
 //
 // FUNCTIONS
 //
 
 // Input: page ID, location to place this module on page (right, center...), module ID
 // Output: page object, populated with ID and this location/module pair
-function addPage($pageId, $location, &$moduleIds, &$pages) {
+function addPage($pageId, $location, $tabIndex, $tabName, $tabDisplay, &$moduleIds, &$pages) {
 
 	$page;
 	if (isset($pages[$pageId])) {
@@ -142,9 +133,8 @@ function addPage($pageId, $location, &$moduleIds, &$pages) {
 
 	$page->setId($pageId);
 
-	foreach ($moduleIds as $moduleId) {
-		$page->appendLocation($location, $moduleId);
-	}
+	$page->appendLocation($location, $moduleIds, $tabName, $tabIndex, $tabDisplay);
+	
 	return $page;
 }
 
@@ -158,11 +148,8 @@ function displayModules ($moduleList, $noPrint = FALSE) {
 		}
 		// Standalone plugins need to return their output instead of printing directly.
 		// TO DO: Determine if this should be done with all plugins and if that uses more RAM.
-		elseif ($noPrint == TRUE) {
-			$output .= getPlugin($module, TRUE);
-		}
 		else {
-			getPlugin($module);
+			$output .= getPlugin($module, $noPrint);
 		}
 	}
 	return $output;
@@ -245,20 +232,15 @@ class Page {
 	public function getLocations($location = NULL) {
 		if (empty($location)) {
 			return $this->locations;
-		} else {
-                  return $this->locations["$location"];
+		} elseif(isset($this->locations["$location"])) {
+			return $this->locations["$location"];
 		}
 	}
 
-  public function setSidebar($sidebar) {
-		$this->sidebar = $sidebar;
-	}
-
-	public function appendLocation($location, $moduleId) {
-		if (!isset($this->locations[$location])) {
-			$this->locations[$location] = array();
-		}
-		array_push ($this->locations[$location], $moduleId);
+	public function appendLocation($location, $moduleIds, $tabName, $tabIndex, $tabDisplay) {
+		$this->locations[$location][$tabIndex]["name"] = $tabName;
+		$this->locations[$location][$tabIndex]["display"] = $tabDisplay;
+		$this->locations[$location][$tabIndex]["modules"] = $moduleIds;
 	}
 }
 

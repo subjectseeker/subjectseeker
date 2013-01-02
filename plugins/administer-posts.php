@@ -13,50 +13,49 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 */
 
 function adminPosts($httpQuery = NULL, $allowOverride = TRUE, $minimal = FALSE, $open = FALSE) {
-	$db = ssDbConnect();
-	if (isLoggedIn()) {
+	global $pages;
+	$db	= ssDbConnect();
+	
+	if (isLoggedIn()){
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
-								$userPriv = getUserPrivilegeStatus($authUserId, $db);
-		
-		if ($userPriv > 1) { // admin
-			$step = NULL;
-			if (!empty($_REQUEST["step"])) {
-				$step = $_REQUEST["step"];
-			}
-				
-			if ($step != NULL) {
-				confirmEditPost($step, $db);
-			}
-			$queryList = httpParamsToSearchQuery($httpQuery, $allowOverride);
-			$settings = httpParamsToExtraQuery($httpQuery, $allowOverride);
-			$settings["type"] = "post";
-			$postsData = generateSearchQuery ($queryList, $settings, 1, $db);			
-			if (!empty($postsData["errors"])) {
-				foreach ($postsData["errors"] as $error) {
-					print "<p class=\"ss-error\">$error</p>";
-				}
-			}
-			else {
-				if (empty($postsData["result"])) {
-					print "<p>There are no more posts in the system.</p>";
-				}
-				else {
-					editPostForm ($postsData["result"], $userPriv, FALSE, $db);
-				}
-				global $pages;
-				$pagesize = NULL;
-				if (isset($_REQUEST["n"])) {
-					$pagesize = $_REQUEST["n"];
-				}
-				pageButtons ($pages["administer-posts"]->getAddress(), $pagesize, $postsData["total"]);
-			}
-		} else { // not moderator or admin
-			print "<p class=\"ss-warning\">You are not authorized to administrate posts.</p>";
-		}
-	} else { // not logged in
+		$userPriv = getUserPrivilegeStatus($authUserId, $db);
+	} else {
 		print "<p class=\"ss-warning\">Please log in.</p>";
+		
+		return NULL;
 	}
+	
+	if ($userPriv < 2) {
+		print "<p class=\"ss-warning\">You don't have sufficient privileges.</p>";
+		
+		return NULL;
+	}
+	
+	$step = NULL;
+	if (isset($_REQUEST["step"])) {
+		$step = $_REQUEST["step"];
+	}
+	
+	if ($step) {
+		confirmEditPost($step, $db);
+	}
+	
+	$api = new API;
+	$api->searchDb($httpQuery, TRUE, "post", $userPriv);
+	$posts = $api->posts;
+	
+	if (empty($posts)) {
+		print "<p>No posts found.</p>";
+		return NULL;
+	}
+	
+	editPostForm ($api->posts, $userPriv, FALSE, $db);
+	$limit = NULL;
+	if (isset($_REQUEST["n"])) {
+		$limit = $_REQUEST["n"];
+	}
+	pageButtons ($pages["posts"]->getAddress(), $limit, $api->total);
 }
 ?>

@@ -15,51 +15,29 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 include_once (dirname(__FILE__)."/../initialize.php");
 
 // Only recommend if user is logged in.
-if (isLoggedIn()){
+if (isLoggedIn()) {
 	$db = ssDbConnect();
 	$authUser = new auth();
 	$authUserId = $authUser->userId;
 	$authUserName = $authUser->userName;
 	$userPriv = getUserPrivilegeStatus($authUserId, $db);
-	$postId = str_replace("post-", "", $_REQUEST["postId"]);
+	$id = $_REQUEST["id"];
+	$step = $_REQUEST["step"];
+	$type = $_REQUEST["type"];
 	
-	// If user is logged in
-	if ($authUserId != NULL) {
-		$step = NULL;
-		if (isset($_REQUEST["step"])) {
-			$step = $_REQUEST["step"];
-		}
-		
-		if ($step == 'recommend') {
-			// Insert recommendation
-			$timestamp = dateStringToSql("now");
-			$sql = "INSERT IGNORE INTO POST_RECOMMENDATION (USER_ID, BLOG_POST_ID, REC_DATE_TIME) VALUES ($authUserId, $postId, '$timestamp')";
-			mysql_query($sql, $db);
-			
-			if ($userPriv > 0) {
-				$sql = "UPDATE POST_RECOMMENDATION SET REC_NOTIFICATION='1' WHERE BLOG_POST_ID='$postId' AND USER_ID='$authUserId' AND REC_NOTIFICATION = '0'";
-				mysql_query($sql, $db);
-			}
-		}
-		
-		if ($step == 'recommended') {	
-			$sql = "DELETE FROM POST_RECOMMENDATION WHERE BLOG_POST_ID = $postId AND USER_ID = $authUserId";
-			mysql_query($sql, $db);
-		}
-		// Get post recommendation status
-		$recStatus = getRecommendationsCount($postId, NULL, $authUserId, NULL, $db);
+	$typeId = "";
+	if ($type == "post")
+		$typeId = "1";
+	elseif ($type == "user")
+		$typeId = "2";
+	
+	if ($step == 'recommend') {
+		addRecommendation($id, $typeId, $authUserId, $db);
+	} elseif ($step == 'recommended') {	
+		removeRecommendation($id, $typeId, $authUserId, $db);
 	}
 	
-	// Get number of recommendations for this post
-	$recCount = getRecommendationsCount($postId, NULL, NULL, NULL, $db);
-	
-	// Update recommendation button.
-	if ($recStatus == TRUE) {
-		print "<div class=\"recommended\" title=\"Remove recommendation and note\"></div>";
-	} else {
-		print "<div class=\"recommend\" title=\"Recommend\"></div>";
-	}
-	print "<span class=\"rec-count\">$recCount</span>";
+	recButton($id, $typeId, $authUserId, TRUE, $db);
 }
 
 ?>

@@ -25,7 +25,7 @@ $postId = $matchResult[0];
 $errormsgs = array();
 $postData = getPost($postId, $db);
 $postHasCitation = $postData["BLOG_POST_HAS_CITATION"];
-$editorsPicksStatus = getRecommendationsCount($postId, NULL, NULL, 1, $db);
+$editorsPicksStatus = getRecommendations($id, $typeId, NULL, TRUE, NULL, NULL, $db);
 
 global $postProfile;
 global $imagesUrl;

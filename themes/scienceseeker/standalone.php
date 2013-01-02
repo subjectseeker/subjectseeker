@@ -3,12 +3,15 @@ global $currentPage;
 global $homeUrl;
 global $themeUrl;
 global $localStylesheet;
-$content = displayModules($currentPage->getLocations("center"), TRUE);
+
+$content = "";
+foreach ($currentPage->getLocations("center") as $tab) {
+	$content .= displayModules($tab["modules"], TRUE);
+}
 
 if ($httpsEnabled == "true") {
 	$themeUrl = str_replace("http:", "https:", $themeUrl);
 	$imagesUrl = str_replace("http:", "https:", $imagesUrl);
-	$localStylesheet = str_replace("http:", "https:", $localStylesheet);
 }
 ?>
 <!DOCTYPE html>
@@ -17,11 +20,7 @@ if ($httpsEnabled == "true") {
 <?php include_once("head.php"); ?>
 <link rel="stylesheet" type="text/css" href="<?php echo $themeUrl; ?>/standalone.css" media="all">
 <?php
-if (!empty($localStylesheet)) {
-?>
-<link rel="stylesheet" type="text/css" href="<?php echo $localStylesheet ?>" media="all" />
-<?php
-}
+echo $customHead;
 ?>
 </head>
 <body>

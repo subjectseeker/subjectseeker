@@ -39,11 +39,15 @@ function displayFilters() {
 	<div class=\"filter-buttons\"><a data-button=\"filter-posts\" class=\"button-small-red\" href=\"".$pages["posts"]->getAddress()."\">Posts</a><a data-button=\"filter-blogs\" class=\"button-small-red\" href=\"".$pages["sources"]->getAddress()."\">Sources</a><a data-button=\"filter-widget\" class=\"button-small-red\" href=\"".$pages["widget"]->getAddress()."\">Widget</a><a data-button=\"filter-feed\" class=\"button-small-yellow\" href=\"$feedUrl\" target=\"_blank\">Feed</a></div>
 	<p>Search Title<br />
 	<input class=\"filters-text\" type=\"text\" name=\"title\" /></p>
-	<ul>
-	<li><input class=\"filters\" type=\"checkbox\" name=\"category\" value=\"has-citation\"";
-	if (isset($checkCitation)) print " checked=\"checked\"";
-	print " /> <a href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=has-citation&amp;value0=true\">Citations</a></li>
-	<li style=\"margin-bottom: 20px;\"><input class=\"filters\" type=\"checkbox\" name=\"category\" value=\"recommender-status\"";
+	<ul>";
+	// TO DO: This is a workaround in case the installation has the citations disabled, find a better solution.
+	if (isset($pages["generate-citations"])) {
+		print "<li><input class=\"filters\" type=\"checkbox\" name=\"category\" value=\"has-citation\"";
+		if (isset($checkCitation))
+			print " checked=\"checked\"";
+		print " /> <a href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=has-citation&amp;value0=true\">Citations</a></li>";
+	}
+	print "<li style=\"margin-bottom: 20px;\"><input class=\"filters\" type=\"checkbox\" name=\"category\" value=\"recommender-status\"";
 	if (isset($checkEditorsPicks)) print " checked=\"checked\"";
 	print " /> <a href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=recommender-status&amp;value0=editor\">Editors' Picks</a></li>";
 	$topicList = getTopicList (1, $db);
