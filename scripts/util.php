@@ -316,7 +316,7 @@ class cache {
 		
 		// Constructor of the class
 		$this->file = $this->cacheDir . "/$fileName.txt";
-		if (file_exists($this->file) && (filemtime($this->file) + $this->cacheTime) > time()) {
+		if (file_exists($this->file) && (filemtime($this->file) + 3600) > time()) {
 			if ($varCache != TRUE) {
 				$this->htmlCache();
 			}
@@ -412,38 +412,84 @@ function paramArrayToString($params) {
 /*
  * HTTP request functions
  */
-
+ 
 // Input: Optional http query, allow override.
 // Output: list of SSFilter objects representing search query
-function httpParamsToSearchQuery($query = NULL, $allowOverride = TRUE) {
+function parseHttpParams($query = NULL, $allowOverride = TRUE) {
 	parse_str($query, $parsedQuery);
 	// Allow users to override the parameters with GET or POST
 	if ($allowOverride == TRUE) {
-		$parsedQuery = array_merge($parsedQuery, $_REQUEST);
+		$parsedQuery = array_merge($parsedQuery, $_GET);
+	}
+	
+	$i = 0;
+	$searchParams["string"] = "";
+	$searchParams["parameters"] = array();
+	$searchParams["filters"] = array();
+	while (array_key_exists ("filter$i", $parsedQuery)) {
+		$searchParams["filters"][$i]["name"] = $parsedQuery["filter$i"];
+		$searchParams["string"] .= "&filter$i=".$parsedQuery["filter$i"];
+		$searchParams["filters"][$i]["value"] = NULL;
+		$searchParams["filters"][$i]["modifier"] = NULL;
+
+		if (array_key_exists("value$i", $parsedQuery)) {
+			$searchParams["filters"][$i]["value"] = $parsedQuery["value$i"];
+			$searchParams["string"] .= "&value$i=".$parsedQuery["value$i"];
+		}
+
+		if (array_key_exists("modifier$i", $parsedQuery)) {
+			$searchParams["filters"][$i]["modifier"] = $parsedQuery["modifier$i"];
+			$searchParams["string"] .= "&modifier$i=".$parsedQuery["modifier$i"];
+		}
+		
+		++$i;
+	}
+	
+	$results = array();
+	$parameters = array("n", "offset", "type", "show-all", "citation-in-summary", "source-in-title", "sort", "order", "max-date", "min-date", "max-id", "min-id");
+	foreach ($parameters as $parameter) {
+		$searchParams["parameters"][$parameter] = NULL;
+		if (isset($parsedQuery[$parameter])) {
+			$searchParams["parameters"][$parameter] = $parsedQuery[$parameter];
+			$searchParams["string"] .= "&$parameter=".$parsedQuery[$parameter];
+		}
+	}
+	
+	$searchParams["string"] = substr($searchParams["string"], 1);
+	
+	return $searchParams;
+}
+
+// Input: Optional http query, allow override.
+// Output: list of SSFilter objects representing search query
+/*function httpParamsToSearchQuery($query = NULL, $allowOverride = TRUE) {
+	parse_str($query, $parsedQuery);
+	// Allow users to override the parameters with GET or POST
+	if ($allowOverride == TRUE) {
+		$parsedQuery = array_merge($parsedQuery, $_GET);
 	}
 	
 	$i = 0;
 	// TODO JPH use this list
 	$params = array("filter", "value", "modifier");
-	$searchObjs = array();
+	$searchParams = array();
 
 	while (array_key_exists ("filter$i", $parsedQuery)) {
-		$ssFilter = new SSFilter();
-		$ssFilter->name = $parsedQuery["filter$i"];
+		$param["name"] = $parsedQuery["filter$i"];
 
 		if (array_key_exists("value$i", $parsedQuery)) {
-			$ssFilter->value = $parsedQuery["value$i"];
+			$param["value"] = $parsedQuery["value$i"];
 		}
 
 		if (array_key_exists("modifier$i", $parsedQuery)) {
-			$ssFilter->modifier = $parsedQuery["modifier$i"];
+			$param["modifier"] = $parsedQuery["modifier$i"];
 		}
 		
-		array_push($searchObjs, $ssFilter);
-		$i++;
+		array_push($searchParams, $param);
+		++$i;
 	}
 	
-	return $searchObjs;
+	return $searchParams;
 }
 
 // Input: Optional http query, allow override.
@@ -452,7 +498,7 @@ function httpParamsToExtraQuery($query = NULL, $allowOverride = TRUE) {
 	parse_str($query, $parsedQuery);
 	// Allow users to override the parameters with GET or POST
 	if ($allowOverride == TRUE) {
-		$parsedQuery = array_merge($parsedQuery, $_REQUEST);
+		$parsedQuery = array_merge($parsedQuery, $_GET);
 	}
 	
 	$results = array();
@@ -465,7 +511,7 @@ function httpParamsToExtraQuery($query = NULL, $allowOverride = TRUE) {
 	}
 	
 	return $results;
-}
+}*/
 
 // Get current url
 function getURL () {
@@ -2075,8 +2121,7 @@ function pageButtons ($baseUrl, $pagesize, $total, $nextText = "»", $prevText =
 			$pageQuery = htmlspecialchars(http_build_query($queryResults));
 			if ($currentPage == $p) {
 				print "<span class=\"page-number-selected\">$p</span>";
-			}
-			else {
+			} else {
 				print "<a class=\"page-number\" href=\"$baseUrl/?$pageQuery\">$p</a>";
 			}
 			$p++;
@@ -4328,10 +4373,10 @@ function clearClaimToken($blogId, $userId, $claimToken, $db) {
 
 /* Social Networks */
 
-function getGoogleTokens($code) {
+function getGoogleTokens($code, $returnUrl) {
 	global $googleClientId, $googleClientSecret;
 	
-	$googleTokens = json_decode(getPage("https://accounts.google.com/o/oauth2/token", "code=$code&client_id=$googleClientId&client_secret=$googleClientSecret&redirect_uri=".$pages["sync"]->getAddress(TRUE)."&grant_type=authorization_code"));
+	$googleTokens = json_decode(getPage("https://accounts.google.com/o/oauth2/token", "code=$code&client_id=$googleClientId&client_secret=$googleClientSecret&redirect_uri=$returnUrl&grant_type=authorization_code"));
 	
 	return $googleTokens;
 }
@@ -4412,7 +4457,7 @@ function getTwitterUserDetails($twitterUserId = NULL, $twitterUserName = NULL) {
 	$connection = new TwitterOAuth($twitterConsumerKey, $twitterConsumerSecret);
 	$result = $connection->post("users/lookup", array("user_id" => $twitterUserId, "screen_name" => $twitterUserName));
 	$httpCode = $connection->http_code;
-	
+	var_dump($result);
 	if ($httpCode == 200) {
 		if (count($result) == 1)
 			return array_shift($result);

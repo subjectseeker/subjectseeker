@@ -15,21 +15,12 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 function displayFeed($httpQuery = NULL, $allowOverride = TRUE, $minimal = FALSE, $open = FALSE) {
 	$db = ssDbConnect();
 	
-	$cache = new cache("posts-$httpQuery", TRUE, TRUE);
-	if ($cache->caching == TRUE) {
-		$api = new API;
-		$api->searchDb($httpQuery, $allowOverride, "post");
-		$cacheVars["posts"] = $posts = $api->posts;
-		$cacheVars["total"] = $total = $api->total;
-		$cacheVars["errors"] = $errors = $api->errors;
-		$cache->storeVars($cacheVars);
-	} else {
-		$cacheVars = $cache->varCache();
-		$posts = $cacheVars["posts"];
-		$total = $cacheVars["total"];
-		$errors = $cacheVars["errors"];
-	}
-	
+	$api = new API;
+	$api->searchDb($httpQuery, $allowOverride, "post");
+	$posts = $api->posts;
+	$total = $api->total;
+	$errors = $api->errors;
+
 	if ($errors) {
 		foreach ($errors as $error) {
 			print "<p class=\"ss-error\">$error</p>";

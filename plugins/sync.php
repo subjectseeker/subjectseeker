@@ -68,7 +68,7 @@ function syncPage() {
 		}
 		
 		$code = $_REQUEST["code"];
-		$googleTokens = getGoogleTokens($code);
+		$googleTokens = getGoogleTokens($code, $pages["sync"]->getAddress(TRUE));
 		$oauthToken = $googleTokens->access_token;
 		
 		$googleUser = getGoogleUser($oauthToken);

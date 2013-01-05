@@ -68,7 +68,7 @@ Author Email: ".$email."
 	
 ".$message;
 			
-			sendMail($contactEmail, $subject, $content);
+			sendUserMail($userDisplayName, $userEmail, $subject, $content);
 			print "<p class=\"ss-successful\">Your message has been successfully sent.</p>";
 		}
 	}
@@ -89,6 +89,15 @@ Author Email: ".$email."
 	}
 	print "<p><input class=\"ss-button\" type=\"submit\" value=\"Send\" /></p>
 	</form>";
+}
+
+function sendUserMail($userDisplayName, $userEmail, $subject, $message) {
+	global $sitename;
+	global $contactEmail;
+	$headers = "Mime-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nFrom: $sitename <$contactEmail>\r\nReply-To: $userDisplayName <$userEmail>\r\nX-Mailer: PHP/" . phpversion();
+	if (! mail($contactEmail, $subject, $message, $headers)) {
+		// TODO: Log this.
+	}
 }
 
 ?>

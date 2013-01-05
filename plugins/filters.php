@@ -17,20 +17,20 @@ function displayFilters() {
 	global $feedUrl;
 	global $currentPage;
 	
-	$params = httpParamsToSearchQuery();
+	$params = parseHttpParams();
 	$db = ssDbConnect();
 	
-	foreach ($params as $param) {
-		if ($param->name == "blog" && $param->modifier == "topic") {
-			$topics[] = $param->value;
+	foreach ($params["filters"] as $param) {
+		if ($param["name"] == "blog" && $param["modifier"] == "topic") {
+			$topics[] = $param["value"];
 		}
-		if ($param->name == "topic") {
-			$topics[] = $param->value;
+		if ($param["name"] == "topic") {
+			$topics[] = $param["value"];
 		}
-		if ($param->name == "has-citation" && $param->value != "false") {
+		if ($param["name"] == "has-citation" && $param["value"] != "false") {
 			$checkCitation = TRUE;
 		}
-		if ($param->name == "recommender-status" && $param->value == "editor") {
+		if ($param["name"] == "recommender-status" && $param["value"] == "editor") {
 			$checkEditorsPicks = TRUE;
 		}
 	}

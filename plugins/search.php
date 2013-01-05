@@ -77,7 +77,9 @@ function searchPage($text = NULL, $limit = 30, $minimal = FALSE, $open = FALSE) 
 	}
 		
 	if (!empty($posts)) {
+		print "<div class=\"posts\">";
 		displayPosts ($posts, $minimal, $open, $db);
+		print "</div>";
 	} else {
 		print "<p>No results found for your search parameters.</p>";
 	}

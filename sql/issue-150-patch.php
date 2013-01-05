@@ -54,18 +54,21 @@ while ($row = mysql_fetch_array($results)) {
 	$twitterNames[] = $socialNetworkUserName;
 }
 
-$twitterNames = implode(",", $twitterNames);
-$twitterUsers = getTwitterUserDetails(NULL, $twitterNames);
-foreach ($twitterUsers as $twitterUser) {
-	$twitterUserId = $twitterUser->id;
-	$twitterUserName = $twitterUser->screen_name;
-	$twitterUserAvatar = $twitterUser->profile_image_url;
-	$oauthToken = $socialNetworkUsers[$twitterUserName]["access_token"];
-	$oauthSecretToken = $socialNetworkUsers[$twitterUserName]["secret_token"];
-	$userId = $socialNetworkUsers[$twitterUserName]["userId"];
-	$blogId = $socialNetworkUsers[$twitterUserName]["blogId"];
-	
-	$socialNetworkUserId = addSocialNetworkUser(1, $twitterUserId, $twitterUserName, $twitterUserAvatar, $userId, $blogId, $oauthToken, $oauthSecretToken, NULL, $db);
+$twitterNameLists = array_chunk($twitterNames, 80);
+foreach ($twitterNameLists as $twitterNameList) {
+	$twitterNames = implode(",", $twitterNameList);
+	$twitterUsers = getTwitterUserDetails(NULL, $twitterNames);
+	foreach ($twitterUsers as $twitterUser) {
+		$twitterUserId = $twitterUser->id;
+		$twitterUserName = $twitterUser->screen_name;
+		$twitterUserAvatar = $twitterUser->profile_image_url;
+		$oauthToken = $socialNetworkUsers[$twitterUserName]["access_token"];
+		$oauthSecretToken = $socialNetworkUsers[$twitterUserName]["secret_token"];
+		$userId = $socialNetworkUsers[$twitterUserName]["userId"];
+		$blogId = $socialNetworkUsers[$twitterUserName]["blogId"];
+		
+		$socialNetworkUserId = addSocialNetworkUser(1, $twitterUserId, $twitterUserName, $twitterUserAvatar, $userId, $blogId, $oauthToken, $oauthSecretToken, NULL, $db);
+	}
 }
 
 /* Transfer Registration dates */

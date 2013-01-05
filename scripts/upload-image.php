@@ -5,7 +5,7 @@ include_once("initialize.php");
 function updateRecImage ($imageName, $postId, $userId, $db) {
 	$imageName = mysql_real_escape_string($imageName);
 	
-	$sql = "UPDATE POST_RECOMMENDATION SET REC_IMAGE = '$imageName' WHERE BLOG_POST_ID = '$postId' AND USER_ID = '$userId'";
+	$sql = "UPDATE RECOMMENDATION SET REC_IMAGE = '$imageName' WHERE OBJECT_ID = '$postId' AND OBJECT_TYPE_ID = '1' AND USER_ID = '$userId'";
 	mysql_query($sql, $db);
 }
 

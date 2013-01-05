@@ -82,7 +82,7 @@ function displayLogin() {
 	/* Google log in */
 	elseif (isset($_REQUEST["code"])) {
 		$code = $_REQUEST["code"];
-		$googleTokens = getGoogleTokens($code);
+		$googleTokens = getGoogleTokens($code,$pages["login"]->getAddress(TRUE));
 		$oauthToken = $googleTokens->access_token;
 		$googleUser = getGoogleUser($oauthToken);
 		$socialNetworkUserExtId = $googleUser->id;
