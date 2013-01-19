@@ -219,8 +219,7 @@ function displayLogin() {
 		<p><input type=\"text\" name=\"verification-data\"	/></p>
 		<p><input class=\"white-button\" type=\"submit\" value=\"Send verification email\" /></p>
 		</form>";
-	}
-	elseif ($step == "confirm-verification") {
+	} elseif ($step == "confirm-verification") {
 		$content .= "<div class=\"box-title\">Verify Account</div>";
 		if (!empty($_POST["verification-data"])) {
 			$userVerificationData = $_POST["verification-data"];
@@ -235,14 +234,12 @@ function displayLogin() {
 				if ($userStatusId == 3) {
 					$verificationCode = createSecretCode ($userId, 3, $db);
 					sendVerificationEmail($verificationCode, $userEmail, $userName, $userDisplayName);
-				}
-				else {
+				} else {
 					$content .= "<p class=\"ss-warning\">This account ($userName) has already been verified.</p>
 					<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress(TRUE)."\">Log In</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 					return $content;
 				}
-			}
-			else {
+			} else {
 				$content .= "<p class=\"ss-error\">The submitted email or user was not found in our database.</p>
 				<p><a class=\"white-button\" href=\"".$pages["login"]->getAddress(TRUE)."/?step=send-verification\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 				return $content;
@@ -255,8 +252,7 @@ function displayLogin() {
 		<p><input type=\"text\" name=\"verification-code\" /></p>
 		<p><input class=\"white-button\" type=\"submit\" value=\"Submit\" /></p>
 		</form>";
-	}
-	elseif ($step == "verify-email") {
+	} elseif ($step == "verify-email") {
 		$content .=	"<div class=\"box-title\">Verify Account</div>";
 		
 		if (!empty($_REQUEST["verification-code"])) {
@@ -275,8 +271,9 @@ function displayLogin() {
 				editUserStatus ($userId, 0, $db);
 				$authUser = new auth();
 				$authUser->loginUser($userId, FALSE);
-				$content .= "<p class=\"ss-successful\">Your account has been verified.</p>
-				<a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a>";
+				$userName = getUserName($userId, $db);
+				
+				header("Location: $homeUrl/user/$userName/settings");
 				
 			} else {
 				$content .= "<p class=\"ss-error\">Verification code not found in our database.</p>

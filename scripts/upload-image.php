@@ -14,6 +14,16 @@ function updateUserAvatar ($imageName, $userId, $db) {
 	mysql_query($sql, $db);
 }
 
+function updateGroupBanner ($imageName, $groupId, $db) {
+	$sql = "UPDATE `GROUP` SET GROUP_BANNER = '$imageName' WHERE GROUP_ID = '$groupId'";
+	mysql_query($sql, $db);
+}
+
+function updateUserBanner ($imageName, $userId, $db) {
+	$sql = "UPDATE USER_PREFERENCE SET USER_BANNER = '$imageName' WHERE USER_ID = '$userId'";
+	mysql_query($sql, $db);
+}
+
 if (isLoggedIn()){
 	global $imagesUrl;
 	global $imagedir;
@@ -53,12 +63,48 @@ if (isLoggedIn()){
 		$img_r = imagecreatefromgif($imageLocation);
 	}
 	
-	if ($userPriv > 0 && isset($_POST["type"]) && $_POST["type"] == "header") {	
+	$newImageName = $name.".jpg";
+	
+	if ($userPriv > 0 && isset($_POST["type"]) && $_POST["type"] == "header") {
 		// Generate cropped image
 		$createImage = imagecreatetruecolor(580, 200);
 		imagecopyresampled($createImage,$img_r,0,0,$x,$y,580,200,$w,$h);
-	}
-	else {
+		
+		$postId = $_POST["postId"];
+		imagejpeg($createImage, "$imagedir/headers/$newImageName", 	100);
+		updateRecImage($newImageName, $postId, $userId, $db);
+		
+	} elseif (isset($_POST["type"]) && $_POST["type"] == "user-banner") {
+		$createImage = imagecreatetruecolor(1000, 125);
+		imagecopyresampled($createImage,$img_r,0,0,$x,$y,1000,125,$w,$h);
+		
+		if (!is_dir($imagedir."/users/".$userId."/banners")) {
+			mkdir($imagedir."/users/".$userId."/banners", 0775, TRUE);
+			chmod($imagedir."/users/".$userId, 0775);
+			chmod($imagedir."/users/".$userId."/banners", 0775);
+		}
+	
+		imagejpeg($createImage, "$imagedir/users/$userId/banners/$newImageName", 	100);
+		updateUserBanner ($imageName, $userId, $db);
+	
+	} elseif (isset($_POST["type"]) && $_POST["type"] == "group-banner") {
+		$createImage = imagecreatetruecolor(1000, 125);
+		imagecopyresampled($createImage,$img_r,0,0,$x,$y,1000,125,$w,$h);
+		
+		$groupId = $_POST["groupId"];	
+		
+		if (isGroupManager($groupId, $authUserId, NULL, $db)) {
+			if (!is_dir($imagedir."/groups/".$groupId."/banners")) {
+				mkdir($imagedir."/groups/".$groupId."/banners", 0775, TRUE);
+				chmod($imagedir."/groups/".$groupId, 0775);
+				chmod($imagedir."/groups/".$groupId."/banners", 0775);
+			}
+		
+			imagejpeg($createImage, "$imagedir/groups/$groupId/banners/$newImageName", 	100);
+			updateGroupBanner($newImageName, $groupId, $db);
+		}
+		
+	} else {
 		// Generate cropped image
 		$createImage = imagecreatetruecolor(300, 300);
 		imagecopyresampled($createImage,$img_r,0,0,$x,$y,300,300,$w,$h);
@@ -66,20 +112,11 @@ if (isLoggedIn()){
 		// Generate small cropped image
 		$createImageS = imagecreatetruecolor(50, 50);
 		imagecopyresampled($createImageS,$img_r,0,0,$x,$y,50,50,$w,$h);
-	}
-	
-	$newImageName = $name.".jpg";
-	
-	if ($userPriv > 0 && isset($_POST["type"]) && $_POST["type"] == "header") {
-		$postId = $_POST["postId"];
-		imagejpeg($createImage, "$imagedir/headers/$newImageName", 	100);
-		updateRecImage($newImageName, $postId, $userId, $db);
-	}
-	else {
+		
 		$newImageNameS = "small-".$name.".jpg";
 		
 		// If user image folder doesn't exist, create it.
-		if (!is_dir($imagedir."/users/".$userId)) {
+		if (!is_dir($imagedir."/users/".$userId."/avatars")) {
 			mkdir($imagedir."/users/".$userId."/avatars", 0775, TRUE);
 			chmod($imagedir."/users/".$userId, 0775);
 			chmod($imagedir."/users/".$userId."/avatars", 0775);

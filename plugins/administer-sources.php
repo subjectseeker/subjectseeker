@@ -81,7 +81,7 @@ function adminSources() {
 			}
 			
 			$api = new API;
-			$api->searchDb("show-all=true", TRUE, "blog", $userPriv);
+			$api->searchDb("show-all=true", TRUE, "blog", FALSE, $userPriv);
 			$sites = $api->sites;
 			
 			if (empty($api->sites)) {

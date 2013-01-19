@@ -52,6 +52,26 @@ function editImage() {
 		},function() { 
 			$('#crop-button').removeAttr('disabled');
 		});
+		
+		$('#jcrop-group-banner').Jcrop({
+			minSize: [ 1000, 125 ],
+			setSelect: [ 0, 0, 1000, 125 ],
+			boxWidth: 600,
+			aspectRatio: 8/1,
+			onSelect: updateCoords,
+		},function() { 
+			$('#crop-button').removeAttr('disabled');
+		});
+		
+		$('#jcrop-user-banner').Jcrop({
+			minSize: [ 1000, 125 ],
+			setSelect: [ 0, 0, 1000, 125 ],
+			boxWidth: 600,
+			aspectRatio: 8/1,
+			onSelect: updateCoords,
+		},function() { 
+			$('#crop-button').removeAttr('disabled');
+		});
 	});
 	</script>";
 	if (isLoggedIn()){
@@ -87,20 +107,31 @@ function editImage() {
 			$target = "avatar";
 			
 			// Check if editor is uploading a header.
-			if (!empty($_GET["type"]) && $_GET["type"] == "header" && $userPriv > 0) {		
+			if (isset($_GET["type"]) && $_GET["type"] == "header" && $userPriv > 0) {		
 				if ($width < 580 || $height < 200) {
 					return $content .= "<p class=\"ss-error\">Your image must be at least 580 x 200.</p>";
 				}
 				$target = "header";
-			}
-			elseif ($width < 80 || $height < 80) {
+			} elseif (isset($_GET["type"]) && $_GET["type"] == "group-banner") {	
+				if ($width < 1000 || $height < 125) {
+					return $content .= "<p class=\"ss-error\">Your image must be at least 1000 x 125.</p>";
+				}
+				$target = "group-banner";
+				
+			} elseif (isset($_GET["type"]) && $_GET["type"] == "user-banner") {	
+				if ($width < 1000 || $height < 125) {
+					return $content .= "<p class=\"ss-error\">Your image must be at least 1000 x 125.</p>";
+				}
+				$target = "user-banner";
+				
+			} elseif ($width < 80 || $height < 80) {
 				return $content .= "<p class=\"ss-error\">Your avatar must be at least 80 x 80.</p>";
 			}
 			
 			global $homeUrl;
 			$originalUrl = $homeUrl;
-			if (empty($originalUrl)) {
-				$originalUrl = $_GET["url"];
+			if (isset($_REQUEST["url"])) {
+				$originalUrl = $_REQUEST["url"];
 			}
 			
 			$content .= "<div class=\"box-title\">Image Cropper</div>
@@ -117,10 +148,20 @@ function editImage() {
 			<input type=\"hidden\" name=\"url\" value=\"$originalUrl\" />
 			<input type=\"hidden\" name=\"imageName\" value=\"$imageName\" />";
 			if ($userPriv > 0) {
-				if (!empty($_POST["userId"])) {
+				if (isset($_POST["userId"])) {
 					$content .= "<input type=\"hidden\" name=\"userId\" value=\"".$_POST["userId"]."\" />";
 				}
-				if (!empty($_GET["type"]) && $_GET["type"] == "header") {
+				if (isset($_GET["type"]) && $_GET["type"] == "group-banner") {
+					$groupId = $_REQUEST["groupId"];
+					$content .= "<input type=\"hidden\" name=\"groupId\" value=\"$groupId\" />
+					<input type=\"hidden\" name=\"type\" value=\"group-banner\" />";
+					
+				} elseif (isset($_GET["type"]) && $_GET["type"] == "user-banner") {
+					$userId = $_REQUEST["userId"];
+					$content .= "<input type=\"hidden\" name=\"userId\" value=\"$userId\" />
+					<input type=\"hidden\" name=\"type\" value=\"user-banner\" />";
+					
+				} elseif (isset($_GET["type"]) && $_GET["type"] == "header") {
 					$postId = $_REQUEST["postId"];
 					$content .= "<input type=\"hidden\" name=\"postId\" value=\"$postId\" />
 					<input type=\"hidden\" name=\"type\" value=\"header\" />";

@@ -59,6 +59,7 @@ $twitterUserApi = "http://api.twitter.com/1/users/lookup.json?user_id="; // Twit
 // Parameters
 $numResults = 30;
 $maximumResults = 500;
+$cacheTime = 3600; // Seconds
 
 // E-mails
 $rejectedSiteReasons = "	1. The site may not have enough science content. We are flexible in our definition of a \"science\" site, but science must be one of the main topics.

@@ -27,13 +27,14 @@ function displayPostProfile() {
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
+		$authUserPriv = getUserPrivilegeStatus($authUserId, $db);
 	}
 	
 	preg_match('/(?<=\/post\/)\d+/', $_SERVER["REQUEST_URI"], $matchResult);
 	$postId = $matchResult[0];
 	
 	$api = new API;
-	$api->searchDb("type=post&filter0=identifier&value0=$postId", FALSE, "post");
+	$api->searchDb("type=post&filter0=identifier&value0=$postId", FALSE, "post", FALSE);
 	$post = array_shift($api->posts);
 	
 	if (!$post) {
@@ -41,54 +42,38 @@ function displayPostProfile() {
 	}
 	
 	$postId = $post["postId"];
+	$blogId = $post["siteId"];
 	$blogName = $post["siteName"];
 	$blogUri = $post["siteUrl"];
 	$postDate = strtotime($post["postDate"]);
 	$postSummary = strip_tags($post["postSummary"]);
 	$postTitle = $post["postTitle"];
-	$postUri = $post["postUrl"];
+	$postUrl = $post["postUrl"];
 	$postProfile = "/post/" . $postId;
 	$postHasCitation = $post["hasCitation"];
 	$date = date("g:i A | F d, Y", $postDate);
 	$postAuthor = $post["postAuthorName"];
 	$postLanguage = postIdToLanguageName ($postId, $db);
+	$blogTopics = getTags($blogId, 3, NULL, $db);
 	
 	// If post doesn't have a title, use the url instead.
 	if (! $postTitle)
-		$postTitle = $postUri;
-	
-	// Get blog topics.
-	$blogCatSQL = "SELECT T.TOPIC_NAME FROM TOPIC AS T, PRIMARY_BLOG_TOPIC AS BT, BLOG_POST AS P WHERE P.BLOG_POST_ID = $postId AND BT.BLOG_ID = P.BLOG_ID AND T.TOPIC_ID = BT.TOPIC_ID;";
-	$result = mysql_query( $blogCatSQL, $db);
-	
-	$blogTopics = array();
-	while ( $row = mysql_fetch_array( $result ) ) {
-		array_push($blogTopics, $row["TOPIC_NAME"]);
-	}
-	
-	// Get post topics.
-	$postCatSQL = "SELECT T.TOPIC_NAME FROM TOPIC AS T, POST_TOPIC AS PT WHERE PT.BLOG_POST_ID = $postId AND T.TOPIC_ID = PT.TOPIC_ID;";
-	$result = mysql_query( $postCatSQL, $db);
-	
-	$postTopics = array();
-	while ( $row = mysql_fetch_array( $result ) ) {
-		array_push($postTopics, $row["TOPIC_NAME"]);
-	}
+		$postTitle = $postUrl;
 	
 	// Get citations
 	if ($postHasCitation) $postCitations = postIdToCitation($postId, $db);
 	
 	$editorsPicksStatus = getRecommendations($postId, 1, NULL, TRUE, NULL, NULL, $db);
 	
-	print "<div>
-	<h1><a href=\"$postUri\" target=\"_blank\" title=\"Permanent link to $postTitle\">$postTitle</a></h1>
+	print "<div class=\"profile-title\">
+	<h1><a href=\"$postUrl\" target=\"_blank\" title=\"Permanent link to $postTitle\">$postTitle</a></h1>
 	<div class='profile-buttons'>";
 	recButton($postId, 1, $authUserId, FALSE, $db);
 	commentButton($postId, 1, $db);
 	print"</div>
 	</div>
 	<div class=\"profile-sidebar\">
-	<h2 class='block-title'>About this post</h2>
+	<h3>About this post</h3>
 	<div class=\"block\">
 	<div class='block-label'>Source</div>
 	<div class='block-value'><a href=\"$blogUri\" target=\"_blank\" title=\"Permanent link to $blogName homepage\" rel=\"alternate\">$blogName</a></div>";
@@ -105,12 +90,14 @@ function displayPostProfile() {
 	print "<div class='block-label'>Categories</div>
 	<div class='block-value'>";
 	foreach ($blogTopics as $i => $blogTopic) {
-		if ($i != 0)
+		if ($i != 0) {
 			print ", ";
-			
-		print "<a href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=blog&amp;modifier0=topic&amp;value0=".urlencode($blogTopic)."\" title=\"View all posts in $blogTopic\">$blogTopic</a>";
+		}
+		print "<a href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=blog&amp;modifier0=topic&amp;value0=".urlencode($blogTopic["topicName"])."\" title=\"View all posts in ".$blogTopic["topicName"]."\">".$blogTopic["topicName"]."</a>";
 	}
 	print "</div>
+	<div class='block-label'>URL</div>
+	<div class='block-value'><a href=\"$postUrl\" target=\"_blank\" title=\"Permanent link to $postTitle\" rel=\"alternate\">$postUrl</a></div>
 	
 	<div class=\"toggle-button center-text\">Link to this page</div>
 	<div class=\"ss-slide-wrapper center-text\">
@@ -146,18 +133,34 @@ function displayPostProfile() {
 		print '</div>';
 	}
 	print "</div>";
-	if ($postTopics) {
-		print "<h3>Topics</h3>
-		<div class=\"margin-bottom\">";
-		foreach ($postTopics as $a => $postTopic) {
-			if ($a != 0) {
-				print ", ";
-			}
-			print "<a href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=topic&amp;value0=".urlencode($postTopic)."\" title=\"View all posts in $postTopic\">$postTopic</a>";
-		}
-		print "</div>";
-	}
+	
+	print "<h3>Tags</h3>";
+	displayTags($postId, 1, TRUE, $db);
+	
 	displayComments($postId, 1, $authUserId, $db);
+	if ($authUserPriv > 0) {
+		$currentUrl = getURL();
+		print "<div class=\"toggle-button\">Related Image</div>
+		<div class=\"ss-slide-wrapper padding-content\" style=\"display: none;\">
+		<div id=\"filter-panel\">
+		<form method=\"post\" action=\"".$pages["crop"]->getAddress()."/?url=$currentUrl&amp;type=header\" enctype=\"multipart/form-data\">
+		<input type=\"hidden\" name=\"postId\" value=\"$postId\" />
+		<div>
+		<div class=\"alignleft\">
+		<h4>Maximum Size</h4>
+		<span class=\"subtle-text\">1 MB</span>
+		</div>
+		<div class=\"alignleft\" style=\"margin-left: 40px;\">
+		<h4>Minimum Width/Height</h4>
+		<span class=\"subtle-text\">580px / 200px</span>
+		</div>
+		</div>
+		<br style=\"clear: both;\" />
+		<div class=\"ss-div-2\"><input type=\"file\" name=\"image\" /> <input class=\"ss-button\" type=\"submit\" value=\"Upload\" /></div>
+		</form>
+		</div>
+		</div>";
+	}
 	print "</div>
 	</div>
 	</div>

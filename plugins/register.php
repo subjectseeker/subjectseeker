@@ -22,8 +22,7 @@ function displayRegistration() {
 	// If logged in, send to log in page to deal with this.
 	if (isLoggedIn()) {
 		header("Location: ".$pages["login"]->getAddress(TRUE)."/?url=$originalUrl");
-	}
-	else {
+	} else {
 		$content = "<div class=\"box-title\">Create Account</div>";
 		include_once(dirname(__FILE__)."/../third-party/recaptcha/recaptchalib.php");
 		
@@ -34,8 +33,8 @@ function displayRegistration() {
 		
 		// Check if user has submitted information
 		if (isset($_POST['user-name'])) {
-			$userName = mysql_escape_string($_POST['user-name']);
-			$userEmail = mysql_escape_string($_POST['email']);
+			$userName = mysql_real_escape_string($_POST['user-name']);
+			$userEmail = mysql_real_escape_string($_POST['email']);
 			$userPass1 = $_POST["pass1"];
 			$userPass2 = $_POST["pass2"];
 			
@@ -72,7 +71,7 @@ function displayRegistration() {
 				$userDisplayName = $userName;
 				
 				// Check if Twitter details have been imported
-				if ($_SESSION["regStep"] == "two") {
+				if (isset($_SESSION["regStep"]) && $_SESSION["regStep"] == "two") {
 					$socialNetworkId = $_SESSION["socialNetworkId"];
 					$socialNetworkUserExtId = $_SESSION["userId"];
 					$socialNetworkUserName = $_SESSION["userName"];

@@ -38,7 +38,7 @@ foreach ($tweets as $tweet) {
 		foreach ($tweet->entities->urls as $url) {
 			$link = expandURL($url->expanded_url);
 			$api = new API;
-			$api->searchDb("filter0=url&modifier0=all&value0=$link", FALSE, "post");
+			$api->searchDb("filter0=url&modifier0=all&value0=$link", FALSE, "post", FALSE);
 			
 			if ($api->total > 0) {
 				$post = array_shift($api->posts);

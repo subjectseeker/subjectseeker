@@ -1,4 +1,5 @@
 RewriteEngine On
+RewriteRule ^real-time/?$ real-time/realtime.php [L]
 RewriteRule ^search/default/?$ scripts/feed.php [L]
 RewriteRule ^feed/posts/?$ scripts/feed.php [L]
 RewriteRule ^widget/default/?$ scripts/widget.php [L]

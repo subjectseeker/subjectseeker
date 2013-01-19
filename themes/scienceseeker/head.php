@@ -14,8 +14,26 @@ global $httpsEnabled;
 
 if ($currentPage->id == "home") {
 	$title = $sitename." | ".$subtitle;
-}
-else {
+} elseif ($currentPage->id == "user-profile") {
+	preg_match('/(?<=\/user\/)[A-Za-z][A-Za-z0-9_]+/', $_SERVER["REQUEST_URI"], $matchResult);
+	$userName = $matchResult[0];
+	$title = "$userName's Profile | ".$sitename;
+	
+} elseif ($currentPage->id == "post-profile") {
+	$db = ssDbConnect();
+	preg_match('/(?<=\/post\/)\d+/', $_SERVER["REQUEST_URI"], $matchResult);
+	$post = getPost ($matchResult[0], $db);
+	$postTitle = $post["BLOG_POST_TITLE"];
+	$title = "$postTitle | ".$sitename;
+	
+} elseif ($currentPage->id == "group-profile") {
+	$db = ssDbConnect();
+	preg_match('/(?<=\/group\/)\d+/', $_SERVER["REQUEST_URI"], $matchResult);
+	$group = getGroup($matchResult[0], $db);
+	$groupName = $group["groupName"];
+	$title = "$groupName | ".$sitename;
+	
+} else {
 	$title = $currentPage->title." | ".$sitename;
 }
 
@@ -39,7 +57,7 @@ if ($debugSite == "true") {
 <?php
 }
 ?>
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
 <script type="text/javascript" src="<?php echo $jsUrl ?>/library.js"></script>
 <?php
 echo $customHead;

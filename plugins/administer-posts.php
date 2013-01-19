@@ -43,7 +43,7 @@ function adminPosts($httpQuery = NULL, $allowOverride = TRUE, $minimal = FALSE, 
 	}
 	
 	$api = new API;
-	$api->searchDb($httpQuery, TRUE, "post", $userPriv);
+	$api->searchDb($httpQuery, TRUE, "post", FALSE, $userPriv);
 	$posts = $api->posts;
 	
 	if (empty($posts)) {

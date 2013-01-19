@@ -31,7 +31,7 @@ function displayMySites() {
 		}
 		
 		$api = new API;
-		$api->searchDb("filter0=author&modifier0=user-name&value0=$authUserName", FALSE, "blog", $userPriv);
+		$api->searchDb("filter0=author&modifier0=user-name&value0=$authUserName", FALSE, "blog", FALSE, $userPriv);
 		$sites = $api->sites;
 		foreach($sites as $site) {
 			editBlogForm($site, $userPriv, TRUE, $db);

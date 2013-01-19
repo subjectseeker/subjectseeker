@@ -21,23 +21,17 @@ if (isLoggedIn()) {
 	$authUserId = $authUser->userId;
 	$authUserName = $authUser->userName;
 	$userPriv = getUserPrivilegeStatus($authUserId, $db);
-	$id = $_REQUEST["id"];
 	$step = $_REQUEST["step"];
-	$type = $_REQUEST["type"];
-	
-	$typeId = "";
-	if ($type == "post")
-		$typeId = "1";
-	elseif ($type == "user")
-		$typeId = "2";
+	$objectId = $_REQUEST["id"];
+	$objectTypeId = $_REQUEST["type"];
 	
 	if ($step == 'recommend') {
-		addRecommendation($id, $typeId, $authUserId, $db);
+		addRecommendation($objectId, $objectTypeId, $authUserId, $db);
 	} elseif ($step == 'recommended') {	
-		removeRecommendation($id, $typeId, $authUserId, $db);
+		removeRecommendation($objectId, $objectTypeId, $authUserId, $db);
 	}
 	
-	recButton($id, $typeId, $authUserId, TRUE, $db);
+	recButton($objectId, $objectTypeId, $authUserId, TRUE, $db);
 }
 
 ?>

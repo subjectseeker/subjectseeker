@@ -42,39 +42,7 @@ function displayResources($httpQuery = NULL, $allowOverride = TRUE) {
 	
 	print "<div class=\"entries\">";
 	foreach ($api->sites as $site) {
-		$blogId = $site["siteId"];
-		$blogName = $site["siteName"];
-		$blogUri = $site["siteUrl"];
-		$blogSyndication = $site["siteFeedUrl"];
-		$blogDescription = $site["siteSummary"];
-		$blogTopics = getBlogTopics($blogId, $db);
-		
-		if (empty($blogDescription)) {
-			$blogDescription = "No summary available for this site.";
-		}
-		
-		print "<div class=\"ss-entry-wrapper\">
-		<div class=\"entry-indicator\">+</div>
-		<div class=\"post-header\">
-		<a class=\"entry-title\" href=\"".$blogUri."\">".$blogName."</a>
-		<div class=\"index-categories\">";
-		foreach ($blogTopics as $i => $topic) {
-			$topicName = $topic["topicName"];
-			if ($i != 0)
-				print " | ";
-			print "<a href=\"".$pages["sources"]->getAddress()."/?type=blog&amp;filter0=topic&amp;value0=".urlencode($topicName)."\" title=\"View all posts in $topicName\">$topicName</a>";
-		}
-		print "</div>
-		</div>
-		<div class=\"ss-slide-wrapper\">
-			<div class=\"padding-content\">
-			<div class=\"margin-bottom\">".$blogDescription."</div>
-			<div>
-			<a class=\"ss-button\" href=\"".$blogSyndication."\">Feed</a> <a class=\"ss-button\" href=\"$homeUrl/claim/".$blogId."\">Claim this site</a>
-			</div>
-			</div>
-		</div>
-		</div>";
+		displaySite($site, $db);
 	}
 	print "</div>";
 	

@@ -24,6 +24,7 @@ function displayUserPanel() {
 		<li class=\"user-panel-button\"><a href='$homeUrl/user/$authUserName'>My Profile</a></li>
 		<li class=\"user-panel-button\"><a href=\"".$pages["my-sites"]->getAddress()."\">My Sites</a></li>
 		<li class=\"user-panel-button\"><a href=\"".$pages["my-posts"]->getAddress()."\">My Posts</a></li>
+		<li class=\"user-panel-button\"><a href=\"".$pages["my-groups"]->getAddress()."\">My Groups</a></li>
 		<li class=\"user-panel-button\"><a href=\"".$pages["home"]->getAddress()."user/$authUserName/settings\">Settings</a></li>
 		<li class=\"user-panel-button\"><a href=\"".$pages["login"]->getAddress(TRUE)."/?logout=true&amp;url=$currentUrl\">Log Out</a></li>";
 		if ($userPriv > 0) {
@@ -47,7 +48,7 @@ function displayUserPanel() {
 function displayTextUserPanel () {
 	$db = ssDbConnect();
 	$currentUrl = getURL();
-	global $pages;
+	global $homeUrl, $pages;
 	if (isLoggedIn()) {
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
@@ -56,8 +57,10 @@ function displayTextUserPanel () {
 		
 		print "<div id=\"user-box-footer\">
 		<ul>
+		<li class=\"user-panel-button\"><a href='$homeUrl/user/$authUserName'>My Profile</a></li>
 		<li class=\"user-panel-button\"><a href=\"".$pages["my-sites"]->getAddress()."\">My Sites</a></li>
 		<li class=\"user-panel-button\"><a href=\"".$pages["my-posts"]->getAddress()."\">My Posts</a></li>
+		<li class=\"user-panel-button\"><a href=\"".$pages["my-groups"]->getAddress()."\">My Groups</a></li>
 		<li class=\"user-panel-button\"><a href=\"".$pages["home"]->getAddress()."user/$authUserName/settings\">Settings</a></li>
 		<li class=\"user-panel-button\"><a href=\"".$pages["login"]->getAddress(TRUE)."/?logout=true&amp;url=$currentUrl\">Log Out</a></li>";
 		if ($userPriv > 0) {

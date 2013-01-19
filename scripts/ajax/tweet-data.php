@@ -19,7 +19,7 @@ $db = ssDbConnect();
 $postId = str_replace("post-", "", $_REQUEST["postId"]);
 
 $api = new API;
-$api->searchDb("filter0=identifier&value0=$postId", FALSE, "post");
+$api->searchDb("filter0=identifier&value0=$postId", FALSE, "post", FALSE);
 $post = array_shift($api->posts);
 $postUri = $post["postUrl"];
 $blogId = $post["siteId"];

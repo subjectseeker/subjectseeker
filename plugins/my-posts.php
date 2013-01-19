@@ -34,7 +34,7 @@ function displayMyPosts($minimal = FALSE, $open = FALSE) {
 	}
 	
 	$api = new API;
-	$api->searchDb("filter0=author&modifier0=user-name&value0=$authUserName", FALSE, "post", $userPriv);
+	$api->searchDb("filter0=author&modifier0=user-name&value0=$authUserName", FALSE, "post", FALSE, $userPriv);
 	$posts = $api->posts;
 	
 	if (empty($posts)) {

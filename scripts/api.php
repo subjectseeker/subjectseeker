@@ -27,7 +27,7 @@ class API {
 	private $group = "";
 	private $count = "";
 	
-	public function searchDb($httpQuery = NULL, $allowOverride = TRUE, $type = NULL, $userPriv = 0) {
+	public function searchDb($httpQuery = NULL, $allowOverride = TRUE, $type = NULL, $useCache = TRUE, $userPriv = 0) {
 		$db = ssDbConnect();
 		$params = parseHttpParams($httpQuery, $allowOverride);
 		if ($type) {
@@ -36,6 +36,8 @@ class API {
 		$params["parameters"]["privilege"] = $userPriv;
 		
 		$cache = new cache("posts-".$params["string"], TRUE, FALSE);
+		if (!$useCache)
+			$cache->caching = TRUE;
 		if ($cache->caching == TRUE) {
 			$queryResult = $this->generateSearchQuery($params, $db);
 			
@@ -45,6 +47,10 @@ class API {
 				}
 				
 				return FALSE;
+			}
+			
+			if (!$queryResult["result"]) {
+				return NULL;
 			}
 			
 			if ($params["parameters"]["type"] == "post") {
@@ -290,7 +296,7 @@ class API {
 		foreach ($params["filters"] as $query) {
 			if ($query["name"] === "topic") {
 				$this->from["BLOG blog"] = true;
-				$this->from["PRIMARY_BLOG_TOPIC pbt"] = true;
+				$this->from["TAG tag"] = true;
 				$this->from["TOPIC t"] = true;
 			} else if ($query["name"] === "author") {
 				$this->from["BLOG_AUTHOR author"] = true;
@@ -319,7 +325,7 @@ class API {
 			$searchType = mysql_real_escape_string($query["modifier"]);
 			
 			if ($query["name"] === "topic") {
-				$topics[] = "t.TOPIC_NAME='$searchValue' AND blog.BLOG_ID=pbt.BLOG_ID AND pbt.TOPIC_ID=t.TOPIC_ID";
+				$topics[] = "t.TOPIC_NAME='$searchValue' AND blog.BLOG_ID = tag.OBJECT_ID AND tag.OBJECT_TYPE_ID = '1' AND tag.TOPIC_ID = t.TOPIC_ID";
 				
 				if ($searchType)
 					array_push ($this->errors, "Unrecognized modifier: $searchType");
@@ -495,12 +501,17 @@ class API {
 					$this->from["ARTICLE_IDENTIFIER artid"] = true;
 				}
 				
+			} else if ($query["name"] === "group") {
+				$this->from["TAG tag"] = true;
+				//$this->from["TAG tag2"] = true;
+				
 			} else if ($query["name"] === "topic") {
-				$this->from["POST_TOPIC pt"] = true;
+				$this->from["TAG tag"] = true;
 				$this->from["TOPIC t"] = true;
+				
 			} else if ($query["name"] === "blog") {
 				if ($query["modifier"] == "topic") { 
-					$this->from["PRIMARY_BLOG_TOPIC pbt"] = true;
+					$this->from["TAG tag"] = true;
 					$this->from["TOPIC t"] = true;
 				}
 				
@@ -557,10 +568,39 @@ class API {
 					else
 						array_push ($this->errors, "Identifier value must be numeric: $searchValue");
 				} elseif ($searchType === "topic") {
-					$blogTopics[] = "t.TOPIC_NAME='" . mysql_real_escape_string($searchValue) . "' AND blog.BLOG_ID=pbt.BLOG_ID AND pbt.TOPIC_ID=t.TOPIC_ID";
+					$blogTopics[] = "t.TOPIC_NAME='$searchValue' AND blog.BLOG_ID = tag.OBJECT_ID AND tag.OBJECT_TYPE_ID = '3' AND tag.TOPIC_ID = t.TOPIC_ID";
 				} else {
 					array_push ($this->errors, "Unrecognized modifier: $searchType");
 				}
+				
+			} else if ($query["name"] === "group") {
+				if (is_numeric($searchValue)) {
+					$db = ssDbConnect();
+					$groupTags = getTags($searchValue, 4, 3, $db);
+					$groupTopics = "";
+					foreach ($groupTags as $i => $tag) {
+						if ($i != 0) {
+							$groupTopics .= " OR ";
+						}
+						$topicId = $tag["topicId"];
+						$tagPrivacy = $tag["tagPrivacy"];
+						$groupTopics .= "(tag.TOPIC_ID = '$topicId'";
+						if ($tagPrivacy) {
+							$tagUserId = $tag["userId"];
+							$groupTopics .= " AND tag.PRIVATE_STATUS = 1 AND tag.USER_ID = $tagUserId";
+						}
+						$groupTopics .= ")";
+						
+						$this->group = "GROUP BY post.BLOG_POST_ID";
+					}
+					array_push ($this->where, "tag.OBJECT_TYPE_ID = '1' AND ($groupTopics) AND tag.OBJECT_ID = post.BLOG_POST_ID");
+				
+				} else{ 
+					array_push ($this->errors, "Identifier value must be numeric: $searchValue");
+				}
+				
+				if ($searchType)
+					array_push ($this->errors, "Unrecognized modifier: $searchType");
 				
 			} else if ($query["name"] === "author") {
 				if ($searchType == "user-name") {
@@ -594,7 +634,7 @@ class API {
 					array_push ($this->errors, "Unrecognized modifier: $searchType");
 			
 			} else if ($query["name"] === "topic") {
-				$topics[] = "t.TOPIC_NAME='$searchValue' AND t.TOPIC_ID=pt.TOPIC_ID AND post.BLOG_POST_ID=pt.BLOG_POST_ID";
+				$topics[] = "t.TOPIC_NAME='$searchValue' AND t.TOPIC_ID=tag.TOPIC_ID AND post.BLOG_POST_ID = tag.OBJECT_ID AND tag.OBJECT_TYPE_ID = '1'";
 				
 				if ($searchType)
 					array_push ($this->errors, "Unrecognized modifier: $searchType");
@@ -680,7 +720,7 @@ class API {
 				
 			} else if ($query["name"] === "min-recommendations") {
 				if (is_numeric($searchValue))
-					array_push ($this->where, "OBJECT_TYPE_ID = '1'","post.BLOG_POST_ID = rec.OBJECT_ID");
+					array_push ($this->where, "rec.OBJECT_TYPE_ID = '1'","post.BLOG_POST_ID = rec.OBJECT_ID");
 				else
 					array_push ($this->errors, "Minimum recommendations value must be numeric: $searchValue");
 				

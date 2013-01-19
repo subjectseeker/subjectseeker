@@ -30,21 +30,15 @@ if (isLoggedIn()){
 	$userTwitter = getSocialNetworkUser(1, $authUserId, "userId", $db);
 }
 	
-$id = $_REQUEST["id"];
-$type = $_REQUEST["type"];
+$objectId = $_REQUEST["id"];
+$objectTypeId = $_REQUEST["type"];
 $step = $_REQUEST["step"];
 $tweet = $_REQUEST["tweet"];
 $commentText = $_REQUEST["comment"];
 $tweetContent = $_REQUEST["tweetContent"];
 
-$typeId = "";
-if ($type == "post")
-	$typeId = "1";
-elseif ($type == "user")
-	$typeId = "2";
-
 $commentDate = dateStringToSql("now");
-$commentId = addComment($id, $typeId, 1, $authUserId, $commentText, $commentDate, $db);
+$commentId = addComment($objectId, $objectTypeId, 1, $authUserId, $commentText, $commentDate, $db);
 $comment = getComment($commentId, $db);
 displayComment($comment, $authUserId, $db);
 
@@ -52,7 +46,7 @@ global $debugSite;
 if ($debugSite != "true") {
 	// Use Search API to find Blog ID and Post URL
 	$api = new API;
-	$api->searchDb("type=post&filter0=identifier&value0=$postId", FALSE, "post");
+	$api->searchDb("type=post&filter0=identifier&value0=$postId", FALSE, "post", FALSE);
 	$post = array_shift($api->posts);
 	$postUrl = $post["postId"];
 	$blogId = $post["siteId"];

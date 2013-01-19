@@ -17,7 +17,7 @@ include_once (dirname(__FILE__)."/util.php");
 $db = ssDbConnect();
 
 $api = new API;
-$api->searchDb(NULL, TRUE);
+$api->searchDb(NULL, TRUE, NULL, FALSE);
 $cacheVars["errors"] = $errors = $api->errors;
 
 
@@ -229,32 +229,8 @@ function formatSearchPostResults($posts, $errors, $db) {
 			$postData["lang"] = "en";
 		}
 		
-		// Post topics are polyvalued, so another query.
-		$catSQL = "SELECT T.TOPIC_NAME FROM TOPIC AS T, POST_TOPIC AS PT WHERE PT.BLOG_POST_ID = $postId AND T.TOPIC_ID = PT.TOPIC_ID;";
-		$results = mysql_query( $catSQL, $db );
-		if ( mysql_error() ) {
-			die ( "getPostData: " . mysql_error() );
-		}
-
-		$postData[ "categories" ] = array(); // post topics
-		while ( $row = mysql_fetch_array( $results ) ) {
-			array_push( $postData[ "categories" ], $row[ "TOPIC_NAME" ] );
-		}
-
-		// The blog category may not be present.
-		$blogCatSQL = "SELECT T.TOPIC_NAME FROM TOPIC AS T, " .
-			"PRIMARY_BLOG_TOPIC AS BT, BLOG_POST AS P WHERE P.BLOG_POST_ID " .
-			"= $postId AND BT.BLOG_ID = P.BLOG_ID AND T.TOPIC_ID = " .
-			"BT.TOPIC_ID;";
-		$result = mysql_query( $blogCatSQL, $db );
-		if ( mysql_error() ) {
-			die ( "getPostData: " . mysql_error() );
-		}
-
-		$postData[ "blog_categories" ] = array(); // blog-level topics
-		while ( $row = mysql_fetch_array( $result ) ) {
-			array_push( $postData[ "blog_categories" ], $row[ "TOPIC_NAME" ] );
-		}
+		$postData["categories"] = getTags($postId, 1, NULL, $db);
+		$postData["blog_categories"] = getTags($blogId, 3, NULL, $db);
 
 		// Now start putting it all into Atom
 		$xml .= "	<entry xml:lang=\"" . $postData[ "lang" ] . "\">\n";
@@ -312,6 +288,7 @@ function formatSearchPostResults($posts, $errors, $db) {
 		$xml .= "		</ss:community>\n";
 
 		foreach ( $postData[ "categories" ] as $category ) {
+			$topicName = $category["topicName"];
 			$xml .= "		<category term=\"$category\" />\n";
 		}
 		
@@ -323,11 +300,11 @@ function formatSearchPostResults($posts, $errors, $db) {
 		
 		$xml .= "			<link href=\"" . $postData[ "blog_uri" ] ."\" rel=\"alternate\" type=\"text/html\" />\n";
 		
-		if ( $postData[ "blog_categories" ] ) {
-			foreach ($postData["blog_categories"] as $category) {
-				$xml .= "			<category term=\"$category\" />\n";
-			}
+		foreach ($postData["blog_categories"] as $category) {
+			$topicName = $category["topicName"];
+			$xml .= "			<category term=\"$topicName\" />\n";
 		}
+		
 		$xml .= "		</source>\n";
 		$xml .= "	</entry>\n";
 	}

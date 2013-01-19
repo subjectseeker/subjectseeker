@@ -21,20 +21,14 @@ if (isLoggedIn()) {
 	$authUserId = $authUser->userId;
 	$authUserName = $authUser->userName;
 	
-	$id = $_REQUEST["id"];
-	$type = $_REQUEST["type"];
+	$objectId= $_REQUEST["id"];
+	$objectTypeId = $_REQUEST["type"];
 	
-	$typeId = "";
-	if ($type == "post")
-		$typeId = "1";
-	elseif ($type == "user")
-		$typeId = "2";
-	
-	if (getFollowers($id, $typeId, $authUserId, $db)) {
-		unfollow($id, $typeId, $authUserId, $db);
+	if (getFollowers($objectId, $objectTypeId, $authUserId, $db)) {
+		unfollow($objectId, $objectTypeId, $authUserId, $db);
 		print "<span class='follow-button'>Follow</span>";
 	} else {
-		follow($id, $typeId, $authUserId, $db);
+		follow($objectId, $objectTypeId, $authUserId, $db);
 		print "<span class='unfollow-button'>Unfollow</span>";
 	}
 }

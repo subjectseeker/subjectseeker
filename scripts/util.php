@@ -48,6 +48,8 @@ function ssDbClose($dbConnection) {
 // Used to get and manage current user info
 class auth {
 	var $errors = array();
+	var $userId = NULL;
+	var $userName = NULL;
 	
 	// If logged in, set user ID and user name
 	function __construct() {
@@ -577,10 +579,22 @@ function insanitize( $htmlString ) {
  * General useful functions
  */
  
+function getObjectTypeName($objectTypeId) {
+	$objectTypes = array("1" => "post", "2" => "user", "3" => "site", "4" => "group");
+	
+	return $objectTypes[$objectTypeId];
+}
+
+function getObjectTypeId($objectTypeName) {
+	$objectTypes = array("post" => "1", "user" => "2", "site" => "3", "group" => "4");
+	
+	return $objectTypes[$objectTypeName];
+}
+ 
 function sendMail($userEmail, $subject, $message) {
-	global $sitename;
-	global $contactEmail;
+	global $sitename, $contactEmail;
 	$headers = "Mime-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nFrom: $sitename <$contactEmail>\r\nReply-To: $sitename <$contactEmail>\r\nX-Mailer: PHP/" . phpversion();
+	
 	if (! mail($userEmail, $subject, $message, $headers)) {
 		// TODO: Log this.
 	}
@@ -617,7 +631,7 @@ function getUserActivity($id, $typeId, $userId, $actionType, $limit, $db) {
 				$userAvatarSmall = $userAvatar["small"];
 			}
 			$action["avatar"] = "<img src='$userAvatarSmall' alt='User Avatar' />";
-			$action["title"] = "<a class='action-user' href='$homeUrl/user/$userName'>$userName</a> posted <a href='$homeUrl/post/".$post["postId"]."'>".$post["postTitle"]."</a> on <a href='".$post["siteUrl"]."'>".$post["siteName"]."</a>.";
+			$action["title"] = "<a class='action-user' href='$homeUrl/user/$userName'>$userName</a> posted <a href='$homeUrl/post/".$post["postId"]."'>".$post["postTitle"]."</a> on <a href='".$post["siteUrl"]."'>".$post["siteName"]."</a>";
 			$action["text"] = strip_tags($post["postSummary"]);
 			$action["date"] = $post["postDate"];
 			$action["type"] = "post";
@@ -634,13 +648,18 @@ function getUserActivity($id, $typeId, $userId, $actionType, $limit, $db) {
 				$userAvatar = getUserAvatar($rec["userId"], $db);
 				$userAvatarSmall = $userAvatar["small"];
 			}
-			if ($rec["recTypeId"] == 1) {
-				$post = getPost($rec["recommendedId"], $db);
-				$action["title"] = "<a class='action-user' href='$homeUrl/user/$userName'>$userName</a> recommended <a href='$homeUrl/post/".$post["BLOG_POST_ID"]."'>".$post["BLOG_POST_TITLE"]."</a>.";
+			if ($rec["objectTypeId"] == 1) {
+				$post = getPost($rec["objectId"], $db);
+				$action["title"] = "<a class='action-user' href='$homeUrl/user/$userName'>$userName</a> recommended <a href='$homeUrl/post/".$post["BLOG_POST_ID"]."'>".$post["BLOG_POST_TITLE"]."</a>";
 				
-			} elseif ($rec["recTypeId"] == 2) {
-				$user = getUserData($rec["recommendedId"], $db);
-				$action["title"] = "<a class='action-user' href='$homeUrl/user/$userName'>$userName</a> recommended user <a href='$homeUrl/user/".$user["userName"]."'>".$user["userName"]."</a>.";
+			} elseif ($rec["objectTypeId"] == 2) {
+				$user = getUserData($rec["objectId"], $db);
+				$action["title"] = "<a class='action-user' href='$homeUrl/user/$userName'>$userName</a> recommended user <a href='$homeUrl/user/".$user["userName"]."'>".$user["userName"]."</a>";
+			} elseif ($rec["objectTypeId"] == 4) {
+				$group = getGroup($rec["objectId"], $db);
+				$groupId = $group["groupId"];
+				$groupName = $group["groupName"];
+				$action["title"] = "<a class='action-user' href='$homeUrl/user/$userName'>$userName</a> recommended group <a href='$homeUrl/group/$groupId'>$groupName</a>";
 			}
 			$action["avatar"] = "<img src='$userAvatarSmall' alt='User Avatar' />";
 			$action["date"] = $rec["recDate"];
@@ -659,9 +678,17 @@ function getUserActivity($id, $typeId, $userId, $actionType, $limit, $db) {
 				$userAvatar = getUserAvatar($comment["userId"], $db);
 				$userAvatarSmall = $userAvatar["small"];
 			}
-			$post = getPost($comment["commentedId"], $db);
+			if ($comment["objectTypeId"] == 1) {
+				$post = getPost($comment["objectId"], $db);
+				$action["title"] = "<a class='action-user' href='$homeUrl/user/$userName'>$userName</a> commented on <a href='$homeUrl/post/".$post["BLOG_POST_ID"]."'>".$post["BLOG_POST_TITLE"]."</a>";
+				
+			} elseif ($comment["objectTypeId"] == 4) {
+				$group = getGroup($comment["objectId"], $db);
+				$groupId = $group["groupId"];
+				$groupName = $group["groupName"];
+				$action["title"] = "<a class='action-user' href='$homeUrl/user/$userName'>$userName</a> commented on group <a href='$homeUrl/group/$groupId'>$groupName</a>";
+			}
 			$action["avatar"] = "<img src='$userAvatarSmall' alt='User Avatar' />";
-			$action["title"] = "<a class='action-user' href='$homeUrl/user/$userName'>$userName</a> commented on <a href='$homeUrl/post/".$post["BLOG_POST_ID"]."'>".$post["BLOG_POST_TITLE"]."</a>.";
 			$action["text"] = $comment["commentText"];
 			$action["date"] = $comment["commentDate"];
 			$action["type"] = "comment";
@@ -746,8 +773,8 @@ function getRecommendations($id, $typeId, $userId, $editorRecs, $limit, $offset,
 	$recommendations = array();
 	while ($row = mysql_fetch_array($results)) {
 		$recommendation["recId"] = $row["RECOMMENDATION_ID"];
-		$recommendation["recommendedId"] = $row["OBJECT_ID"];
-		$recommendation["recTypeId"] = $row["OBJECT_TYPE_ID"];
+		$recommendation["objectId"] = $row["OBJECT_ID"];
+		$recommendation["objectTypeId"] = $row["OBJECT_TYPE_ID"];
 		$recommendation["userId"] = $row["USER_ID"];
 		$recommendation["recDate"] = $row["REC_DATE_TIME"];
 		array_push($recommendations, $recommendation);
@@ -789,8 +816,8 @@ function getComments($id, $typeId, $sourceId, $userId, $limit, $offset, $db) {
 	$comments = array();
 	while ($row = mysql_fetch_array($results)) {
 		$comment["commentId"] = $row["COMMENT_ID"];
-		$comment["commentedId"] = $row["OBJECT_ID"];
-		$comment["commentTypeId"] = $row["OBJECT_TYPE_ID"];
+		$comment["objectId"] = $row["OBJECT_ID"];
+		$comment["objectTypeId"] = $row["OBJECT_TYPE_ID"];
 		$comment["commentSourceId"] = $row["COMMENT_SOURCE_ID"];
 		$comment["commentDate"] = $row["COMMENT_DATE_TIME"];
 		$comment["commentText"] = $row["COMMENT_TEXT"];
@@ -821,16 +848,22 @@ function getComment($commentId, $db) {
 	return $comment;
 }
 
-function getFollowers($id, $typeId, $userId, $db) {
-	$where = "FOLLOWED_ID = '$id' AND FOLLOW_TYPE_ID = '$typeId'";
+function getFollowers($objectId, $objectTypeId, $userId, $db) {
+	$sql = "SELECT * FROM FOLLOWER WHERE OBJECT_ID = '$objectId' AND OBJECT_TYPE_ID = '$objectTypeId'";
 	if ($userId) {
-		$where .= " AND USER_ID = '$userId'";
+		$sql .= " AND USER_ID = '$userId'";
+	}
+	$results = mysql_query($sql, $db);
+	
+	$followers = array();
+	while ($row = mysql_fetch_array($results)) {
+		$follower["userId"] = $row["USER_ID"];
+		$follower["objectId"] = $row["OBJECT_ID"];
+		$follower["objectTypeId"] = $row["OBJECT_TYPE_ID"];
+		array_push($followers, $follower);
 	}
 	
-	$sql = "SELECT COUNT(*) FROM FOLLOWER WHERE $where";
-	$result = mysql_query($sql, $db);
-	$count = mysql_result($result, 0);
-	return $count;
+	return $followers;
 }
 
 function sortDate($a, $b) {
@@ -867,12 +900,12 @@ function getUserTweets($socialNetworkUserId, $limit, $offset, $db) {
  */
  
 function follow($id, $typeId, $userId, $db) {
-	$sql = "INSERT IGNORE INTO FOLLOWER (USER_ID, FOLLOWED_ID, FOLLOW_TYPE_ID) VALUES ($userId, $id, $typeId)";
+	$sql = "INSERT IGNORE INTO FOLLOWER (USER_ID, OBJECT_ID, OBJECT_TYPE_ID) VALUES ($userId, $id, $typeId)";
 	mysql_query($sql, $db);
 }
 
 function unfollow ($id, $typeId, $userId, $db) {
-	$sql = "DELETE FROM FOLLOWER WHERE FOLLOWED_ID = '$id' AND FOLLOW_TYPE_ID = '$typeId' AND USER_ID = '$userId'";
+	$sql = "DELETE FROM FOLLOWER WHERE OBJECT_ID = '$id' AND OBJECT_TYPE_ID = '$typeId' AND USER_ID = '$userId'";
 	mysql_query($sql, $db);
 }
  
@@ -1399,35 +1432,6 @@ function getBlogIds ($db) {
 	return array_unique ($blogIds);
 }
 
-// Input: array of topic IDs, DB handle
-// Return: array of blog IDs, for blogs with primary/secondary topics corresponding to the specified IDs
-function topicIdsToBlogIds ($topicIds, $db) {
-
-	$topicIdString = join(',', $topicIds);
-
-	$sql	= "SELECT b.BLOG_ID ";
-	$sql .= "FROM PRIMARY_BLOG_TOPIC AS t1 ";
-	$sql .= "INNER JOIN BLOG AS b ";
-	$sql .= "ON t1.BLOG_ID = b.BLOG_ID ";
-	$sql .= "WHERE t1.TOPIC_ID IN (" . $topicIdString . ") ";
-	$sql .= "AND b.BLOG_STATUS_ID = 0 ";
-
-	$results =	mysql_query($sql, $db);
-
-	if (mysql_error() != null) {
-		print "ERROR: " . mysql_error() . "<br />";
-	}
-
-	// Convert to array
-	$blogIds = array();
-	while ($row = mysql_fetch_array($results)) {
-		array_push ($blogIds, $row["BLOG_ID"]);
-	}
-
-	return array_unique ($blogIds);
-
-}
-
 // Input: Citation Text, DB handle
 // Output: Citation ID
 function citationTextToCitationId ($citation, $db) {
@@ -1664,8 +1668,8 @@ function uriFetchable ($uri) {
 
 // Input: ID of post, ID of topic, Topic source, DB handle
 // Action: link IDs of post and topic in DB
-function linkTopicToPost($postId, $topicId, $source, $db) {
-	$sql = "INSERT IGNORE INTO POST_TOPIC (BLOG_POST_ID, TOPIC_ID, TOPIC_SOURCE) VALUES ($postId, $topicId, $source)";
+function linkTopicToPost($postId, $topicId, $topicSourceId, $db) {
+	$sql = "INSERT IGNORE INTO TAG (TOPIC_ID, OBJECT_ID, OBJECT_TYPE_ID, TOPIC_SOURCE_ID, CREATION_DATE_TIME) VALUES ('$topicId', '$postId', '1', '$topicSourceId', NOW())";
 	mysql_query($sql, $db);
 	if (mysql_error()) {
 		die ("linkTopicToPost: " . mysql_error() . "\n");
@@ -1937,8 +1941,7 @@ function addBlog($blogname, $bloguri, $blogsyndicationuri, $blogdescription, $to
 		$userPriv = getUserPrivilegeStatus($userId, $db);
 		if ($userPriv > 0) { // moderator or admin
 			$status = 0; // active
-		}
-		else {
+		} else {
 			# Send email to site admin with notification that a blog is waiting for approval
 			$mailSent = mail ($siteApprovalEmail, "[$sitename admin] Pending blog submission", "Pending blog submission at $approveUrl");
 			
@@ -1973,15 +1976,15 @@ function addBlog($blogname, $bloguri, $blogsyndicationuri, $blogdescription, $to
 // Input: topic string, blog ID, DB handle
 // Action: associate this topic with this blog ID
 // TODO handle errors
-function associateTopic($topic2, $blogId, $db) {
-	$sql = "INSERT INTO PRIMARY_BLOG_TOPIC (TOPIC_ID, BLOG_ID) VALUES ($topic2, $blogId)";
+function associateTopic($topicId, $blogId, $db) {
+	$sql = "INSERT INTO TAG (TOPIC_ID, OBJECT_ID, OBJECT_TYPE_ID, TOPIC_SOURCE_ID, CREATION_DATE_TIME) VALUES ('$topicId', '$blogId', '3', 1, NOW())";
 	mysql_query($sql, $db);
 }
 
 // Input: blog ID, DB handle
 // Output: list of topic IDs for this blog
 function getBlogTopics($blogId, $db) {
-	$sql = "SELECT bt.TOPIC_ID, t.TOPIC_NAME FROM PRIMARY_BLOG_TOPIC bt INNER JOIN TOPIC t ON bt.TOPIC_ID = t.TOPIC_ID WHERE bt.BLOG_ID='$blogId' ORDER BY bt.TOPIC_ID DESC";
+	$sql = "SELECT bt.TOPIC_ID, t.TOPIC_NAME FROM TAG tag INNER JOIN TOPIC t ON tag.TOPIC_ID = t.TOPIC_ID WHERE tag.OBJECT_ID = '$blogId' AND OBJECT_TYPE_ID = '3' ORDER BY tag.TOPIC_ID DESC";
 	$results = mysql_query($sql, $db);
 	
 	$topics = array();
@@ -1994,10 +1997,119 @@ function getBlogTopics($blogId, $db) {
 	return $topics;
 }
 
+// Input: post ID, DB handle
+// Output: list of topic IDs for this post
+/*function getUserTags($postId, $db) {
+	$sql = "SELECT tag.*, t.TOPIC_NAME FROM TAG tag INNER JOIN TOPIC t ON tag.TOPIC_ID = t.TOPIC_ID WHERE tag.OBJECT_ID='$postId' AND tag.OBJECT_TYPE_ID='1' AND tag.TOPIC_SOURCE_ID = '3' ORDER BY tag.TOPIC_ID DESC";
+	$results = mysql_query($sql, $db);
+	
+	$topics = array();
+	while ($row = mysql_fetch_array($results)) {
+		$topic["tagId"] = $row["TAG_ID"];
+		$topic["topicId"] = $row["TOPIC_ID"];
+		$topic["topicName"] = $row["TOPIC_NAME"];
+		$topic["objectId"] = $row["OBJECT_ID"];
+		$topic["objectTypeId"] = $row["OBJECT_TYPE_ID"];
+		$topic["userId"] = $row["USER_ID"];
+		$topic["tagPrivacy"] = $row["TOPIC_NAME"];
+		$topic["tagDate"] = $row["CREATION_DATE_TIME"];
+		array_push($topics, $topic);
+	}
+
+	return $topics;
+}*/
+
+function getTags($objectId, $objectTypeId, $topicSourceId, $db) {
+	$sql = "SELECT tag.*, t.TOPIC_NAME FROM TAG tag INNER JOIN TOPIC t ON tag.TOPIC_ID = t.TOPIC_ID WHERE tag.OBJECT_ID='$objectId' AND tag.OBJECT_TYPE_ID='$objectTypeId'";
+	if ($topicSourceId) {
+		$sql .= " AND tag.TOPIC_SOURCE_ID = '$topicSourceId'";
+	}
+	$sql .= " ORDER BY TOPIC_SOURCE_ID, tag.PRIVATE_STATUS ASC";
+	$results = mysql_query($sql, $db);
+	
+	$tags = array();
+	while ($row = mysql_fetch_array($results)) {
+		$tag["tagId"] = $row["TAG_ID"];
+		$tag["topicId"] = $row["TOPIC_ID"];
+		$tag["topicName"] = $row["TOPIC_NAME"];
+		$tag["topicSourceId"] = $row["TOPIC_SOURCE_ID"];
+		$tag["objectId"] = $row["OBJECT_ID"];
+		$tag["objectTypeId"] = $row["OBJECT_TYPE_ID"];
+		$tag["userId"] = $row["USER_ID"];
+		$tag["tagPrivacy"] = $row["PRIVATE_STATUS"];
+		$tag["tagDate"] = $row["CREATION_DATE_TIME"];
+		array_push($tags, $tag);
+	}
+
+	return $tags;
+}
+
+function getTag($tagId, $db) {
+	$sql = "SELECT *, topic.TOPIC_NAME FROM TAG tag INNER JOIN TOPIC topic ON tag.TOPIC_ID = topic.TOPIC_ID WHERE TAG_ID = '$tagId'";
+	$result = mysql_query($sql, $db);
+	
+	$row = mysql_fetch_array($result);
+	$tag["tagId"] = $row["TAG_ID"];
+	$tag["topicId"] = $row["TOPIC_ID"];
+	$tag["topicName"] = $row["TOPIC_NAME"];
+	$tag["topicSourceId"] = $row["TOPIC_SOURCE_ID"];
+	$tag["objectId"] = $row["OBJECT_ID"];
+	$tag["objectTypeId"] = $row["OBJECT_TYPE_ID"];
+	$tag["userId"] = $row["USER_ID"];
+	$tag["tagPrivacy"] = $row["PRIVATE_STATUS"];
+	$tag["tagDate"] = $row["CREATION_DATE_TIME"];
+
+	return $tag;
+}
+
+function getGroup($groupId, $db) {
+	$sql = "SELECT * FROM `GROUP` WHERE GROUP_ID = '$groupId'";
+	$result = mysql_query($sql, $db);
+	
+	$row = mysql_fetch_array($result);
+	$group["groupId"] = $row["GROUP_ID"];
+	$group["groupName"] = $row["GROUP_NAME"];
+	$group["groupDescription"] = $row["GROUP_DESCRIPTION"];
+	$group["groupCreationDate"] = $row["CREATION_DATE_TIME"];
+	
+	return $group;
+}
+
+function getGroupManagers($groupId, $userId, $db) {
+	$sql = "SELECT * FROM GROUP_MANAGER WHERE GROUP_ID = '$groupId'";
+	if ($userId) {
+		$sql .= " AND USER_ID = '$userId'";
+	}
+	$results = mysql_query($sql, $db);
+	
+	$managers = array();
+	while ($row = mysql_fetch_array($results)) {
+		$manager["userId"] = $row["USER_ID"];
+		$manager["groupId"] = $row["GROUP_ID"];
+		$manager["groupManagerPrivId"] = $row["MANAGER_PRIVILEGE_ID"];
+		array_push($managers, $manager);
+	}
+	
+	return $managers;
+}
+
+function isGroupManager($groupId, $userId, $managerPrivilegeId, $db) {
+	$sql = "SELECT * FROM GROUP_MANAGER WHERE GROUP_ID = '$groupId' AND USER_ID = '$userId'";
+	if ($managerPrivilegeId)
+		$sql .= " AND MANAGER_PRIVILEGE_ID = '$managerPrivilegeId'";
+	$result = mysql_query($sql, $db);
+	
+	if ($result == NULL || mysql_num_rows($result) == 0) {
+		return FALSE;
+	}
+	
+	return TRUE;
+}
+
 // Input: blog ID, DB handle
 // TODO handle errors
 function removeTopics($blogId, $db) {
-	$sql = "DELETE FROM PRIMARY_BLOG_TOPIC WHERE BLOG_ID=$blogId";
+	$sql = "DELETE FROM TAG WHERE OBJECT_ID = '$blogId' AND OBJECT_TYPE_ID = '3' AND TOPIC_SOURCE_ID = '1'";
 	mysql_query($sql, $db);
 }
 
@@ -2005,17 +2117,12 @@ function removeTopics($blogId, $db) {
  * Common HTML code
  */
  
-function recButton($id, $typeId, $userId, $ajax, $db) {
-	$recStatus = getRecommendations($id, $typeId, $userId, NULL, NULL, NULL, $db);
-	$recCount = count(getRecommendations($id, $typeId, NULL, NULL, NULL, NULL, $db));
-	
-	if ($typeId == "1")
-		$type = "post";
-	elseif ($typeId == "2")
-		$type = "user";
+function recButton($objectId, $objectTypeId, $userId, $ajax, $db) {
+	$recStatus = getRecommendations($objectId, $objectTypeId, $userId, NULL, NULL, NULL, $db);
+	$recCount = count(getRecommendations($objectId, $objectTypeId, NULL, NULL, NULL, NULL, $db));
 	
 	if (!$ajax)
-		print "<div class='rec-box' data-id='$id' data-type='$type'>";
+		print "<div class='rec-box' data-id='$objectId' data-type='$objectTypeId'>";
 	
 	if ($userId && $recStatus)
 		print "<div class='recommended' title='Remove recommendation'></div>";
@@ -2029,40 +2136,30 @@ function recButton($id, $typeId, $userId, $ajax, $db) {
 		print "</div>";
 }
 
-function commentButton($id, $typeId, $db) {
-	$commentCount = count(getComments($id, $typeId, NULL, NULL, NULL, NULL, $db));
-	
-	if ($typeId == "1")
-		$type = "post";
-	elseif ($typeId == "2")
-		$type = "user";
+function commentButton($objectId, $objectTypeId, $db) {
+	$commentCount = count(getComments($objectId, $objectTypeId, NULL, NULL, NULL, NULL, $db));
+	$objectTypeName = getObjectTypeName($objectTypeId);
 	
 	global $homeUrl;
-	print "<div class=\"comment-box\" data-number=\"$commentCount\" data-id='$id' data-type='$type'>
-	<a class=\"comment-icon\" href=\"$homeUrl/post/$id\" title=\"Post Profile\"></a>";
+	print "<div class=\"comment-box\" data-number=\"$commentCount\" data-id='$objectId' data-type='$objectTypeId'>
+	<a class=\"comment-icon\" href=\"$homeUrl/$objectTypeName/$objectId\" title=\"Profile page\"></a>";
 	if ($commentCount != 0) {
 	 print "<span class=\"comment-count\">$commentCount</span>";
 	}
 	print "</div>";
 }
 
-function followButton($id, $typeId, $userId, $db) {
+function followButton($objectId, $objectTypeId, $userId, $db) {
 	$followerStatus = FALSE;
-	$followerCount = getFollowers($id, $typeId, NULL, $db);
-	
+	$followerCount = count(getFollowers($objectId, $objectTypeId, NULL, $db));
 	if ($userId)
-		$followerStatus = getFollowers($id, $typeId, $userId, $db);
+		$followerStatus = getFollowers($objectId, $objectTypeId, $userId, $db);
 	
-	if ($typeId == "1")
-		$type = "post";
-	elseif ($typeId == "2")
-		$type = "user";
-	
-	print "<div class='follow-status' data-id='$id' data-type='$type'>";
+	print "<div class='follow-status' data-id='$objectId' data-type='$objectTypeId'>";
 	if ($followerStatus)
-		print "<span class='unfollow-button'>Unfollow</span>";
+		print "<div class='unfollow-button'>Unfollow</div>";
 	else
-		print "<span class='follow-button'>Follow</span>";
+		print "<div class='follow-button'>Follow</div>";
 		
 	if ($followerCount != 0) {
 		//print "<span class='follow-count'>$followerCount</span>";
@@ -2178,7 +2275,7 @@ function editBlogForm ($site, $userPriv, $open, $db) {
 	$blogCrawledDate = $site["siteCrawledDate"];
 	$blogStatusId = $site["siteStatus"];
 	$twitterUser = getSocialNetworkUser(1, $blogId, "siteId", $db);
-	$blogTopics = getBlogTopics($blogId, $db);
+	$blogTopics = getTags($blogId, 3, NULL, $db);
 	$blogStatus = ucwords(blogStatusIdToName ($blogStatusId, $db));
 	
 	print "<div class=\"ss-entry-wrapper\">
@@ -2289,16 +2386,13 @@ function editBlogForm ($site, $userPriv, $open, $db) {
 function displayPosts ($posts, $minimal = FALSE, $open = FALSE, $db) {
 	global $homeUrl;
 	global $pages;
-	$authUserId = NULL;
-	if (isLoggedIn()){
-		$authUser = new auth();
-		$authUserId = $authUser->userId;
-		$authUserName = $authUser->userName;
-	}
+	$authUser = new auth();
+	$authUserId = $authUser->userId;
 	
 	$previousDay = NULL;
 	foreach ($posts as $post) {
 		$postId = $post["postId"];
+		$blogId = $post["siteId"];
 		$blogName = $post["siteName"];
 		$blogUri = $post["siteUrl"];
 		$postDate = strtotime($post["postDate"]);
@@ -2309,6 +2403,7 @@ function displayPosts ($posts, $minimal = FALSE, $open = FALSE, $db) {
 		$postProfile = $homeUrl . "/post/" . $postId;
 		$postHasCitation = $post["hasCitation"];
 		$formatDay = date("F d, Y", $postDate);
+		$blogTopics = getTags($blogId, 3, NULL, $db);
 		
 		if (empty($postSummary)) {
 			$postSummary = "No summary available for this post.";
@@ -2326,15 +2421,6 @@ function displayPosts ($posts, $minimal = FALSE, $open = FALSE, $db) {
 		// If post doesn't have a title, use the url instead.
 		if (empty($postTitle))
 			$postTitle = $postUri;
-		
-		// The blog category may not be present.
-		$blogCatSQL = "SELECT T.TOPIC_NAME FROM TOPIC AS T, PRIMARY_BLOG_TOPIC AS BT, BLOG_POST AS P WHERE P.BLOG_POST_ID = $postId AND BT.BLOG_ID = P.BLOG_ID AND T.TOPIC_ID = BT.TOPIC_ID;";
-		$result = mysql_query( $blogCatSQL, $db);
-		
-		$categories = array();
-		while ( $row = mysql_fetch_array( $result ) ) {
-			array_push($categories, $row["TOPIC_NAME"]);
-		}
 		
 		// Get citations
 		if ($postHasCitation)
@@ -2365,7 +2451,7 @@ function displayPosts ($posts, $minimal = FALSE, $open = FALSE, $db) {
 			</div>
 			<div class=\"ss-slide-wrapper\">";
 		}
-		print "<div class=\"post-summary\" title=\"Summary\">$postSummary</div>";
+		print "<div class=\"entry-description\" title=\"Summary\">$postSummary</div>";
 		// Add citations to summary if available
 		if ($postHasCitation == TRUE) {
 			print "<div class=\"citation-wrapper\">";
@@ -2379,9 +2465,12 @@ function displayPosts ($posts, $minimal = FALSE, $open = FALSE, $db) {
 		<a class=\"post-source\" href=\"$blogUri\" target=\"_blank\" title=\"Permanent link to $blogName homepage\" rel=\"alternate\">$blogName</a>
 		<div class=\"alignright\">
 		<div class=\"post-categories\">";
-		foreach ($categories as $i => $category) {
-			if ($i != 0) print " | ";
-			print "<a href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=blog&amp;modifier0=topic&amp;value0=".urlencode($category)."\" title=\"View all posts in $category\">$category</a>";
+		foreach ($blogTopics as $i => $blogTopic) {
+			$topicName = $blogTopic["topicName"];
+			
+			if ($i != 0)
+				print " | ";
+			print "<a href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=blog&amp;modifier0=topic&amp;value0=".urlencode($topicName)."\" title=\"View all posts in $topicName\">$topicName</a>";
 		}
 		print "</div>
 		<div class=\"recs\">";
@@ -2416,17 +2505,15 @@ function displayPosts ($posts, $minimal = FALSE, $open = FALSE, $db) {
 
 // Input: Post ID, DB Handle
 // Action: Display notes for a post.
-function displayComments ($id, $typeId, $userId, $db) {	
+function displayComments ($objectId, $objectTypeId, $userId, $db) {	
 	// Get comments list
-	$commentList = getComments($id, $typeId, NULL, NULL, NULL, NULL, $db);
+	$commentList = getComments($objectId, $objectTypeId, NULL, NULL, NULL, NULL, $db);
 	$commentCount = count($commentList);
 	
-	print "<div class=\"data-carrier\" data-id=\"$id\" data-type=\"post\" data-count=\"$commentCount\">
+	print "<div class=\"data-carrier\" data-id=\"$objectId\" data-type=\"$objectTypeId\" data-count=\"$commentCount\">
 	<div class=\"comments\">
-	<h3>Notes</h3>";
-	if ($commentList == NULL) {
-		print "<p>There are no notes for this post. Recommend this post to leave a note.</p>";
-	} else {
+	<h3>Comments</h3>";
+	if ($commentList) {
 		// Display comments
 		foreach ($commentList as $comment) {
 			displayComment($comment, $userId, $db);
@@ -2434,53 +2521,32 @@ function displayComments ($id, $typeId, $userId, $db) {
 	}
 	print "</div>";
 	
+	global $pages;
 	if ($userId) {
-		global $pages;
 		$twitterUser = getSocialNetworkUser(1, $userId, "userId", $db);
 		$userPriv = getUserPrivilegeStatus($userId, $db);
 		
 		print "<form method=\"post\" enctype=\"multipart/form-data\">
-		<div class=\"comment-submission-head\"><span class=\"char-count\" data-limit=\"140\">140</span></div>
-		<div class=\"margin-bottom\">
+		<div class=\"char-count\" data-limit=\"140\">140</div>
 		<textarea class=\"comment-area\" name=\"comment\"></textarea>
-		</div>
 		<div class=\"margin-bottom\">
 		<div class=\"tweet-preview-area margin-bottom\">
 		<div class=\"subtle-text margin-bottom-small ss-bold\">Tweet Preview</div>
 		<div class=\"tweet-preview\"><span class=\"tweet-message\"></span><span class=\"tweet-extras\"></span></div>
 		</div>
 		<input class=\"submit-comment ss-button\" type=\"button\" value=\"Submit\" />";
-		if ($twitterUser) {
-			print " <span class=\"subtle-text alignright\" title=\"The blog's twitter handle and post's url will be included in your tweet.\"><input class=\"tweet-note\" type=\"checkbox\" value=\"true\" /> Tweet this note.</span>";
-		} else {
-			$currentUrl = getURL();
-			print " <a class=\"alignright subtle-text\" href=\"".$pages["sync"]->getAddress(TRUE)."/?url=$currentUrl\">Sync with Twitter</a>";
+		if ($objectTypeId == 1) {
+			if ($twitterUser) {
+				print " <span class=\"subtle-text alignright\" title=\"The blog's twitter handle and post's url will be included in your tweet.\"><input class=\"tweet-note\" type=\"checkbox\" value=\"true\" /> Tweet this note.</span>";
+			} else {
+				$currentUrl = getURL();
+				print " <a class=\"alignright subtle-text\" href=\"".$pages["sync"]->getAddress(TRUE)."/?url=$currentUrl\">Sync with Twitter</a>";
+			}
 		}
 		print "</div>
 		</form>";
-		if ($userPriv > 0) {
-			$currentUrl = getURL();
-			print "<div class=\"toggle-button\">Related Image</div>
-							<div class=\"ss-slide-wrapper padding-content\" style=\"display: none;\">
-								<div id=\"filter-panel\">
-									<form method=\"post\" action=\"".$pages["crop"]->getAddress()."/?url=$currentUrl&amp;type=header\" enctype=\"multipart/form-data\">
-										<input type=\"hidden\" name=\"postId\" value=\"$id\" />
-										<div>
-											<div class=\"alignleft\">
-												<h4>Maximum Size</h4>
-												<span class=\"subtle-text\">1 MB</span>
-											</div>
-											<div class=\"alignleft\" style=\"margin-left: 40px;\">
-												<h4>Minimum Width/Height</h4>
-												<span class=\"subtle-text\">580px / 200px</span>
-											</div>
-										</div>
-										<br style=\"clear: both;\" />
-										<div class=\"ss-div-2\"><input type=\"file\" name=\"image\" /> <input class=\"ss-button\" type=\"submit\" value=\"Upload\" /></div>
-									</form>
-								</div>
-							</div>";
-		}
+	} else {
+		print "<p><a href=\"".$pages["login"]->getAddress(TRUE)."\">Log in</a> to leave a comment</a></p>";
 	}
 	print "</div>";
 }
@@ -2495,7 +2561,7 @@ function displayComment($comment, $userId, $db) {
 	$userAvatar = getUserAvatar($commentUserId, $db);
 	
 	print "<div class=\"comment\" data-comment-id=\"$commentId\" data-user-id=\"$commentUserId\">
-	<div class=\"comment-header\"><a href=\"$homeUrl/user/$userName\">$userName</a><span class=\"alignright\">";
+	<div class=\"comment-header\"><a class=\"comment-username\" href=\"$homeUrl/user/$userName\">$userName</a><span class=\"comment-info\">";
 	if ($commentUserId == $userId) {
 		print "<span class='comment-delete'>Delete</span> | ";
 	}
@@ -2505,6 +2571,102 @@ function displayComment($comment, $userId, $db) {
 	<div class=\"comment-text\">$commentText</div>
 	</div>
 	</div>";
+}
+
+function displaySite($site, $db) {
+	global $homeUrl, $pages;
+	
+	$blogId = $site["siteId"];
+	$blogName = $site["siteName"];
+	$blogUri = $site["siteUrl"];
+	$blogSyndication = $site["siteFeedUrl"];
+	$blogDescription = $site["siteSummary"];
+	$blogTopics = getTags($blogId, 3, NULL, $db);
+	
+	if (empty($blogDescription)) {
+		$blogDescription = "No summary available for this site.";
+	}
+	
+	print "<div class=\"ss-entry-wrapper\">
+	<div class=\"entry-indicator\">+</div>
+	<div class=\"post-header\">
+	<a class=\"entry-title\" href=\"".$blogUri."\">".$blogName."</a>
+	<div class=\"index-categories\">";
+	foreach ($blogTopics as $i => $topic) {
+		$topicName = $topic["topicName"];
+		if ($i != 0)
+			print " | ";
+		print "<a href=\"".$pages["sources"]->getAddress()."/?type=blog&amp;filter0=topic&amp;value0=".urlencode($topicName)."\" title=\"View all posts in $topicName\">$topicName</a>";
+	}
+	print "</div>
+	</div>
+	<div class=\"ss-slide-wrapper\">
+		<div class=\"entry-description\">$blogDescription</div>
+		<div class=\"ss-div\">
+		<a class=\"ss-button\" href=\"".$blogSyndication."\">Feed</a> <a class=\"ss-button\" href=\"$homeUrl/claim/".$blogId."\">Claim this site</a>
+		</div>
+	</div>
+	</div>";
+}
+
+function displayGroup($group, $db) {
+	global $homeUrl;
+	$authUser = new auth();
+	$authUserId = $authUser->userId;
+	
+	$groupId = $group["groupId"];
+	$groupName = $group["groupName"];
+	$groupDescription = $group["groupDescription"];
+	
+	print "<div class=\"ss-entry-wrapper\">
+	<div class=\"entry-indicator\">+</div>
+	<div class=\"post-header\">
+	<a class=\"entry-title\" href=\"$homeUrl/group/$groupId\">$groupName</a>
+	</div>
+	<div class=\"ss-slide-wrapper\">
+	<div class=\"entry-description\">$groupDescription</div>
+	<div class=\"ss-div\">";
+	followButton($groupId, 4, $authUserId, $db);
+	print "</div>
+	</div>
+	</div>";
+}
+
+function displayTags($objectId, $objectTypeId, $addTags, $db) {
+	$tags = getTags($objectId, $objectTypeId, NULL, $db);
+	print "<div class=\"tags\">";
+	foreach ($tags as $tag) {
+		displayTag($tag, $db);
+	}
+	if ($addTags) {
+		print "<div class=\"add-tag\" data-id=\"$objectId\" data-type=\"$objectTypeId\">+ Add Tag</div>";
+	}
+	print "</div>";
+}
+
+
+function displayTag($tag, $db) {
+	global $pages;
+	$authUser = new auth();
+	$authUserId = $authUser->userId;
+	$authUserPriv = getUserPrivilegeStatus($authUserId, $db);
+	
+	$tagId = $tag["tagId"];
+	$tagName = $tag["topicName"];
+	$tagPrivacy = $tag["tagPrivacy"];
+	$tagSourceId = $tag["topicSourceId"];
+	
+	if ($tagPrivacy)
+		$className = "private-tag";
+	else
+		$className = "public-tag";
+	
+	print "<div class=\"tag\" data-id=\"$tagId\">
+	<a class=\"$className\" href=\"".$pages["posts"]->getAddress()."/?type=post&amp;filter0=topic&amp;value0=".urlencode($tagName)."\" title=\"View all posts in $tagName\">$tagName</a>";
+	if ($tagSourceId == 3 && ($tag["userId"] == $authUserId || $authUserPriv > 0)) {
+		print "<span class=\"tag-remove\">X</span>";
+	}
+	print "</div>";
 }
 
 // Input: Step of the editing process, user ID, user Privilege, DB Handle
@@ -2770,8 +2932,7 @@ function editPostForm ($posts, $userPriv, $open, $db) {
 		if ($userPriv > 0) {
 			print "<p>Post Date<br />
 			<input type=\"text\" name=\"postDate\" value=\"$postDate\"/></p>";
-		}
-		else {
+		} else {
 			print "<p>Post Date: $postDate</p>";
 		}
 		print "<p>Title<br />
@@ -3318,11 +3479,11 @@ function checkUserPreferences($userUrl, $userBio) {
 	$result = "";
 	
 	if ($userUrl && !filter_var($userUrl, FILTER_VALIDATE_URL)) {
-		$result .= "Invalid URL submitted ($url), URL must start with \"http://\", e.g., <span class=\"italics\">http://blogname.blogspot.com/</span>.";
+		$result .= "<p class=\"ss-error\">Invalid URL submitted ($userUrl), URL must start with \"http://\", e.g., <span class=\"italics\">http://blogname.blogspot.com/</span></p>";
 	}
 	
 	if (mb_strlen($userBio) > 20000) {
-		$result .= "Biography is too long; a maximum of 20000 characters is allowed.";
+		$result .= "<p class=\"ss-error\">Biography is too long; a maximum of 20000 characters is allowed.</p>";
 	}
 	
 	return $result;
@@ -3400,7 +3561,7 @@ function getBlogName($blogId, $db) {
 // Input: user ID, DB handle
 // Return: all user preferences
 function getUserData($userId, $db) {
-	$sql = "SELECT * FROM USER user INNER JOIN USER_PREFERENCE pref ON  user.USER_ID = pref.USER_ID WHERE user.USER_ID = '$userId'";
+	$sql = "SELECT * FROM USER user LEFT JOIN USER_PREFERENCE pref ON user.USER_ID = pref.USER_ID WHERE user.USER_ID = '$userId'";
 	$result = mysql_query($sql, $db);
 	
 	if ($result == NULL || mysql_num_rows($result) == 0) {
@@ -3576,6 +3737,8 @@ function addUser($userName, $userEmail, $pass, $db) {
 	mysql_query($sql, $db);
 	
 	$userId = mysql_insert_id();
+	
+	editUserPreferences($userId, NULL, NULL, NULL, 1, 1, $db);
 	
 	return $userId;
 }

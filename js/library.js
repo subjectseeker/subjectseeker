@@ -16,9 +16,7 @@
 }*/
 
 function toggleSlider (slider) {
-	slider.slideToggle(400, "swing", function() {
-		updateCommentsButton(this);
-	});
+	slider.slideToggle(400, "swing");
 }
 
 function updateCommentsButton (element) {
@@ -115,11 +113,10 @@ $(document).ready(function() {
   });
 	
 	$('.ss-entry-wrapper').click(function(event) {
-		if(! $( event.target).parents('.ss-slide-wrapper, .recs').length && ! $( event.target).is('a, #recommend')) {
+		if(! $( event.target).parents('.ss-slide-wrapper, .recs, .user-card-small, .tag').length && ! $( event.target).is('a, .recommend')) {
 			var slider = $(this).find('.ss-slide-wrapper:eq(0)');
 			var indicator = $(this).find('.entry-indicator');
 			slider.slideToggle(300, "swing", function() {
-				updateCommentsButton(this);
 				if(slider.is(":visible")) {
 					indicator.html('-');
 				} else {
@@ -256,7 +253,7 @@ $(document).ready(function() {
 		
 	});
 	
-	$('.rec-count').on('click', function() {
+	$('.rec-box').on('click','.rec-count', function() {
 		var parent = $(this).parents('.rec-box');
 		var id = $(parent).data('id');
 		var type = $(parent).data('type');
@@ -276,7 +273,7 @@ $(document).ready(function() {
 		return false;
 	});
 	
-	$('.comment-count').on('click', function() {
+	$('.comment-box').on('click','.comment-count', function() {
 		var parent = $(this).parents('.comment-box');
 		var id = $(parent).data('id');
 		var type = $(parent).data('type');
@@ -345,6 +342,84 @@ $(document).ready(function() {
 			parent.find('.tweet-extras').html('');
 			$('.comment-area').keyup();
 		}
+	});
+	
+	$('.add-tag').click(function() {
+		var id = $(this).data('id');
+		var type = $(this).data('type');
+		
+		if (!isLoggedIn()) {
+			notification('<p>You must be logged in to add tags.</p><a class="ss-button" href="/login">Log In</a> <a class="ss-button" href="/register">Register</a>');
+			
+			return false;
+		}
+		
+		popup('<h2>Add tag</h2><div class="tag-form" data-id="'+id+'" data-type="'+type+'"><p>Tag: <input type="name" name="name" /> <select><option value="0">Public</option><option value="1">Private</option></select></p><input class="tag-button ss-button" type="submit" value="Add Tag" /></div>');
+		
+		
+		/*if (tweet.is(':checked')) {
+			$.ajax({
+				type: 'POST',
+				url: '/scripts/ajax/tweet-data.php',
+				data: 'postId=' + postId,
+				cache: false,
+				
+				success: function(data) {
+					parent.find('.tweet-extras').html(data);
+					parent.find('.tweet-preview-area').fadeIn();
+					$('.comment-area').keyup();
+				} 
+			});
+		} else {
+			parent.find('.tweet-preview-area').fadeOut();
+			parent.find('.tweet-extras').html('');
+			$('.comment-area').keyup();
+		}*/
+	});
+	
+	$('#popup-box').on('click', '.tag-button', function() {
+		var parent = $(this).parents('.tag-form');
+		var id = parent.data('id');
+		var type = parent.data('type');
+		var topicName = parent.find('input[name="name"]').val();
+		var privacy = parent.find('option:selected').val();
+		$.ajax({
+			type: 'POST',
+			url: '/scripts/ajax/add-tag.php',
+			data: 'id=' + id + '&type=' + type + '&topicName=' + topicName + '&privacy=' + privacy,
+			cache: false,
+			
+			success: function(data) {
+				$('.add-tag').before(data);
+			} 
+		});
+	});
+	
+	$('.tags').on('click', '.tag-remove', function() {
+		var parent = $(this).parents('.tag');
+		var id = parent.data('id');
+		$.ajax({
+			type: 'POST',
+			url: '/scripts/ajax/remove-tag.php',
+			data: 'tagId=' + id,
+			cache: false
+		});
+		parent.remove();
+	});
+	
+	$('.user-card-small').on('click', '.user-remove', function() {
+		var parent = $(this).parents('.user-card-small');
+		var userId = parent.data('user-id');
+		var groupId = parent.data('group-id');
+		$.ajax({
+			type: 'POST',
+			url: '/scripts/ajax/remove-manager.php',
+			data: 'userId=' + userId + '&groupId=' + groupId,
+			cache: false
+		});
+		parent.remove();
+		
+		return false;
 	});
 	
 	$('.comment-area').keyup(function() {

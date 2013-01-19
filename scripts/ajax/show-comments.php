@@ -17,15 +17,10 @@ include_once (dirname(__FILE__)."/../initialize.php");
 global $homeUrl;
 
 $db = ssDbConnect();
-$id = $_REQUEST["id"];
-$type = $_REQUEST["type"];
+$objectId = $_REQUEST["id"];
+$objectTypeId = $_REQUEST["type"];
+$objectTypeName = getObjectTypeName($objectTypeId);
 
-$typeId = "";
-if ($type == "post")
-	$typeId = "1";
-elseif ($type == "user")
-	$typeId = "2";
-
-print "<h2>Comments on this $type...</h2>";
-userActivity($id, $typeId, NULL, "comments", 15, $db);
+print "<h2>Comments on this $objectTypeName...</h2>";
+userActivity($objectId, $objectTypeId, NULL, "comments", 15, $db);
 ?>
