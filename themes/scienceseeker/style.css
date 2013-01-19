@@ -573,6 +573,7 @@ a:visited.tweet-author:hover, a.tweet-author:hover {
 
 .profile-sidebar {
 	float: right;
+	clear: both;
 	width: 32%;
 	background: #F0F0F0;
 	padding: 2%;
