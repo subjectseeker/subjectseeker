@@ -135,6 +135,12 @@ function deleteGroup($groupId, $db) {
 	$sql = "DELETE FROM TAG WHERE OBJECT_ID = '$groupId' AND OBJECT_TYPE_ID = '4'";
 	mysql_query($sql, $db);
 	
+	$sql = "DELETE FROM COMMENT WHERE OBJECT_ID = '$groupId' AND OBJECT_TYPE_ID = '4'";
+	mysql_query($sql, $db);
+	
+	$sql = "DELETE FROM RECOMMENDATION WHERE OBJECT_ID = '$groupId' AND OBJECT_TYPE_ID = '4'";
+	mysql_query($sql, $db);
+	
 	$sql = "DELETE FROM `GROUP` WHERE GROUP_ID = '$groupId'";
 	mysql_query($sql, $db);
 }
@@ -156,7 +162,7 @@ function manageGroup($group, $db) {
 	</div>
 	<div class=\"ss-slide-wrapper\">
 	<br />
-	<form method=\"post\">
+	<form class=\"block\" method=\"post\">
 	<input type=\"hidden\" name=\"step\" value=\"edit\" />
 	<input type=\"hidden\" name=\"groupId\" value=\"$groupId\" />
 	<p>Name<br/ >
@@ -170,7 +176,7 @@ function manageGroup($group, $db) {
 	</form>
 	<hr />
 	<h3>Group Banner</h3>
-	<form method=\"post\" action=\"".$pages["crop"]->getAddress()."/?url=$currentUrl&amp;type=group-banner&groupId=$groupId\" enctype=\"multipart/form-data\">
+	<form class=\"block\" method=\"post\" action=\"".$pages["crop"]->getAddress()."/?url=$currentUrl&amp;type=group-banner&groupId=$groupId\" enctype=\"multipart/form-data\">
 	<div class=\"margin-bottom\"><input type=\"file\" name=\"image\" /> <input class=\"ss-button\" type=\"submit\" value=\"Upload\" /></div>
 	</form>
 	<hr />";

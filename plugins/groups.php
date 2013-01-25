@@ -1,3 +1,4 @@
+
 <?php
 
 /*
@@ -12,18 +13,26 @@ THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 */
 
-function pluginListGroups() {
-	global $homeUrl;
-	global $pages;
+function pluginListGroups($httpQuery = NULL, $allowOverride = TRUE, $minimal = FALSE, $open = FALSE, $userGroups = TRUE) {
+	global $homeUrl, $pages;
 	
 	$db = ssDbConnect();
 	$groups = NULL;
 	$authUserId = NULL;
-	if (isLoggedIn()){
+	$limit = 30;
+	$offset = 0;
+	
+	if (isset($_REQUEST["n"]))
+		$limit = $_REQUEST["n"];
+	if (isset($_REQUEST["offset"]))
+		$offset = $_REQUEST["offset"];
+		
+	if (isLoggedIn() && $userGroups){
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		
-		$groups = getUserGroups($authUserId, $db);
+		$groups = getUserGroups($authUserId, $limit, $offset, $db);
+		$total = array_shift(mysql_fetch_array(mysql_query("SELECT FOUND_ROWS()", $db)));
 	}
 	
 	if ($authUserId && $groups) {
@@ -34,7 +43,8 @@ function pluginListGroups() {
 		}
 		print "</div>";
 	} else {
-		$groups = getLatestGroups($db);
+		$groups = getLatestGroups($limit, $offset, $db);
+		$total = array_shift(mysql_fetch_array(mysql_query("SELECT FOUND_ROWS()", $db)));
 		print "<h1>Latest Groups</h1>
 		<div class=\"entries\">";
 		foreach ($groups as $group) {
@@ -42,10 +52,14 @@ function pluginListGroups() {
 		}
 		print "</div>";
 	}
+	
+	if (!$minimal) {
+		pageButtons ($pages["groups"]->getAddress(), $limit, $total);
+	}
 }
 
-function getUserGroups($userId, $db) {
-	$sql = "SELECT * FROM `GROUP` g INNER JOIN FOLLOWER f ON g.GROUP_ID = f.OBJECT_ID WHERE f.OBJECT_TYPE_ID = '4' AND f.USER_ID = '$userId'";
+function getUserGroups($userId, $limit, $offset, $db) {
+	$sql = "SELECT SQL_CALC_FOUND_ROWS * FROM `GROUP` g INNER JOIN FOLLOWER f ON g.GROUP_ID = f.OBJECT_ID WHERE f.OBJECT_TYPE_ID = '4' AND f.USER_ID = '$userId' LIMIT $limit OFFSET $offset";
 	$results = mysql_query($sql, $db);
 	
 	$groups = array();
@@ -61,8 +75,8 @@ function getUserGroups($userId, $db) {
 	return $groups;
 }
 
-function getLatestGroups($db) {
-	$sql = "SELECT * FROM `GROUP` ORDER BY CREATION_DATE_TIME DESC";
+function getLatestGroups($limit, $offset, $db) {
+	$sql = "SELECT SQL_CALC_FOUND_ROWS * FROM `GROUP` ORDER BY CREATION_DATE_TIME DESC LIMIT $limit OFFSET $offset";
 	$results = mysql_query($sql, $db);
 	
 	$groups = array();

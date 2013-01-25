@@ -19,16 +19,23 @@ if (isLoggedIn()) {
 	$db = ssDbConnect();
 	$authUser = new auth();
 	$authUserId = $authUser->userId;
-	$authUserName = $authUser->userName;
-	$userPriv = getUserPrivilegeStatus($authUserId, $db);
+	$authUserPriv = getUserPrivilegeStatus($authUserId, $db);
 	$step = $_REQUEST["step"];
 	$objectId = $_REQUEST["id"];
 	$objectTypeId = $_REQUEST["type"];
 	
 	if ($step == 'recommend') {
 		addRecommendation($objectId, $objectTypeId, $authUserId, $db);
+		
+		if ($authUserPriv > 0 && $objectTypeId == 1) {
+			addNotification($objectId, $objectTypeId, $authUserId, 1, $db);
+		}
 	} elseif ($step == 'recommended') {	
 		removeRecommendation($objectId, $objectTypeId, $authUserId, $db);
+		
+		if ($authUserPriv > 0 && $objectTypeId == 1) {
+			removeNotification($objectId, $objectTypeId, $authUserId, 1, $db);
+		}
 	}
 	
 	recButton($objectId, $objectTypeId, $authUserId, TRUE, $db);

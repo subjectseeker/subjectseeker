@@ -42,6 +42,10 @@ function popup(text) {
 	$('#popup-content').html(text);
 }
 
+function closePopup() {
+	$('#popup-box').slideUp();
+}
+
 function notification(text) {
 	$('#notification-area').slideDown();
 	$('#notification-content').html(text);
@@ -49,7 +53,7 @@ function notification(text) {
 
 $(document).ready(function() {
 	
-	var loadingGif = '<div class="center-text"><img src="/images/icons/loading.gif" height="12px" alt="Loading" title="Loading" /></div>'
+	var loadingGif = '<div class="center-text"><img src="/images/icons/loading.gif" height="12px" alt="Loading" title="Loading" /></div>';
 	
 	/*function updateComments (element) {
 		var parent = $(element).parents('.data-carrier');
@@ -112,7 +116,7 @@ $(document).ready(function() {
     toggleSlider(this.next());
   });
 	
-	$('.ss-entry-wrapper').click(function(event) {
+	$('.entries, .posts, .ss-entry-wrapper').on('click', '.ss-entry-wrapper', function() {
 		if(! $( event.target).parents('.ss-slide-wrapper, .recs, .user-card-small, .tag').length && ! $( event.target).is('a, .recommend')) {
 			var slider = $(this).find('.ss-slide-wrapper:eq(0)');
 			var indicator = $(this).find('.entry-indicator');
@@ -253,6 +257,70 @@ $(document).ready(function() {
 		
 	});
 	
+	$('.trophy-box').on('click', '.nominated,.nominate', function() {
+		var id = $(this).parents('.trophy-box').data('id');
+		/*var awardsString = '';
+		var categories = {
+    'science': 'Best Science Post',
+    'biology': 'Best Biology Post',
+    'physics/astronomy': 'Best Physics / Astronomy Post',
+		'psychology/neuroscience':'Best Psychology / Neuroscience Post',
+		'medicine':'Best Medicine Post',
+		'chemistry':'Best Chemistry Post',
+		'podcast/video':'Podcast / Video',
+		'peer-review':'Best Post About Peer-Reviewed Research',
+		'young-blogger':'Best Post by a High School / Undergraduate Blogger',
+		'art':'Best Science Art Post',
+		'science-life':'Best Life-in-Science Post',
+		};*/
+		
+		if (!isLoggedIn()) {
+			notification('<p>You must be logged in to nominate a post.</p><a class="ss-button" href="/login">Log In</a> <a class="ss-button" href="/register">Register</a>');
+			return false;
+		}
+		
+		popup('<div class="center-text"><img src="/images/icons/loading.gif" alt="Loading" title="Loading" /></div>');
+		$.ajax({
+			type: 'POST',
+			url: '/scripts/ajax/contest-categories.php',
+			data: 'id=' + id,
+			cache: false,
+			success: function(data) {
+				popup(data);
+			} 
+		});
+		
+		/*awardsString += '<h2>ScienceSeeker Awards</h2><p>To nominate this post for an award, click on the award category below.</p><ul data-id="'+id+'">';
+		for (key in categories) {
+			if (key == 'science') {
+				awardsString += '<li class="contest-category" data-category="'+key+'">'+categories[key]+'<span class="contest-nominated">Nominated</span></li>';
+			} else {
+				awardsString += '<li class="contest-category-science" data-category="'+key+'">'+categories[key]+'<span class="contest-nominated">Nominated</span></li>';
+			}
+		}
+		awardsString += '</ul>';*/
+		
+		//popup(awardsString);
+		
+		return false;
+	});
+	
+	$('#popup-box').on('click', '.contest-category', function() {
+		var parent = $(this).parents('ul');
+		var id = parent.data('id');
+		var category = $(this).data('category');
+		$.ajax({
+			type: 'POST',
+			url: '/scripts/ajax/nominate.php',
+			data: 'id=' + id + '&category=' + category,
+			cache: false
+		});
+		
+		closePopup();
+		
+		return false;
+	});
+	
 	$('.rec-box').on('click','.rec-count', function() {
 		var parent = $(this).parents('.rec-box');
 		var id = $(parent).data('id');
@@ -345,6 +413,7 @@ $(document).ready(function() {
 	});
 	
 	$('.add-tag').click(function() {
+		var parent = $(this).parents('.tags');
 		var id = $(this).data('id');
 		var type = $(this).data('type');
 		
@@ -354,27 +423,17 @@ $(document).ready(function() {
 			return false;
 		}
 		
+		if (type == 4) {
+			var tagsNum = $(parent).children('.tag').length;
+			
+			if (tagsNum >= 10) {
+				notification('<p>Maximum number of tags reached on this group.</a>');
+				return false;
+			}
+		}
+		
 		popup('<h2>Add tag</h2><div class="tag-form" data-id="'+id+'" data-type="'+type+'"><p>Tag: <input type="name" name="name" /> <select><option value="0">Public</option><option value="1">Private</option></select></p><input class="tag-button ss-button" type="submit" value="Add Tag" /></div>');
 		
-		
-		/*if (tweet.is(':checked')) {
-			$.ajax({
-				type: 'POST',
-				url: '/scripts/ajax/tweet-data.php',
-				data: 'postId=' + postId,
-				cache: false,
-				
-				success: function(data) {
-					parent.find('.tweet-extras').html(data);
-					parent.find('.tweet-preview-area').fadeIn();
-					$('.comment-area').keyup();
-				} 
-			});
-		} else {
-			parent.find('.tweet-preview-area').fadeOut();
-			parent.find('.tweet-extras').html('');
-			$('.comment-area').keyup();
-		}*/
 	});
 	
 	$('#popup-box').on('click', '.tag-button', function() {
@@ -383,6 +442,17 @@ $(document).ready(function() {
 		var type = parent.data('type');
 		var topicName = parent.find('input[name="name"]').val();
 		var privacy = parent.find('option:selected').val();
+		
+		var addButton = $('.add-tag[data-id="'+id+'"][data-type="'+type+'"]');
+		if (type == 4) {
+			var tagsNum = $(addButton).parents('tags').children('.tag').length;
+			
+			if (tagsNum >= 10) {
+				notification('<p>Maximum number of tags reached on this group.</a>');
+				return false;
+			}
+		}
+		
 		$.ajax({
 			type: 'POST',
 			url: '/scripts/ajax/add-tag.php',
@@ -393,6 +463,8 @@ $(document).ready(function() {
 				$('.add-tag').before(data);
 			} 
 		});
+		
+		closePopup();
 	});
 	
 	$('.tags').on('click', '.tag-remove', function() {

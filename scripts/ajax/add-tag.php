@@ -33,13 +33,4 @@ if (isLoggedIn()) {
 	displayTag($tag, $db);
 }
 
-function addTag($topicName, $objectId, $objectTypeId, $topicSourceId, $userId, $privateStatus, $db) {
-	$topicId = addTopic ($topicName, $db);
-	
-	$sql = "REPLACE INTO TAG (TOPIC_ID, OBJECT_ID, OBJECT_TYPE_ID, TOPIC_SOURCE_ID, USER_ID, PRIVATE_STATUS, CREATION_DATE_TIME) VALUES ('$topicId', '$objectId', '$objectTypeId', '$topicSourceId', $userId, '$privateStatus', NOW())";
-	mysql_query($sql, $db);
-	
-	return mysql_insert_id();
-}
-
 ?>

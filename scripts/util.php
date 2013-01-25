@@ -421,7 +421,7 @@ function parseHttpParams($query = NULL, $allowOverride = TRUE) {
 	parse_str($query, $parsedQuery);
 	// Allow users to override the parameters with GET or POST
 	if ($allowOverride == TRUE) {
-		$parsedQuery = array_merge($parsedQuery, $_GET);
+		$parsedQuery = array_merge($parsedQuery, $_REQUEST);
 	}
 	
 	$i = 0;
@@ -461,59 +461,6 @@ function parseHttpParams($query = NULL, $allowOverride = TRUE) {
 	
 	return $searchParams;
 }
-
-// Input: Optional http query, allow override.
-// Output: list of SSFilter objects representing search query
-/*function httpParamsToSearchQuery($query = NULL, $allowOverride = TRUE) {
-	parse_str($query, $parsedQuery);
-	// Allow users to override the parameters with GET or POST
-	if ($allowOverride == TRUE) {
-		$parsedQuery = array_merge($parsedQuery, $_GET);
-	}
-	
-	$i = 0;
-	// TODO JPH use this list
-	$params = array("filter", "value", "modifier");
-	$searchParams = array();
-
-	while (array_key_exists ("filter$i", $parsedQuery)) {
-		$param["name"] = $parsedQuery["filter$i"];
-
-		if (array_key_exists("value$i", $parsedQuery)) {
-			$param["value"] = $parsedQuery["value$i"];
-		}
-
-		if (array_key_exists("modifier$i", $parsedQuery)) {
-			$param["modifier"] = $parsedQuery["modifier$i"];
-		}
-		
-		array_push($searchParams, $param);
-		++$i;
-	}
-	
-	return $searchParams;
-}
-
-// Input: Optional http query, allow override.
-// Output: array of additional data for the search
-function httpParamsToExtraQuery($query = NULL, $allowOverride = TRUE) {
-	parse_str($query, $parsedQuery);
-	// Allow users to override the parameters with GET or POST
-	if ($allowOverride == TRUE) {
-		$parsedQuery = array_merge($parsedQuery, $_GET);
-	}
-	
-	$results = array();
-	$parameters = array("n", "offset", "type", "show-all", "citation-in-summary", "source-in-title", "sort", "order", "max-date", "min-date", "max-id", "min-id");
-	
-	foreach ($parameters as $parameter) {
-		$results[$parameter] = NULL;
-		if (isset($parsedQuery[$parameter]))
-			$results[$parameter] = $parsedQuery[$parameter];
-	}
-	
-	return $results;
-}*/
 
 // Get current url
 function getURL () {
@@ -653,7 +600,7 @@ function getUserActivity($id, $typeId, $userId, $actionType, $limit, $db) {
 				$action["title"] = "<a class='action-user' href='$homeUrl/user/$userName'>$userName</a> recommended <a href='$homeUrl/post/".$post["BLOG_POST_ID"]."'>".$post["BLOG_POST_TITLE"]."</a>";
 				
 			} elseif ($rec["objectTypeId"] == 2) {
-				$user = getUserData($rec["objectId"], $db);
+				$user = getUser($rec["objectId"], $db);
 				$action["title"] = "<a class='action-user' href='$homeUrl/user/$userName'>$userName</a> recommended user <a href='$homeUrl/user/".$user["userName"]."'>".$user["userName"]."</a>";
 			} elseif ($rec["objectTypeId"] == 4) {
 				$group = getGroup($rec["objectId"], $db);
@@ -1977,7 +1924,7 @@ function addBlog($blogname, $bloguri, $blogsyndicationuri, $blogdescription, $to
 // Action: associate this topic with this blog ID
 // TODO handle errors
 function associateTopic($topicId, $blogId, $db) {
-	$sql = "INSERT INTO TAG (TOPIC_ID, OBJECT_ID, OBJECT_TYPE_ID, TOPIC_SOURCE_ID, CREATION_DATE_TIME) VALUES ('$topicId', '$blogId', '3', 1, NOW())";
+	$sql = "INSERT IGNORE INTO TAG (TOPIC_ID, OBJECT_ID, OBJECT_TYPE_ID, TOPIC_SOURCE_ID, CREATION_DATE_TIME) VALUES ('$topicId', '$blogId', '3', 1, NOW())";
 	mysql_query($sql, $db);
 }
 
@@ -2042,6 +1989,15 @@ function getTags($objectId, $objectTypeId, $topicSourceId, $db) {
 	}
 
 	return $tags;
+}
+
+function addTag($topicName, $objectId, $objectTypeId, $topicSourceId, $userId, $privateStatus, $db) {
+	$topicId = addTopic ($topicName, $db);
+	
+	$sql = "REPLACE INTO TAG (TOPIC_ID, OBJECT_ID, OBJECT_TYPE_ID, TOPIC_SOURCE_ID, USER_ID, PRIVATE_STATUS, CREATION_DATE_TIME) VALUES ('$topicId', '$objectId', '$objectTypeId', '$topicSourceId', $userId, '$privateStatus', NOW())";
+	mysql_query($sql, $db);
+	
+	return mysql_insert_id();
 }
 
 function getTag($tagId, $db) {
@@ -2109,7 +2065,7 @@ function isGroupManager($groupId, $userId, $managerPrivilegeId, $db) {
 // Input: blog ID, DB handle
 // TODO handle errors
 function removeTopics($blogId, $db) {
-	$sql = "DELETE FROM TAG WHERE OBJECT_ID = '$blogId' AND OBJECT_TYPE_ID = '3' AND TOPIC_SOURCE_ID = '1'";
+	$sql = "DELETE FROM TAG WHERE OBJECT_ID = '$blogId' AND OBJECT_TYPE_ID = '3'";
 	mysql_query($sql, $db);
 }
 
@@ -2131,6 +2087,23 @@ function recButton($objectId, $objectTypeId, $userId, $ajax, $db) {
 		
 	if ($recCount != 0)
 		print "<span class='rec-count'>$recCount</span>";
+		
+	if (!$ajax)
+		print "</div>";
+}
+
+function trophyButton($postId, $ajax, $db) {
+	$sql = "SELECT *, topic.TOPIC_NAME FROM TAG tag INNER JOIN TOPIC topic ON tag.TOPIC_ID = topic.TOPIC_ID WHERE OBJECT_ID = '$postId' AND OBJECT_TYPE_ID = '1' AND TOPIC_NAME = 'ssawards'";
+	$result = mysql_query($sql, $db);
+	$row = mysql_fetch_array($result);
+	
+	if (!$ajax)
+		print "<div class='trophy-box' data-id='$postId'>";
+	
+	if ($row)
+		print "<div class='nominated' title='Nominated'></div>";
+	else
+		print "<div class='nominate' title='Nominate'></div>";
 		
 	if (!$ajax)
 		print "</div>";
@@ -2190,9 +2163,8 @@ function pageButtons ($baseUrl, $pagesize, $total, $nextText = "»", $prevText =
 	$nextOffset = $offset + $pagesize;
 	$prevOffset = $offset - $pagesize;
 	
-	print "<div class=\"center-text\">";
+	print "<div class=\"page-buttons\">";
 	if ($total != 0) {
-		print "<div class=\"page-buttons\">";
 		$queryResults["offset"] = $nextOffset;
 		$nextPage = htmlspecialchars(http_build_query($queryResults));
 		
@@ -2229,7 +2201,6 @@ function pageButtons ($baseUrl, $pagesize, $total, $nextText = "»", $prevText =
 		if ($currentPage < $pages && $offset <= $total) {
 			print "<a class=\"arrow-right\" title=\"Next page\" href=\"$baseUrl/?$nextPage\"></a>";
 		}
-		print "</div>";
 	}
 	print "<div class=\"subtle-text\">".number_format($total, 0, ".", ",")." Result";
 	if ($total != 1) {
@@ -2476,6 +2447,7 @@ function displayPosts ($posts, $minimal = FALSE, $open = FALSE, $db) {
 		<div class=\"recs\">";
 		recButton($postId, 1, $authUserId, FALSE, $db);
 		commentButton($postId, 1, $db);
+		trophyButton($postId, FALSE, $db);
 		print "</div>
 		</div>
 		</div>";
@@ -2603,7 +2575,7 @@ function displaySite($site, $db) {
 	<div class=\"ss-slide-wrapper\">
 		<div class=\"entry-description\">$blogDescription</div>
 		<div class=\"ss-div\">
-		<a class=\"ss-button\" href=\"".$blogSyndication."\">Feed</a> <a class=\"ss-button\" href=\"$homeUrl/claim/".$blogId."\">Claim this site</a>
+		<a class=\"ss-button\" href=\"".$pages["posts"]->getAddress()."/?type=posts&amp;filter0=blog&amp;modifier0=identifier&amp;value0=$blogId\">Posts</a> <a class=\"ss-button\" href=\"".$blogSyndication."\">Feed</a> <a class=\"ss-button\" href=\"$homeUrl/claim/".$blogId."\">Claim this site</a>
 		</div>
 	</div>
 	</div>";
@@ -2755,21 +2727,18 @@ function confirmEditBlog ($step, $db) {
 			
 			displayBlogClaimToken($claimToken, $blogId, $db);
 			return;
-		}
-		elseif (!empty($crawl)) {
+		} elseif (!empty($crawl)) {
 			// Find new posts
 			$blog = array("syndicationuri"=>$blogSyndicationUri, "id"=>$blogId, "name"=>$blogName);
 			$result = crawlBlogs($blog, $db);
 			
 			// Get posts and find citations
-			$queryList = httpParamsToSearchQuery("type=post&filter0=blog&modifier0=identifier&value0=$blogId&n=10", FALSE);
-			$settings = httpParamsToExtraQuery("type=post&filter0=blog&modifier0=identifier&value0=$blogId&n=10", FALSE);
-			$settings["type"] = "post";
-			$postsData = generateSearchQuery ($queryList, $settings, 1, $db);
-			while ($row = mysql_fetch_array($postsData["result"])) {
-				$postId = $row["BLOG_POST_ID"];
-				$postUri = $row["BLOG_POST_URI"];
-				$postTitle = $row["BLOG_POST_TITLE"];
+			$api = new API;
+			$api->searchDb("type=post&filter0=blog&modifier0=identifier&value0=$blogId&n=10", FALSE, "post");
+			foreach ($api->posts as $post) {
+				$postId = $post["postId"];
+				$postUri = $post["postUrl"];
+				$postTitle = $post["postTitle"];
 				$citations = checkCitations($postUri, $postId, $db);
 				if (!empty($citations)) {
 					$result .= "<p class=\"ss-successful\">We found the following citation(s) on $blogName: <a href=\"$postUri\">$postTitle</a></p>";
@@ -3491,7 +3460,7 @@ function checkUserPreferences($userUrl, $userBio) {
 
 // Input: user ID, user URL, Biography, Email EP notifications, Email announcements, DB handle
 // Action: edit user preferences
-function editUserPreferences ($userId, $url, $bio, $location, $emailEdPicks, $emailAnnouncement, $db) {
+function editUserPreferences ($userId, $url, $bio, $location, $emailEdPicks, $emailAnnouncement, $emailFollows, $db) {
 	
 	// escape stuff
 	$url = mysql_real_escape_string($url);
@@ -3506,9 +3475,12 @@ function editUserPreferences ($userId, $url, $bio, $location, $emailEdPicks, $em
 	if ($emailAnnouncement == TRUE) {
 		$emailA = "1";
 	}
+	if ($emailFollows == TRUE) {
+		$emailF = "1";
+	}
 	
 	// update easy data
-	$sql = "REPLACE INTO USER_PREFERENCE (USER_ID, USER_URL, USER_BIOGRAPHY, USER_LOCATION, EMAIL_EDITOR_PICK, EMAIL_ANNOUNCEMENTS) VALUES ('$userId', '$url', '$bio', '$location', '$emailEP', '$emailA')";
+	$sql = "REPLACE INTO USER_PREFERENCE (USER_ID, USER_URL, USER_BIOGRAPHY, USER_LOCATION, EMAIL_EDITOR_PICK, EMAIL_ANNOUNCEMENTS, EMAIL_FOLLOWS) VALUES ('$userId', '$url', '$bio', '$location', '$emailEP', '$emailA', '$emailF')";
 	mysql_query($sql, $db);
 }
 
@@ -3560,7 +3532,7 @@ function getBlogName($blogId, $db) {
 
 // Input: user ID, DB handle
 // Return: all user preferences
-function getUserData($userId, $db) {
+function getUser($userId, $db) {
 	$sql = "SELECT * FROM USER user LEFT JOIN USER_PREFERENCE pref ON user.USER_ID = pref.USER_ID WHERE user.USER_ID = '$userId'";
 	$result = mysql_query($sql, $db);
 	
@@ -3582,6 +3554,7 @@ function getUserData($userId, $db) {
 	$userData["userLocation"] = $row["USER_LOCATION"];
 	$userData["emailEditorsPicks"] = $row["EMAIL_EDITOR_PICK"];
 	$userData["emailAnnouncements"] = $row["EMAIL_ANNOUNCEMENTS"];
+	$userData["emailFollows"] = $row["EMAIL_FOLLOWS"];
 	
 	return $userData;
 }
@@ -3738,7 +3711,7 @@ function addUser($userName, $userEmail, $pass, $db) {
 	
 	$userId = mysql_insert_id();
 	
-	editUserPreferences($userId, NULL, NULL, NULL, 1, 1, $db);
+	editUserPreferences($userId, NULL, NULL, NULL, 1, 1, 1, $db);
 	
 	return $userId;
 }
@@ -3816,6 +3789,18 @@ function getSimplePie($uri, $cacheTime = 0) {
 	$feed->init();
 	
 	return $feed;
+}
+
+/* Notifications */
+
+function addNotification($objectId, $objectTypeId, $userId, $notificationTypeId, $db) {
+	$sql = "INSERT IGNORE INTO NOTIFICATION (OBJECT_ID, OBJECT_TYPE_ID, USER_ID, NOTIFICATION_STATUS_ID, NOTIFICATION_TYPE_ID, NOTIFICATION_DATE_TIME) VALUES ('$objectId', '$objectTypeId', '$userId', 0, '$notificationTypeId', NOW())";
+	mysql_query($sql, $db);
+}
+
+function removeNotification($objectId, $objectTypeId, $userId, $notificationTypeId, $db) {
+	$sql = "DELETE FROM NOTIFICATION WHERE OBJECT_ID = '$objectId' AND OBJECT_TYPE_ID = '$objectTypeId' AND NOTIFICATION_TYPE_ID = '$notificationTypeId' AND NOTIFICATION_STATUS_ID = '0'";
+	mysql_query($sql, $db);
 }
 
 /* CitationSeeker */

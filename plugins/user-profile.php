@@ -31,7 +31,9 @@ function displayUserProfile() {
 	$userId = getUserId($userName, $db);
 	$userAvatar = getUserAvatar($userId, $db);
 	$userBannerSrc = getUserBanner($userId, $db);
-	$userData = getUserData($userId, $db);
+	$userData = getUser($userId, $db);
+	$userTwitter = getSocialNetworkUser(1, $userId, "userId", $db);
+	$userGoogle = getSocialNetworkUser(3, $userId, "userId", $db);
 	$userDisplayName = $userData["userDisplayName"];
 	$userUrl = $userData["userUrl"];
 	$userLocation = $userData["userLocation"];
@@ -70,6 +72,17 @@ function displayUserProfile() {
 		print "<div class='block-label'>Location</div>
 		<div class='block-value'>$userLocation</div>";
 	}
+	if ($userTwitter || $userGoogle) {
+		print "<div class='block-label'>Social Networks</div>
+		<ul>";
+		if ($userTwitter) {
+			print "<li class=\"sync-link\"><a title=\"Twitter account\" href=\"https://twitter.com/#!/".$userTwitter["socialNetworkUserName"]."\"><div class=\"twitter-icon\"></div> ".$userTwitter["socialNetworkUserName"]."</a></li>";
+		}
+		if ($userGoogle) {
+			print "<li class=\"sync-link\"><a title=\"Google account\" href=\"https://plus.google.com/".$userGoogle["socialNetworkUserExtId"]."\"><div class=\"googleplus-icon\"></div> ".$userGoogle["socialNetworkUserName"]."</a></li>";
+		}
+		print "</ul>";
+	}
 	print "</div>";
 	$followers = getFollowers($userId, 2, $authUserId, $db);
 	if ($followers) {
@@ -79,18 +92,18 @@ function displayUserProfile() {
 			$followerUserId = $follower["userId"];
 			$followerUserName = getUserName($followerUserId, $db);
 			$followerUserAvatar = getUserAvatar($followerUserId, $db);
-			print "<a class=\"follower\" href=\"$homeUrl/user/$followerUserName\"><img height=\"25\" src=\"".$followerUserAvatar["small"]."\" /> <span>$followerUserName</span></a>";
+			print "<div class=\"user-card-small\"><a href=\"$homeUrl/user/$followerUserName\"><img height=\"25\" src=\"".$followerUserAvatar["small"]."\" /> <span>$followerUserName</span></a></div>";
 		}
 		print "</div>";
 	}
 	if ($sites) {
 		print "<h3>$userName's Sites</h3>
-		<div class='block'>
-		<ul>";
+		<div class=\"block\">
+		<div class=\"entries\">";
 		foreach ($sites as $site) {
 			displaySite($site, $db);
 		}
-		print "</ul>
+		print "</div>
 		</div>";
 	}
 	print "</div>
@@ -98,7 +111,7 @@ function displayUserProfile() {
 	<div class='profile-main'>";
 	if ($userBio) {
 		print "<h3>Biography</h3>
-		<div class='block user-bio'>$userBio</div>";
+		<div class='block profile-description'>$userBio</div>";
 	}
 	print "<div class='user-activity'>
 	<h3>$userName's Activity</h3>

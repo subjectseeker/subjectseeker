@@ -37,29 +37,14 @@ function userSettings() {
 		} elseif ($userId == $authUserId || $userPriv > 1) { // Check if user or admin
 			// Check which of the forms have been submitted, if any
 			if (isset($_POST["form"]) && $_POST["form"] == "personal") {
-				$displayName = NULL;
-				$url = NULL;
-				$bio = NULL;
-				$emailEdPicks = NULL;
-				$emailAnnouncements = NULL;
-				if (isset($_POST["display-name"])) {
-					$displayName = $_POST["display-name"];
-				}
-				if (isset($_POST["url"])) {
-					$url = $_POST["url"];
-				}
-				if (isset($_POST["bio"])) {
-					$bio = $_POST["bio"];
-				}
-				if (isset($_POST["location"])) {
-					$location = $_POST["location"];
-				}
-				if (isset($_POST["email-edpicks"])) {
-					$emailEdPicks = $_POST["email-edpicks"];
-				}
-				if (isset($_POST["email-announcements"])) {
-					$emailAnnouncements = $_POST["email-announcements"];
-				}
+				
+				$displayName = $_POST["display-name"];
+				$url = $_POST["url"];
+				$bio = $_POST["bio"];
+				$location = $_POST["location"];
+				$emailEdPicks = $_POST["email-edpicks"];
+				$emailAnnouncements = $_POST["email-announcements"];
+				$emailFollows = $_POST["email-follows"];
 				
 				$errors = checkUserPreferences($url, $bio);
 				$errors .= checkUserData($authUserId, $userId, NULL, $displayName, NULL, NULL, NULL, NULL, $db);
@@ -69,24 +54,18 @@ function userSettings() {
 					if (empty($displayName)) {
 						$displayName = $userName;
 					}
-					editUserPreferences($userId, $url, $bio, $location, $emailEdPicks, $emailAnnouncements, $db);
+					editUserPreferences($userId, $url, $bio, $location, $emailEdPicks, $emailAnnouncements, $emailFollows, $db);
 					editDisplayName ($userId, $displayName, $db);
 					
 					print "<p class=\"ss-successful\">You settings have been updated.</p>";
 				}
 			} elseif (isset($_POST["form"]) && $_POST["form"] == "email") {
-				$email = NULL;
-				$userPass = NULL;
-				if (isset($_POST["email"])) {
-					$newEmail = $_POST["email"];
-				}
-				if (isset($_POST["current-pass"])) {
-					$userPass = $_POST["current-pass"];
-				}
+				$newEmail = $_POST["email"];
+				$userPass = $_POST["current-pass"];
 				
-				$errors = checkUserData($authUserId, $userId, NULL, NULL, $email, $userPass, NULL, NULL, $db);
+				$errors = checkUserData($authUserId, $userId, NULL, NULL, $newEmail, $userPass, NULL, NULL, $db);
 				
-				if (empty($userPass) || empty($email)) {
+				if (empty($userPass) || empty($newEmail)) {
 					$errors .= "<p class=\"ss-error\">Missing value, please submit your current password and your desired new email.</p>";
 				}
 				
@@ -130,7 +109,7 @@ function userSettings() {
 			
 			// Get user info
 			$userAvatar = getUserAvatar($userId, $db);
-			$userData = getUserData($userId, $db);
+			$userData = getUser($userId, $db);
 			$userTwitter = getSocialNetworkUser(1, $userId, "userId", $db);
 			$userGoogle = getSocialNetworkUser(3, $userId, "userId", $db);
 			$userDisplayName = $userData["userDisplayName"];
@@ -140,17 +119,18 @@ function userSettings() {
 			$userLocation = $userData["userLocation"];
 			$emailEditorsPicks = $userData["emailEditorsPicks"];
 			$emailAnnouncements = $userData["emailAnnouncements"];
+			$emailFollows = $userData["emailFollows"];
 			
 			$originalUrl = getURL();
 			
 			print "<div>
 			<h3>Personal Information</h3>
-			<form class=\"avatar-form\" method=\"post\" action=\"".$pages["crop"]->getAddress()."/?url=$originalUrl \" enctype=\"multipart/form-data\">
+			<form class=\"block center-text\" method=\"post\" action=\"".$pages["crop"]->getAddress()."/?url=$originalUrl \" enctype=\"multipart/form-data\">
 			<input type=\"hidden\" name=\"userId\" value=\"$userId\" />
 			<p class=\"margin-bottom-small\"><img src=\"".$userAvatar["big"]."\" title=\"User avatar\" /></p>
 			<p><input type=\"file\" name=\"image\" accept=\"image/*\" /><br /><input class=\"ss-button\" type=\"submit\" value=\"Upload\" /></p>
 			</form>
-			<form method=\"post\">
+			<form class=\"block\" method=\"post\">
 			<input type=\"hidden\" name=\"form\" value=\"personal\" />
 			<p>Display Name<br />
 			<input name=\"display-name\" type=\"text\" value=\"".htmlspecialchars($userDisplayName, ENT_QUOTES)."\" /></p>
@@ -187,16 +167,21 @@ function userSettings() {
 				print "checked=\"checked\"";
 			}
 			print " /> Enable email notifications for announcements.</p>
+			<p><input name=\"email-follows\" type=\"checkbox\" value=\"True\" ";
+			if ($emailFollows == "1") {
+				print "checked=\"checked\"";
+			}
+			print " /> Enable email notifications of new followers.</p>
 			<p><input class=\"ss-button\" type=\"submit\" value=\"Change Settings\" /></p>
 			</form>
 			<hr class=\"margin-bottom\" />
-			<form method=\"post\" action=\"".$pages["crop"]->getAddress()."/?url=$currentUrl&amp;type=user-banner\" enctype=\"multipart/form-data\">
+			<form class=\"block\" method=\"post\" action=\"".$pages["crop"]->getAddress()."/?url=$currentUrl&amp;type=user-banner\" enctype=\"multipart/form-data\">
 			<input type=\"hidden\" name=\"userId\" value=\"$userId\" />
 			<h3>Profile Banner</h3>
 			<p><input type=\"file\" name=\"image\" /> <input class=\"ss-button\" type=\"submit\" value=\"Upload\" /></p>
 			</form>
 			<hr class=\"margin-bottom\" />
-			<form method=\"post\">
+			<form class=\"block\" method=\"post\">
 			<input type=\"hidden\" name=\"form\" value=\"email\" />
 			<h3>Change Email</h3>
 			<p>Email<br />
@@ -206,7 +191,7 @@ function userSettings() {
 			<p><input class=\"ss-button\" type=\"submit\" value=\"Change Email\" /></p>
 			</form>
 			<hr class=\"margin-bottom\" />
-			<form method=\"post\">
+			<form class=\"block\" method=\"post\">
 			<input type=\"hidden\" name=\"form\" value=\"password\" />
 			<h3>Change Password</h3>
 			<p>Current Password<br />
@@ -216,8 +201,8 @@ function userSettings() {
 			<p>Re-type Password<br />
 			<input name=\"new-pass2\" type=\"password\" value=\"\" /></p>
 			<p><input class=\"ss-button\" type=\"submit\" value=\"Change Password\" /></p>
-			</div>
-			</form>";
+			</form>
+			</div>";
 		} else {
 			print "<p class=\"ss-error\">You don't have permission to access this page</p>";
 		}

@@ -36,9 +36,7 @@ class API {
 		$params["parameters"]["privilege"] = $userPriv;
 		
 		$cache = new cache("posts-".$params["string"], TRUE, FALSE);
-		if (!$useCache)
-			$cache->caching = TRUE;
-		if ($cache->caching == TRUE) {
+		if ($cache->caching == TRUE || !$useCache) {
 			$queryResult = $this->generateSearchQuery($params, $db);
 			
 			if ($queryResult["errors"]) {
@@ -121,7 +119,10 @@ class API {
 			$cacheVars["topics"] = $this->topics;
 			$cacheVars["errors"] = $this->errors;
 			$cacheVars["total"] = $this->total;
-			$cache->storeVars($cacheVars);
+			
+			if ($useCache)
+				$cache->storeVars($cacheVars);
+				
 		} else {
 			$cacheVars = $cache->varCache();
 			$this->posts = $cacheVars["posts"];
@@ -444,6 +445,7 @@ class API {
 	// Input: list of search queries for a blog search
 	// Return: string useful in SORT clause in SQL search, based on input queries
 	private function generateBlogSort ($params) {
+		$order = "";
 		$sortBy = "alphabetical";
 		$orderBy = "asc";
 		
@@ -458,7 +460,7 @@ class API {
 		$sorts = array ("id" => "blog.BLOG_ID","status" => "blog.BLOG_STATUS_ID","alphabetical" => "blog.BLOG_NAME","added-date" => "blog.ADDED_DATE_TIME","crawled-date" => "blog.CRAWLED_DATE_TIME");
 		$orders = array("desc" => "DESC","asc" => "ASC");
 		
-		if ($sorts["$sortBy"] && $orders["$orderBy"]) {
+		if (isset($sorts["$sortBy"]) && isset($orders["$orderBy"])) {
 			$order = "ORDER BY " . $sorts["$sortBy"] . " " . $orders["$orderBy"];
 		} else {
 			array_push ($this->errors, "Unknown order: $sortBy $orderBy");
@@ -786,7 +788,7 @@ class API {
 	// Input: list of search queries for a post search
 	// Return: string useful in SORT clause in SQL search, based on input queries
 	private function generatePostSort($params) {
-		
+		$order = "";
 		$sortBy = "publication-date";
 		$orderBy = "desc";
 		if ($params["parameters"]["sort"]) {
@@ -800,12 +802,12 @@ class API {
 		$sorts = array ("id" => "post.BLOG_POST_ID","alphabetical" => "post.BLOG_POST_TITLE","publication-date" => "post.BLOG_POST_DATE_TIME","added-date" => "post.BLOG_POST_INGEST_DATE_TIME","recommendation-date" => "rec.REC_DATE_TIME","recommendation-count" => "COUNT(rec.REC_DATE_TIME)");
 		$orders = array("desc" => "DESC","asc" => "ASC");
 		
-		if ($sorts["$sortBy"] && $orders["$orderBy"]) {
+		if (isset($sorts["$sortBy"]) && isset($orders["$orderBy"])) {
 			if ($sortBy == "recommendation-date" || $sortBy == "recommendation-count") {
 				$this->group = "GROUP BY post.BLOG_POST_ID";
-				unset($this->from["POST_RECOMMENDATION rec"]);
-				$this->from["(SELECT * FROM POST_RECOMMENDATION ORDER BY REC_DATE_TIME DESC) rec"] = true;
-				array_push ($this->where, "post.BLOG_POST_ID = rec.BLOG_POST_ID");
+				unset($this->from["RECOMMENDATION rec"]);
+				$this->from["(SELECT * FROM RECOMMENDATION ORDER BY REC_DATE_TIME DESC) rec"] = true;
+				array_push ($this->where, "post.BLOG_POST_ID = rec.OBJECT_ID AND OBJECT_TYPE_ID = 1");
 			}
 			$order = "ORDER BY " . $sorts["$sortBy"] . " " . $orders["$orderBy"];
 			

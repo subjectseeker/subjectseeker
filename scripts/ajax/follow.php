@@ -19,16 +19,17 @@ if (isLoggedIn()) {
 	$db = ssDbConnect();
 	$authUser = new auth();
 	$authUserId = $authUser->userId;
-	$authUserName = $authUser->userName;
 	
 	$objectId= $_REQUEST["id"];
 	$objectTypeId = $_REQUEST["type"];
 	
 	if (getFollowers($objectId, $objectTypeId, $authUserId, $db)) {
 		unfollow($objectId, $objectTypeId, $authUserId, $db);
+		removeNotification($objectId, $objectTypeId, $authUserId, 2, $db);
 		print "<span class='follow-button'>Follow</span>";
 	} else {
 		follow($objectId, $objectTypeId, $authUserId, $db);
+		addNotification($objectId, $objectTypeId, $authUserId, 2, $db);
 		print "<span class='unfollow-button'>Unfollow</span>";
 	}
 }

@@ -20,21 +20,17 @@ include_once (dirname(__FILE__)."/config.php");
 
 session_start();
 
+$currentPage = $pages["404"];
 // Check if site is in a subfolder
 $prefix = parse_url($homeUrl, PHP_URL_PATH);
 // Get current page info.
 foreach ($pages as $page) {
 	$pageAddress = $page->address;
-	$currentAddress = parse_url(getURL (),PHP_URL_PATH);
+	$currentAddress = parse_url(getURL(),PHP_URL_PATH);
 	if (preg_match("~^($prefix)?$pageAddress/?$~", $currentAddress)) {
 		$currentPage = $page;
 		break;
 	}
-}
-
-// If page was not found, return 404 page.
-if (empty($currentPage)) {
-	$currentPage = $pages["404"];
 }
 
 // Check if user has a log in cookie

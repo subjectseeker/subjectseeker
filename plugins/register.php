@@ -83,7 +83,7 @@ function displayRegistration() {
 						addToTwitterList($socialNetworkUserExtId);
 						$twitterUser = getTwitterUserDetails($socialNetworkUserExtId);
 						$socialNetworkUserAvatar = $twitterUser->profile_image_url;
-						editUserPreferences($userId, $twitterUser->url, $twitterUser->description, $twitterUser->location, 1, 1, $db);
+						editUserPreferences($userId, $twitterUser->url, $twitterUser->description, $twitterUser->location, 1, 1, 1, $db);
 						
 					} elseif ($socialNetworkId == 3) {
 						$googleUser = getGoogleUser($oauthToken);
@@ -103,7 +103,7 @@ function displayRegistration() {
 						if(isset($googlePlusUser->currentLocation))
 							$userLocation = $googlePlusUser->currentLocation;
 							
-						editUserPreferences($userId, $userUrl, $userBio, $userLocation, 1, 1, $db);
+						editUserPreferences($userId, $userUrl, $userBio, $userLocation, 1, 1, 1, $db);
 						
 						if ($googlePlusUser->displayName) {
 							$userDisplayName = $googlePlusUser->displayName;

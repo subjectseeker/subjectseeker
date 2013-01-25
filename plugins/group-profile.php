@@ -79,7 +79,7 @@ function displayGroupProfile() {
 	
 	<div class=\"profile-main\">
 	<h3>Description</h3>
-	<div class=\"block\" title=\"Description\">$groupDescription</div>";
+	<div class=\"block profile-description\" title=\"Description\">$groupDescription</div>";
 	$api = new API;
 	$api->searchDb("filter0=group&value0=$groupId&n=8", FALSE, "post", FALSE);
 	if ($api->posts) {

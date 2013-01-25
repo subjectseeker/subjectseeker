@@ -8,7 +8,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8 */;
 
 --
--- Database: `subjectseeker`
+-- Database: `sciseek_backend_alpha`
 --
 
 -- --------------------------------------------------------
@@ -398,19 +398,6 @@ CREATE TABLE IF NOT EXISTS `GROUP_MANAGER` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `GROUP_TAG`
---
-
-DROP TABLE IF EXISTS `GROUP_TAG`;
-CREATE TABLE IF NOT EXISTS `GROUP_TAG` (
-  `GROUP_ID` int(10) NOT NULL COMMENT 'Reference to a group.',
-  `TAG_ID` int(10) NOT NULL COMMENT 'Reference to a tag associated with a group.',
-  PRIMARY KEY  (`GROUP_ID`,`TAG_ID`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Associations between groups and tags.';
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `LANGUAGE`
 --
 
@@ -423,6 +410,25 @@ CREATE TABLE IF NOT EXISTS `LANGUAGE` (
   PRIMARY KEY  (`LANGUAGE_ID`),
   UNIQUE KEY `AK_LANGUAGE_IETF_CODE` (`LANGUAGE_IETF_CODE`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='A human language (actually a locale), as defined in IETF BCP';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `NOTIFICATION`
+--
+
+DROP TABLE IF EXISTS `NOTIFICATION`;
+CREATE TABLE IF NOT EXISTS `NOTIFICATION` (
+  `NOTIFICATION_ID` int(11) NOT NULL auto_increment COMMENT 'Unique identifier of a notification',
+  `OBJECT_ID` int(11) NOT NULL COMMENT 'Reference to an object.',
+  `OBJECT_TYPE_ID` int(11) NOT NULL COMMENT 'Reference to a type of object.',
+  `USER_ID` int(11) default NULL COMMENT 'Reference to a user.',
+  `NOTIFICATION_STATUS_ID` tinyint(4) NOT NULL COMMENT 'Reference to the status of a notification.',
+  `NOTIFICATION_TYPE_ID` int(11) NOT NULL COMMENT 'Reference to a type of notification.',
+  `NOTIFICATION_DATE_TIME` datetime NOT NULL COMMENT 'Date and time of creation of a notification.',
+  PRIMARY KEY  (`NOTIFICATION_ID`),
+  UNIQUE KEY `OBJECT_ID` (`OBJECT_ID`,`OBJECT_TYPE_ID`,`USER_ID`,`NOTIFICATION_TYPE_ID`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Notifications to be sent to users.';
 
 -- --------------------------------------------------------
 
@@ -509,7 +515,6 @@ CREATE TABLE IF NOT EXISTS `RECOMMENDATION` (
   `OBJECT_TYPE_ID` int(11) NOT NULL COMMENT 'ID of the type of recommendation.',
   `REC_DATE_TIME` datetime NOT NULL COMMENT 'Date and time the recommendation was made.',
   `REC_IMAGE` varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'Name of an image associated with a recommendation.',
-  `REC_NOTIFICATION` tinyint(4) NOT NULL default '0' COMMENT 'Indicator of pending notification.',
   PRIMARY KEY  (`RECOMMENDATION_ID`),
   UNIQUE KEY `AK_USER_TO_TYPE` (`USER_ID`,`OBJECT_TYPE_ID`,`OBJECT_ID`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Recommendations of elements in the database.';
@@ -740,6 +745,7 @@ CREATE TABLE IF NOT EXISTS `USER_PREFERENCE` (
   `USER_BIOGRAPHY` text collate utf8_unicode_ci NOT NULL COMMENT 'Personal biography of a user.',
   `EMAIL_EDITOR_PICK` tinyint(1) NOT NULL default '0' COMMENT 'Allow emails for editor''s picks.',
   `EMAIL_ANNOUNCEMENTS` tinyint(1) NOT NULL default '0' COMMENT 'Allow emails for announcements.',
+  `EMAIL_FOLLOWS` tinyint(1) NOT NULL COMMENT 'Allow emails for new follows.',
   `USER_LOCATION` varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'Location of a user.',
   `USER_BANNER` varchar(255) collate utf8_unicode_ci default NULL COMMENT 'Name of a banner associated with a user.',
   PRIMARY KEY  (`USER_ID`)

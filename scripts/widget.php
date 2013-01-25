@@ -8,39 +8,38 @@ function displayWidget() {
 	global $pages;
 	
 	$db = ssDbConnect();
-	$queryList = httpParamsToSearchQuery();
-	$settings = httpParamsToExtraQuery();
-	$settings["type"] = "post";
-	$settings["limit"] = "6";
-	$postsData = generateSearchQuery ($queryList, $settings, 1, $db);
+	$api = new API;
+	$api->searchDb("n=6", TRUE, "post");
 	
-	if (! empty($postsData["errors"])) {
-		foreach ($postsData["errors"] as $error) {
+	if ($api->errors) {
+		foreach ($api->errors as $error) {
 			print "<p class=\"ss-error\">$error</p>";
 		}
+		
 	} else {
 		global $sitename;
 		print "<div class=\"widget-title\"><a title=\"Go to $sitename\" href=\"$homeUrl\" target=\"_blank\" >Now on<br />
 		<img class=\"logo-wrapper\" src=\"$homeUrl/images/logos/SSLogoSmall.png\" alt=\"$sitename Logo\" /></a></div>
 		<div id=\"posts-wrapper\">";
 		
-		if (isset($postsData["result"])) {
-			while ($row = mysql_fetch_array($postsData["result"])) {
-				$postId = $row["BLOG_POST_ID"];
-				$blogName = $row["BLOG_NAME"];
-				$blogUri = $row[ "BLOG_URI"];
-				$postTitle = $row[ "BLOG_POST_TITLE"];
-				$postUri = $row[ "BLOG_POST_URI"];
-				
-				// If post doesn't have a title, use the url instead.
-				if (! $postTitle) $postTitle = $postUri;
-				
-				print "<div class=\"ss-entry-wrapper\">
-				<a class=\"postTitle\" href=\"$postUri\" target=\"_blank\" rel=\"bookmark\" title=\"Permanent link to $postTitle\">$postTitle</a><br /><a target=\"_blank\" class=\"blogTitle\" title=\"$blogName homepage\" href=\"$blogUri\">$blogName</a>
-				</div>";
-			}
-		} else {
+		if ($api->total == 0) {
 			print "<div class=\"padding-content\">No results found for your search parameters.</div>";
+		}
+		
+		foreach ($api->posts as $post) {
+			$postId = $post["postId"];
+			$blogName = $post["siteName"];
+			$blogUri = $post["siteUrl"];
+			$postTitle = $post["postTitle"];
+			$postUri = $post["postUrl"];
+			
+			// If post doesn't have a title, use the url instead.
+			if (! $postTitle)
+				$postTitle = $postUri;
+			
+			print "<div class=\"ss-entry-wrapper\">
+			<a class=\"postTitle\" href=\"$postUri\" target=\"_blank\" rel=\"bookmark\" title=\"Permanent link to $postTitle\">$postTitle</a><br /><a target=\"_blank\" class=\"blogTitle\" title=\"$blogName homepage\" href=\"$blogUri\">$blogName</a>
+			</div>";
 		}
 		print "</div>";
 	}

@@ -33,9 +33,11 @@ function displayMySites() {
 		$api = new API;
 		$api->searchDb("filter0=author&modifier0=user-name&value0=$authUserName", FALSE, "blog", FALSE, $userPriv);
 		$sites = $api->sites;
+		print "<div class=\"entries\">";
 		foreach($sites as $site) {
 			editBlogForm($site, $userPriv, TRUE, $db);
 		}
+		print "</div>";
 
 	} else {
 		print "<p class=\"ss-warning>You must log in before you can edit your blog.</p>\n";
