@@ -194,7 +194,7 @@ function manageGroup($group, $db) {
 		print "</div>";
 	}
 	print "</div>
-	<form method=\"post\">
+	<form class=\"block\" method=\"post\">
 	<input type=\"hidden\" name=\"step\" value=\"add-manager\" />
 	<input type=\"hidden\" name=\"groupId\" value=\"$groupId\" />
 	<div class=\"margin-bottom\">User Name<br />
@@ -203,7 +203,7 @@ function manageGroup($group, $db) {
 	</form>";
 	if (isGroupManager($groupId, $authUserId, 2, $db)) {
 		print "<hr />
-		<form method=\"post\">
+		<form class=\"block\" method=\"post\">
 		<input type=\"hidden\" name=\"step\" value=\"delete\" />
 		<input type=\"hidden\" name=\"groupId\" value=\"$groupId\" />
 		<input class=\"ss-button\" type=\"submit\" value=\"Delete Group\" />
