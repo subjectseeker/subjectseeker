@@ -4605,7 +4605,6 @@ function getTwitterUserDetails($twitterUserId = NULL, $twitterUserName = NULL) {
 	$connection = new TwitterOAuth($twitterConsumerKey, $twitterConsumerSecret);
 	$result = $connection->post("users/lookup", array("user_id" => $twitterUserId, "screen_name" => $twitterUserName));
 	$httpCode = $connection->http_code;
-	var_dump($result);
 	if ($httpCode == 200) {
 		if (count($result) == 1)
 			return array_shift($result);

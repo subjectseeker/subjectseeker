@@ -69,17 +69,23 @@ function syncPage() {
 		
 		$code = $_REQUEST["code"];
 		$googleTokens = getGoogleTokens($code, $pages["sync"]->getAddress(TRUE));
-		$oauthToken = $googleTokens->access_token;
 		
-		$googleUser = getGoogleUser($oauthToken);
-		$socialNetworkUserExtId = $googleUser->id;
-		$socialNetworkUserName = $googleUser->name;
-		$socialNetworkUserAvatar = $googleUser->picture;
-		
-		addSocialNetworkUser(3, $socialNetworkUserExtId, $socialNetworkUserName, $socialNetworkUserAvatar, $authUserId, NULL, $oauthToken, NULL, $oauthRefreshToken, $db);
-		
-		$content .= "<p>Your account has been synced.</p>
-		<p><a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
+		if (isset($googleTokens->access_token)) {
+			$oauthToken = $googleTokens->access_token;
+			
+			$googleUser = getGoogleUser($oauthToken);
+			$socialNetworkUserExtId = $googleUser->id;
+			$socialNetworkUserName = $googleUser->name;
+			$socialNetworkUserAvatar = $googleUser->picture;
+			
+			addSocialNetworkUser(3, $socialNetworkUserExtId, $socialNetworkUserName, $socialNetworkUserAvatar, $authUserId, NULL, $oauthToken, NULL, $oauthRefreshToken, $db);
+			
+			$content .= "<p>Your account has been synced.</p>
+			<p><a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
+		} else {
+			$content .= "<p>Invalid token.</p>
+			<p><a class=\"white-button\" href=\"".$pages["sync"]->getAddress(TRUE)."\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
+		}
 	
 	} elseif (isset($_REQUEST["remove"]) && isset($_REQUEST["network"])) {
 		$socialNetworkName = $_REQUEST["network"];

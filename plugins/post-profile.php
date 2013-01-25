@@ -23,6 +23,7 @@ function displayPostProfile() {
 	$db = ssDbConnect();
 	
 	$authUserId = NULL;
+	$authUserPriv = NULL;
 	if (isLoggedIn()){
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
@@ -140,7 +141,8 @@ function displayPostProfile() {
 	displayComments($postId, 1, $authUserId, $db);
 	if ($authUserPriv > 0) {
 		$currentUrl = getURL();
-		print "<div class=\"toggle-button\">Related Image</div>
+		print "<br />
+		<div class=\"toggle-button\">Related Image</div>
 		<div class=\"ss-slide-wrapper padding-content\" style=\"display: none;\">
 		<div id=\"filter-panel\">
 		<form method=\"post\" action=\"".$pages["crop"]->getAddress()."/?url=$currentUrl&amp;type=header\" enctype=\"multipart/form-data\">

@@ -1818,7 +1818,9 @@ background: #4BD336;
 	overflow: auto;
 	max-height: 85%;
 }
-
+.comments {
+	margin-bottom: 15px;
+}
 .comment {
 	background: whiteSmoke;
 	border: 1px solid #D6D6D6;
