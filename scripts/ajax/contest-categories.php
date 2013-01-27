@@ -2,7 +2,7 @@
 
 /*
 
-Copyright © 2010–2012 Christopher R. Maden and Jessica Perry Hekman.
+Copyright © 2010–2012 Gabriel Aponte.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -19,13 +19,13 @@ $postId = $_REQUEST["id"];
 
 $categories = array(
 "biology"=>"Best Biology Post",
-"physics/astronomy"=>"Best Physics / Astronomy Post",
-"psychology/neuroscience"=>"Best Psychology / Neuroscience Post",
+"physics/astronomy"=>"Best Physics or Astronomy Post",
+"psychology/neuroscience"=>"Best Psychology or Neuroscience Post",
 "medicine"=>"Best Medicine Post",
 "chemistry"=>"Best Chemistry Post",
-"podcast/video"=>"Podcast / Video",
+"podcast/video"=>"Best Podcast or Video",
 "peer-review"=>"Best Post About Peer-Reviewed Research",
-"young-blogger"=>"Best Post by a High School / Undergraduate Blogger",
+"young-blogger"=>"Best Post by a High School or Undergraduate Blogger",
 "art"=>"Best Science Art Post",
 "science-life"=>"Best Life-in-Science Post",
 );

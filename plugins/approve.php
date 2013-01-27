@@ -36,9 +36,11 @@ function approveSites() {
 				return NULL;
 			}
 			
+			print "<div class=\"entries\">";
 			foreach($sites as $site) {
 				editBlogForm($site, $userPriv, TRUE, $db);
 			}
+			print "</div>";
 			
 		} else { # not moderator or admin
 			print "<p class=\"ss-warning\">You are not authorized to view the list of blogs for approval.</p>";

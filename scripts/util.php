@@ -2455,7 +2455,7 @@ function displayPosts ($posts, $minimal = FALSE, $open = FALSE, $db) {
 			print "<div class=\"badges\">";
 			if ($postHasCitation == TRUE) print "<span class=\"citation-mark\"></span>";
 			if ($editorsPicksStatus == TRUE) print "<span class=\"editors-mark\"></span>";
-			print "<div class=\"ss-slide-wrapper\" style=\"width: 100%; float: right;\">";
+			print "<div class=\"badges-wrapper\">";
 				if ($postHasCitation == TRUE) {
 					print "<div class=\"citation-mark-content\" title=\"Post citing a peer-reviewed source\">Citation</div>";
 				}
@@ -2574,7 +2574,7 @@ function displaySite($site, $db) {
 	</div>
 	<div class=\"ss-slide-wrapper\">
 		<div class=\"entry-description\">$blogDescription</div>
-		<div class=\"ss-div\">
+		<div>
 		<a class=\"ss-button\" href=\"".$pages["posts"]->getAddress()."/?type=posts&amp;filter0=blog&amp;modifier0=identifier&amp;value0=$blogId\">Posts</a> <a class=\"ss-button\" href=\"".$blogSyndication."\">Feed</a> <a class=\"ss-button\" href=\"$homeUrl/claim/".$blogId."\">Claim this site</a>
 		</div>
 	</div>

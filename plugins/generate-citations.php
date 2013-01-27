@@ -27,8 +27,8 @@ function generateCitations() {
 		<p>Or</p>
 		<p><a class=\"big-button\" href=\"".$pages["generate-citations"]->getAddress()."/?step=create\">Create Citation Manually</a></p>
 		</div>";
-	}
-	elseif ($step == "create") {
+		
+	} elseif ($step == "create") {
 		print "<h3>Create Citation</h3>
 		<form method=\"post\">
 		<input type=\"hidden\" name=\"step\" value=\"end\" />
@@ -41,11 +41,13 @@ function generateCitations() {
 		<textarea class=\"small-text-area\" name=\"fName[]\"></textarea></p>
 		<p><span class=\"subtle-text\">Last Name</span><br />
 		<textarea class=\"small-text-area\" name=\"lName[]\"></textarea></p>
+		<br />
 		</div>
 		<div id=\"journal\">
 		<h4>Journal</h4>
 		<p><textarea class=\"small-text-area\" name=\"journal\"></textarea></p>
 		</div>
+		<br />
 		<h4>Article Url</h4>
 		<p><textarea class=\"small-text-area\" name=\"article\"></textarea></p>
 		<h4>Volume</h4>
@@ -79,10 +81,11 @@ function generateCitations() {
 		}
 		print "</p>
 		</div>
+		<br />
 		<input class=\"ss-button\" type=\"submit\" value=\"Create Citation\" />
 		</form>";
-	}
-	elseif ($step == "results") {
+		
+	} elseif ($step == "results") {
 		global $imagesUrl;
 		$title = NULL;
 		if (!empty($_REQUEST["title"])) {
@@ -101,11 +104,11 @@ function generateCitations() {
 		$results = titleToCitations($title, $metadata2coins);
 		if ($results == NULL) {
 			print "<p>No results found for your search.</p>";
-		}
-		elseif (is_array($results) == FALSE) {
+			
+		} elseif (is_array($results) == FALSE) {
 		 print "<p class=\"ss-error\">$results <input class=\"ss-button\" type=\"button\" value=\"Retry\" onClick=\"window.location.reload()\"></p>";
-		}
-		else {
+		 
+		} else {
 			print "<div class=\"entries\">";
 			foreach ($results as $result) {
 				print "<div class=\"ss-entry-wrapper\">
@@ -178,6 +181,7 @@ function generateCitations() {
 				<p><textarea class=\"small-text-area\" name=\"fName[]\">$firstName</textarea></p>
 				<span class=\"subtle-text\">Last Name</span><br />
 				<p><textarea class=\"small-text-area\" name=\"lName[]\">$lastName</textarea></p>
+				<br />
 				</div>";
 			}
 		}
@@ -185,6 +189,7 @@ function generateCitations() {
 		<h4>Journal</h4>
 		<p><textarea class=\"small-text-area\" name=\"journal\">".$jtitle."</textarea></p>
 		</div>
+		<br />
 		<h4>Article Url</h4>
 		<p><textarea class=\"small-text-area\" name=\"article\">".$artnum."</textarea></p>
 		<h4>Volume</h4>
@@ -235,6 +240,7 @@ function generateCitations() {
 		}
 		print "</p>
 		</div>
+		<br />
 		<input class=\"ss-button\" type=\"submit\" value=\"Submit\" />
 		</form>";
 	}

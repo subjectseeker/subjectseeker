@@ -1,20 +1,5 @@
 /* SubjectSeeker functions */
 
-/*function getUrlVars() {
-	var vars = [], hash;
-	var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
-	var out = hashes;
-	for(var i = 0; i < hashes.length; i++) {
-		hash = hashes[i].split('=');
-		vars.push(hash[0]);
-		vars[hash[0]] = hash[1];
-		
-		//out += hash;
-	}
-	//return vars;
-	return out;
-}*/
-
 function toggleSlider (slider) {
 	slider.slideToggle(400, "swing");
 }
@@ -55,31 +40,6 @@ $(document).ready(function() {
 	
 	var loadingGif = '<div class="center-text"><img src="/images/icons/loading.gif" height="12px" alt="Loading" title="Loading" /></div>';
 	
-	/*function updateComments (element) {
-		var parent = $(element).parents('.data-carrier');
-		var id = $(parent).data('id');
-		var dataString = 'postId='+ id + '&step=showComments';
-		var insert = $(parent).find('.comments');
-		$(insert).html(loadingGif).fadeIn('slow');
-			$.ajax({
-				type: "POST",
-				url: "/scripts/ajax/comment.php",
-				data: dataString,
-				cache: false,
-				
-				success: function(data) {
-					insert.html(data);
-					insert.height('auto');
-					parent.find('.note-button').attr('data-number', $(data).filter('div').attr('data-count'));
-					updateCommentsButton(insert);
-					if(insert.is(':visible')){
-						insert.css({ 'height' : ($(insert).height())});
-					}
-				} 
-		});
-		
-	}*/
-	
 	$('#ss-slideshow, .filter-buttons').fadeIn();
 	
 	$('#loading-message').hide();
@@ -108,15 +68,15 @@ $(document).ready(function() {
   });
 	
 	$('.ss-entry-wrapper').hover(
-		function(){$(this).find('.badges').children('.ss-slide-wrapper').delay(400).slideDown(300); },
-		function(){$(this).find('.badges').children('.ss-slide-wrapper').stop(true, true).slideUp(300); }
+		function(){$(this).find('.badges-wrapper').delay(400).slideDown(300); },
+		function(){$(this).find('.badges-wrapper').stop(true, true).slideUp(300); }
 	);
 	
   $('.ss-div-button').click(function() {
     toggleSlider(this.next());
   });
 	
-	$('.entries, .posts, .ss-entry-wrapper').on('click', '.ss-entry-wrapper', function() {
+	$('.entries, .posts').on('click', '.ss-entry-wrapper', function(event) {
 		if(! $( event.target).parents('.ss-slide-wrapper, .recs, .user-card-small, .tag').length && ! $( event.target).is('a, .recommend')) {
 			var slider = $(this).find('.ss-slide-wrapper:eq(0)');
 			var indicator = $(this).find('.entry-indicator');
@@ -150,35 +110,6 @@ $(document).ready(function() {
 			return;
 		}
 	});
-	
-	/*$(window).scroll( function(){
-		//$('.infinite-scroll').each(function () {
-			var wrapper = $('.infinite-scroll:last');
-			var childName = $(wrapper).data('child');
-			var lastItem = $(wrapper).find('.'+childName+':last-child');
-			var enabled = $(wrapper).data('enabled');
-			var name = $(wrapper).data('name');
-			var bottom_of_object = lastItem.position();
-			var bottom_of_window = $(window).scrollTop() + $(window).height();
-			var query = getUrlVars();
-			alert(bottom_of_object);
-			if(bottom_of_window > bottom_of_object && $(wrapper).attr('data-enabled') == 'true') {
-				//alert('window:' + bottom_of_window + ' object:' + bottom_of_object + ' enabled:' + $(wrapper).attr('data-enabled'));
-				$(wrapper).attr('data-enabled', 'false');
-				$.ajax({
-					type: "POST",
-					enctype: "multipart/form-data",
-					url: "/scripts/ajax/"+name+".php",
-					data: 'query=' + query,
-					cache: false,
-					
-					success: function(data) {
-						wrapper.after(data);
-					}
-				});
-			}
-		//});
-	});*/
 	
 	$('.submit-comment').on('click', function() {
 		var parent = $(this).parents('.data-carrier');
@@ -259,20 +190,6 @@ $(document).ready(function() {
 	
 	$('.trophy-box').on('click', '.nominated,.nominate', function() {
 		var id = $(this).parents('.trophy-box').data('id');
-		/*var awardsString = '';
-		var categories = {
-    'science': 'Best Science Post',
-    'biology': 'Best Biology Post',
-    'physics/astronomy': 'Best Physics / Astronomy Post',
-		'psychology/neuroscience':'Best Psychology / Neuroscience Post',
-		'medicine':'Best Medicine Post',
-		'chemistry':'Best Chemistry Post',
-		'podcast/video':'Podcast / Video',
-		'peer-review':'Best Post About Peer-Reviewed Research',
-		'young-blogger':'Best Post by a High School / Undergraduate Blogger',
-		'art':'Best Science Art Post',
-		'science-life':'Best Life-in-Science Post',
-		};*/
 		
 		if (!isLoggedIn()) {
 			notification('<p>You must be logged in to nominate a post.</p><a class="ss-button" href="/login">Log In</a> <a class="ss-button" href="/register">Register</a>');
@@ -289,18 +206,6 @@ $(document).ready(function() {
 				popup(data);
 			} 
 		});
-		
-		/*awardsString += '<h2>ScienceSeeker Awards</h2><p>To nominate this post for an award, click on the award category below.</p><ul data-id="'+id+'">';
-		for (key in categories) {
-			if (key == 'science') {
-				awardsString += '<li class="contest-category" data-category="'+key+'">'+categories[key]+'<span class="contest-nominated">Nominated</span></li>';
-			} else {
-				awardsString += '<li class="contest-category-science" data-category="'+key+'">'+categories[key]+'<span class="contest-nominated">Nominated</span></li>';
-			}
-		}
-		awardsString += '</ul>';*/
-		
-		//popup(awardsString);
 		
 		return false;
 	});
@@ -557,7 +462,7 @@ $(document).ready(function() {
 			$('#notification-area').slideDown();
 			return;
 		}
-		$('#journal').before('<div class="removable-parent"><div class="margin-bottom"><h4>Author <span class="remove-parent">X</span></h4><span class="subtle-text">First Name</span><br /><textarea class="small-text-area" name="fName[]"></textarea><br /><br /><span class="subtle-text">Last Name</span><br /><textarea class="small-text-area" name="lName[]"></textarea></div></div>');
+		$('#journal').before('<div class="removable-parent"><h4>Author <span class="remove-parent">X</span></h4><p><span class="subtle-text">First Name</span><br /><textarea class="small-text-area" name="fName[]"></textarea></p><p><span class="subtle-text">Last Name</span><br /><textarea class="small-text-area" name="lName[]"></textarea></p><br /></div>');
 	});
 	
 });

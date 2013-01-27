@@ -124,7 +124,7 @@ function displayPostProfile() {
 	
 	<div class=\"profile-main\">
 	<div class=\"block\" title=\"Summary\">
-	$postSummary";
+	<div class='profile-description'>$postSummary</div>";
 	// Add citations to summary if available
 	if ($postHasCitation == TRUE) {
 		print "<div class=\"citation-wrapper\">";
