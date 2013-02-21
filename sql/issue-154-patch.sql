@@ -30,7 +30,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.       */
 /*==============================================================*/
 
-ALTER TABLE BLOG ADD `BLOG_BANNER` varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'Name of a banner associated with a blog.';
-ALTER TABLE GROUP ADD `GROUP_MATCHING_POSTS` tinyint(1) NOT NULL default '1' COMMENT 'Option for groups to display matching posts.';
-ALTER TABLE GROUP ADD `GROUP_MATCHING_SITES` tinyint(1) NOT NULL default '0' COMMENT 'Option for groups to display posts from matching sites.';
-ALTER TABLE RECOMMENDATION DROP `REC_NOTIFICATION`;
+ALTER TABLE `BLOG` ADD `BLOG_BANNER` varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'Name of a banner associated with a blog.';
+ALTER TABLE `GROUP` ADD `GROUP_MATCHING_POSTS` tinyint(1) NOT NULL default '1' COMMENT 'Option for groups to display matching posts.';
+ALTER TABLE `GROUP` ADD `GROUP_MATCHING_SITES` tinyint(1) NOT NULL default '0' COMMENT 'Option for groups to display posts from matching sites.';
+ALTER TABLE `RECOMMENDATION` DROP `REC_NOTIFICATION`;
