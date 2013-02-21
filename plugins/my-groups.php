@@ -33,6 +33,13 @@ function pluginMyGroups() {
 		$groupName = $_POST["name"];
 		$groupDescription = $_POST["description"];
 		
+		if (empty($groupName)) {
+			print "<p class=\"ss-error\">You must submit a name for your group.</p>
+			<p><a href=\"".$pages["my-groups"]->getAddress()."\">Retry</a>";
+			
+			return NULL;
+		}
+		
 		$groupId = addGroup($groupName, $groupDescription, $db);
 		addGroupManager($groupId, $authUserId, 2, $db);
 		
@@ -72,7 +79,14 @@ function pluginMyGroups() {
 			if ($step == "edit" && isGroupManager($groupId, $authUserId, NULL, $db)) {
 				$groupName = $_POST["name"];
 				$groupDescription = $_POST["description"];
-				editGroup($groupId, $groupName, $groupDescription, $db);
+				$groupMatchedPosts = 0;
+				$groupMatchedSitePosts = 0;
+				if ($_POST["track-posts"] == "sites") {
+					$groupMatchedSitePosts = 1;
+				} else {
+					$groupMatchedPosts = 1;
+				}
+				editGroup($groupId, $groupName, $groupDescription, $groupMatchedPosts, $groupMatchedSitePosts, $db);
 				
 				print "<p class=\"ss-successful\">$groupName has been successfully updated.</p>";
 				
@@ -117,11 +131,11 @@ function pluginMyGroups() {
 	}
 }
 
-function editGroup($groupId, $groupName, $groupDescription, $db) {
+function editGroup($groupId, $groupName, $groupDescription, $groupMatchedPosts, $groupMatchedSitePosts, $db) {
 	$groupName = mysql_real_escape_string($groupName);
 	$groupDescription = mysql_real_escape_string($groupDescription);
 	
-	$sql = "UPDATE `GROUP` SET GROUP_NAME='$groupName', GROUP_DESCRIPTION = '$groupDescription' WHERE GROUP_ID='$groupId'";
+	$sql = "UPDATE `GROUP` SET GROUP_NAME='$groupName', GROUP_DESCRIPTION = '$groupDescription', GROUP_MATCHING_POSTS = '$groupMatchedPosts', GROUP_MATCHING_SITES = '$groupMatchedSitePosts' WHERE GROUP_ID='$groupId'";
 	mysql_query($sql, $db);
 }
 
@@ -172,7 +186,17 @@ function manageGroup($group, $db) {
 	$groupTags = getTags($groupId, 4, 3, $db);
 	print "<h3>Tags</h3>";
 	displayTags($groupId, 4, TRUE, $db);
-	print "<div class=\"margin-bottom\"><input class=\"ss-button\" type=\"submit\" value=\"Save Changes\" /></div>
+	print "<p><input type=\"radio\" name=\"track-posts\" value=\"posts\"";
+	if ($group["groupMatchedPosts"]) {
+		print "checked=\"checked\"";
+	}
+	print " /> Group posts that match these tags.</p>
+	<p><input type=\"radio\" name=\"track-posts\" value=\"sites\"";
+	if ($group["groupMatchedSitePosts"]) {
+		print "checked=\"checked\"";
+	}
+	print " /> Group posts from sources that match these tags.</p>
+	<div class=\"margin-bottom\"><input class=\"ss-button\" type=\"submit\" value=\"Save Changes\" /></div>
 	</form>
 	<hr />
 	<h3>Group Banner</h3>
@@ -222,6 +246,8 @@ function getManagerGroups($userId, $db) {
 		$group["groupId"] = $row["GROUP_ID"];
 		$group["groupName"] = $row["GROUP_NAME"];
 		$group["groupDescription"] = $row["GROUP_DESCRIPTION"];
+		$group["groupMatchedPosts"] = $row["GROUP_MATCHING_POSTS"];
+		$group["groupMatchedSitePosts"] = $row["GROUP_MATCHING_SITES"];
 		$group["groupCreationDate"] = $row["CREATION_DATE_TIME"];
 		
 		array_push($groups, $group);

@@ -201,7 +201,7 @@ function formatSearchPostResults($posts, $errors, $db) {
 
 		foreach ( $postData[ "categories" ] as $category ) {
 			$topicName = $category["topicName"];
-			$xml .= "		<category term=\"$category\" />\n";
+			$xml .= "		<category term=\"$topicName\" />\n";
 		}
 		
 		$xml .= "		<source>\n";

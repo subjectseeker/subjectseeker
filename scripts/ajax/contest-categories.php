@@ -19,7 +19,7 @@ $postId = $_REQUEST["id"];
 
 $categories = array(
 "biology"=>"Best Biology Post",
-"physics/astronomy"=>"Best Physics or Astronomy Post",
+"physics/astronomy/earth"=>"Best Physics / Astronomy / Earth Science Post",
 "psychology/neuroscience"=>"Best Psychology or Neuroscience Post",
 "medicine"=>"Best Medicine Post",
 "chemistry"=>"Best Chemistry Post",

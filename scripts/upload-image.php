@@ -24,6 +24,11 @@ function updateUserBanner ($imageName, $userId, $db) {
 	mysql_query($sql, $db);
 }
 
+function updateSiteBanner ($imageName, $siteId, $db) {
+	$sql = "UPDATE BLOG SET BLOG_BANNER = '$imageName' WHERE BLOG_ID = '$siteId'";
+	mysql_query($sql, $db);
+}
+
 if (isLoggedIn()){
 	global $imagesUrl;
 	global $imagedir;
@@ -85,7 +90,24 @@ if (isLoggedIn()){
 		}
 	
 		imagejpeg($createImage, "$imagedir/users/$userId/banners/$newImageName", 	100);
-		updateUserBanner ($imageName, $userId, $db);
+		updateUserBanner ($newImageName, $userId, $db);
+		
+	} elseif (isset($_POST["type"]) && $_POST["type"] == "site-banner") {
+		$createImage = imagecreatetruecolor(1000, 125);
+		imagecopyresampled($createImage,$img_r,0,0,$x,$y,1000,125,$w,$h);
+		
+		$siteId = $_POST["siteId"];	
+		
+		if (canEdit($authUserId, $siteId, $db)) {
+			if (!is_dir($imagedir."/sites/".$siteId."/banners")) {
+				mkdir($imagedir."/sites/".$siteId."/banners", 0775, TRUE);
+				chmod($imagedir."/sites/".$siteId, 0775);
+				chmod($imagedir."/sites/".$siteId."/banners", 0775);
+			}
+		
+			imagejpeg($createImage, "$imagedir/sites/$siteId/banners/$newImageName", 	100);
+			updateSiteBanner($newImageName, $siteId, $db);
+		}
 	
 	} elseif (isset($_POST["type"]) && $_POST["type"] == "group-banner") {
 		$createImage = imagecreatetruecolor(1000, 125);

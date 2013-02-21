@@ -48,6 +48,9 @@ function pluginListGroups($httpQuery = NULL, $allowOverride = TRUE, $minimal = F
 		print "<h1>Latest Groups</h1>
 		<div class=\"entries\">";
 		foreach ($groups as $group) {
+			if (empty($group["groupName"])) {
+				continue;
+			}
 			displayGroup($group, $db);
 		}
 		print "</div>";

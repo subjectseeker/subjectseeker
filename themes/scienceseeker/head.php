@@ -26,6 +26,12 @@ if ($currentPage->id == "home") {
 	$postTitle = $post["BLOG_POST_TITLE"];
 	$title = "$postTitle | ".$sitename;
 	
+} elseif ($currentPage->id == "site-profile") {
+	$db = ssDbConnect();
+	preg_match('/(?<=\/site\/)\d+/', $_SERVER["REQUEST_URI"], $matchResult);
+	$siteName = getBlogName($matchResult[0], $db);
+	$title = "$siteName | ".$sitename;
+	
 } elseif ($currentPage->id == "group-profile") {
 	$db = ssDbConnect();
 	preg_match('/(?<=\/group\/)\d+/', $_SERVER["REQUEST_URI"], $matchResult);
@@ -49,7 +55,7 @@ if ($httpsEnabled == "true") {
 <link rel="shortcut icon" href="<?php echo $imagesUrl ?>/misc/favicon.ico" type="image/x-icon" />
 <link rel="alternate" type="application/rss+xml" title="Feed | <?php echo $sitename; ?>" href="<?php echo $feedUrl; ?>" />
 <link rel="stylesheet" type="text/css" href="<?php echo $themeUrl . "/style.css?v=" . filemtime($basedir.'/themes/scienceseeker/style.css') ?>" media="all" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <?php
 if ($debugSite == "true") {
 ?>

@@ -1,3 +1,12 @@
+-- phpMyAdmin SQL Dump
+-- version 3.4.9
+-- http://www.phpmyadmin.net
+--
+-- Host: localhost
+-- Generation Time: Feb 21, 2013 at 08:26 AM
+-- Server version: 5.0.95
+-- PHP Version: 5.2.6
+
 SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
 
@@ -106,6 +115,7 @@ CREATE TABLE IF NOT EXISTS `BLOG` (
   `BLOG_DESCRIPTION` text collate utf8_unicode_ci COMMENT 'The free-text human-readable description of the nature and intent of the blog.',
   `ADDED_DATE_TIME` datetime NOT NULL COMMENT 'The date and time when this blog was added to the aggregator.',
   `CRAWLED_DATE_TIME` datetime default NULL COMMENT 'The date and time on which this blog was last checked by the aggregator.',
+  `BLOG_BANNER` varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'Name of a banner associated with a blog.',
   PRIMARY KEY  (`BLOG_ID`),
   KEY `FK_BLOG_STATUS` (`BLOG_STATUS_ID`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='A Web log or feed therefrom intended for aggregation by the ';
@@ -377,6 +387,8 @@ CREATE TABLE IF NOT EXISTS `GROUP` (
   `GROUP_NAME` varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'Name of a group.',
   `GROUP_DESCRIPTION` text collate utf8_unicode_ci NOT NULL COMMENT 'Description of a group.',
   `GROUP_BANNER` varchar(255) collate utf8_unicode_ci default NULL COMMENT 'Name of an image associated with a group.',
+  `GROUP_MATCHING_POSTS` tinyint(1) NOT NULL default '1' COMMENT 'Option for groups to display matching posts.',
+  `GROUP_MATCHING_SITES` tinyint(1) NOT NULL default '0' COMMENT 'Option for groups to display posts from matching sites.',
   `CREATION_DATE_TIME` datetime NOT NULL COMMENT 'Date and time of creation of a group.',
   PRIMARY KEY  (`GROUP_ID`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='A group of objects in the database.';
@@ -394,6 +406,19 @@ CREATE TABLE IF NOT EXISTS `GROUP_MANAGER` (
   `MANAGER_PRIVILEGE_ID` int(10) NOT NULL COMMENT 'Reference to the managing privileges of a group.',
   PRIMARY KEY  (`GROUP_ID`,`USER_ID`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Associations between groups and managers of the group.';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `GROUP_TAG`
+--
+
+DROP TABLE IF EXISTS `GROUP_TAG`;
+CREATE TABLE IF NOT EXISTS `GROUP_TAG` (
+  `GROUP_ID` int(10) NOT NULL COMMENT 'Reference to a group.',
+  `TAG_ID` int(10) NOT NULL COMMENT 'Reference to a tag associated with a group.',
+  PRIMARY KEY  (`GROUP_ID`,`TAG_ID`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Associations between groups and tags.';
 
 -- --------------------------------------------------------
 
@@ -515,6 +540,7 @@ CREATE TABLE IF NOT EXISTS `RECOMMENDATION` (
   `OBJECT_TYPE_ID` int(11) NOT NULL COMMENT 'ID of the type of recommendation.',
   `REC_DATE_TIME` datetime NOT NULL COMMENT 'Date and time the recommendation was made.',
   `REC_IMAGE` varchar(255) collate utf8_unicode_ci NOT NULL COMMENT 'Name of an image associated with a recommendation.',
+  `REC_NOTIFICATION` tinyint(4) NOT NULL default '0' COMMENT 'Indicator of pending notification.',
   PRIMARY KEY  (`RECOMMENDATION_ID`),
   UNIQUE KEY `AK_USER_TO_TYPE` (`USER_ID`,`OBJECT_TYPE_ID`,`OBJECT_ID`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Recommendations of elements in the database.';

@@ -1968,7 +1968,7 @@ function getBlogTopics($blogId, $db) {
 
 function getTags($objectId, $objectTypeId, $topicSourceId, $db) {
 	$sql = "SELECT tag.*, t.TOPIC_NAME FROM TAG tag INNER JOIN TOPIC t ON tag.TOPIC_ID = t.TOPIC_ID WHERE tag.OBJECT_ID='$objectId' AND tag.OBJECT_TYPE_ID='$objectTypeId'";
-	if ($topicSourceId) {
+	if ($topicSourceId !== NULL) {
 		$sql .= " AND tag.TOPIC_SOURCE_ID = '$topicSourceId'";
 	}
 	$sql .= " ORDER BY TOPIC_SOURCE_ID, tag.PRIVATE_STATUS ASC";
@@ -2026,6 +2026,8 @@ function getGroup($groupId, $db) {
 	$group["groupId"] = $row["GROUP_ID"];
 	$group["groupName"] = $row["GROUP_NAME"];
 	$group["groupDescription"] = $row["GROUP_DESCRIPTION"];
+	$group["groupMatchedPosts"] = $row["GROUP_MATCHING_POSTS"];
+	$group["groupMatchedSitePosts"] = $row["GROUP_MATCHING_SITES"];
 	$group["groupCreationDate"] = $row["CREATION_DATE_TIME"];
 	
 	return $group;
@@ -2246,7 +2248,7 @@ function editBlogForm ($site, $userPriv, $open, $db) {
 	$blogCrawledDate = $site["siteCrawledDate"];
 	$blogStatusId = $site["siteStatus"];
 	$twitterUser = getSocialNetworkUser(1, $blogId, "siteId", $db);
-	$blogTopics = getTags($blogId, 3, NULL, $db);
+	$blogTopics = getTags($blogId, 3, 1, $db);
 	$blogStatus = ucwords(blogStatusIdToName ($blogStatusId, $db));
 	
 	print "<div class=\"ss-entry-wrapper\">
@@ -2339,15 +2341,22 @@ function editBlogForm ($site, $userPriv, $open, $db) {
 			<br />";
 		}
 	}
+	global $pages;
+	$currentUrl = getURL();
 	print "<h3>Social Networks</h3>
 	<p>Twitter Handle <span class=\"subtle-text\">(Optional)</span><br />
-	<input type=\"text\" name=\"twitterHandle\" size=\"40\" value=\"".$twitterUser["socialNetworkUserName"]."\"/></p>\n";
+	<input type=\"text\" name=\"twitterHandle\" size=\"40\" value=\"".$twitterUser["socialNetworkUserName"]."\"/></p>";
 	global $debugSite;
 	if ($debugSite == "true" && $userPriv > 0) {
 		print "<p><input type=\"checkbox\" class=\"checkbox\" name=\"delete\" value=\"1\" /> Delete from database (debug only).</p>";
 	}
-	print "<input class=\"ss-button\" name=\"editBlog\" type=\"submit\" value=\"Save Changes\" /> <input class=\"ss-button\" name=\"crawl\" type=\"submit\" value=\"Scan for new posts\" />\n
-	</form>\n
+	print "<p><input class=\"ss-button\" name=\"editBlog\" type=\"submit\" value=\"Save Changes\" /> <input class=\"ss-button\" name=\"crawl\" type=\"submit\" value=\"Scan for new posts\" /></p>
+	</form>
+	<hr />
+	<h3>Profile Banner</h3>
+	<form method=\"post\" action=\"".$pages["crop"]->getAddress()."/?url=$currentUrl&amp;type=site-banner&siteId=$blogId\" enctype=\"multipart/form-data\">
+	<div class=\"margin-bottom\"><input type=\"file\" name=\"image\" /> <input class=\"ss-button\" type=\"submit\" value=\"Upload\" /></div>
+	</form>
 	</div>
 	</div>";
 }
@@ -2374,7 +2383,7 @@ function displayPosts ($posts, $minimal = FALSE, $open = FALSE, $db) {
 		$postProfile = $homeUrl . "/post/" . $postId;
 		$postHasCitation = $post["hasCitation"];
 		$formatDay = date("F d, Y", $postDate);
-		$blogTopics = getTags($blogId, 3, NULL, $db);
+		$blogTopics = getTags($blogId, 3, 1, $db);
 		
 		if (empty($postSummary)) {
 			$postSummary = "No summary available for this post.";
@@ -2433,7 +2442,7 @@ function displayPosts ($posts, $minimal = FALSE, $open = FALSE, $db) {
 		}
 		print "</div>
 		<div class=\"post-footer\">
-		<a class=\"post-source\" href=\"$blogUri\" target=\"_blank\" title=\"Permanent link to $blogName homepage\" rel=\"alternate\">$blogName</a>
+		<a class=\"post-source\" href=\"$homeUrl/site/$blogId\" title=\"Permanent link to $blogName homepage\" rel=\"alternate\">$blogName</a>
 		<div class=\"alignright\">
 		<div class=\"post-categories\">";
 		foreach ($blogTopics as $i => $blogTopic) {
@@ -2545,6 +2554,14 @@ function displayComment($comment, $userId, $db) {
 	</div>";
 }
 
+function displaySites($sites, $db) {
+	print "<div class=\"entries\">";
+	foreach ($sites as $site) {
+		displaySite($site, $db);
+	}
+	print "</div>";
+}
+
 function displaySite($site, $db) {
 	global $homeUrl, $pages;
 	
@@ -2553,7 +2570,7 @@ function displaySite($site, $db) {
 	$blogUri = $site["siteUrl"];
 	$blogSyndication = $site["siteFeedUrl"];
 	$blogDescription = $site["siteSummary"];
-	$blogTopics = getTags($blogId, 3, NULL, $db);
+	$blogTopics = getTags($blogId, 3, 1, $db);
 	
 	if (empty($blogDescription)) {
 		$blogDescription = "No summary available for this site.";
@@ -2562,7 +2579,7 @@ function displaySite($site, $db) {
 	print "<div class=\"ss-entry-wrapper\">
 	<div class=\"entry-indicator\">+</div>
 	<div class=\"post-header\">
-	<a class=\"entry-title\" href=\"".$blogUri."\">".$blogName."</a>
+	<a class=\"entry-title\" href=\"$homeUrl/site/$blogId\">".$blogName."</a>
 	<div class=\"index-categories\">";
 	foreach ($blogTopics as $i => $topic) {
 		$topicName = $topic["topicName"];
@@ -2575,7 +2592,7 @@ function displaySite($site, $db) {
 	<div class=\"ss-slide-wrapper\">
 		<div class=\"entry-description\">$blogDescription</div>
 		<div>
-		<a class=\"ss-button\" href=\"".$pages["posts"]->getAddress()."/?type=posts&amp;filter0=blog&amp;modifier0=identifier&amp;value0=$blogId\">Posts</a> <a class=\"ss-button\" href=\"".$blogSyndication."\">Feed</a> <a class=\"ss-button\" href=\"$homeUrl/claim/".$blogId."\">Claim this site</a>
+		<a class=\"ss-button\" href=\"$blogUri\">Home</a> <a class=\"ss-button\" href=\"".$pages["posts"]->getAddress()."/?type=posts&amp;filter0=blog&amp;modifier0=identifier&amp;value0=$blogId\">Posts</a> <a class=\"ss-button\" href=\"".$blogSyndication."\">Feed</a> <a class=\"ss-button\" href=\"$homeUrl/claim/".$blogId."\">Claim this site</a>
 		</div>
 	</div>
 	</div>";
@@ -2764,7 +2781,7 @@ function confirmEditBlog ($step, $db) {
 			editBlog ($blogId, $blogName, $blogUri, $blogSyndicationUri, $blogDescription, $topic1, $topic2, $db);
 			editBlogStatus ($blogId, $blogStatusId, $mailAuthor, $db);
 			if ($twitterHandle) {
-				$twitterUser = getTwitterUserDetails($twitterHandle);
+				$twitterUser = getTwitterUserDetails(NULL, $twitterHandle);
 				
 				if (isset($twitterUser->id)) {
 					unlinkSocialNetworkSite(1, $blogId, $db);
@@ -2779,8 +2796,8 @@ function confirmEditBlog ($step, $db) {
 				deleteBlog($blogId, $db);
 			}
 			print "<p class=\"ss-successful\">$blogName (ID $blogId) has been updated.</p>"; 
-		}
-		elseif ($errors != NULL && $step == "edit") {
+			
+		} elseif ($errors != NULL && $step == "edit") {
 			editBlogStatus ($blogId, $blogStatusId, $mailAuthor, $db);
 			print "<p>$oldBlogName (ID $blogId):</p>$errors";
 			if ($userPriv > 0) {
@@ -3528,6 +3545,30 @@ function getBlogName($blogId, $db) {
 	}
 	$row = mysql_fetch_array($results);
 	return $row["BLOG_NAME"];
+}
+
+// Input: user ID, DB handle
+// Return: all user preferences
+function getSite($siteId, $db) {
+	$sql = "SELECT * FROM BLOG WHERE BLOG_ID = '$siteId'";
+	$result = mysql_query($sql, $db);
+	
+	if ($result == NULL || mysql_num_rows($result) == 0) {
+		return NULL;
+	}
+	
+	$site = array();
+	$row = mysql_fetch_array($result);
+	$site["siteId"] = $row["BLOG_ID"];
+	$site["siteSummary"] = $row["BLOG_DESCRIPTION"];
+	$site["siteName"] = $row["BLOG_NAME"];
+	$site["siteUrl"] = $row["BLOG_URI"];
+	$site["siteFeedUrl"] = $row["BLOG_SYNDICATION_URI"];
+	$site["siteAddedDate"] = $row["ADDED_DATE_TIME"];
+	$site["siteCrawledDate"] = $row["CRAWLED_DATE_TIME"];
+	$site["siteStatus"] = $row["BLOG_STATUS_ID"];
+	
+	return $site;
 }
 
 // Input: user ID, DB handle
@@ -4623,7 +4664,7 @@ function getTwitterUserTweets($twitterUserId, $oauthToken = NULL, $oauthSecretTo
 	global $twitterConsumerSecret;
 	
 	$connection = new TwitterOAuth($twitterConsumerKey, $twitterConsumerSecret, $oauthToken, $oauthSecretToken);
-	$result = $connection->get("statuses/user_timeline", array("user_id" => $twitterUserId, "count" => $limit));
+	$result = $connection->get("statuses/user_timeline", array("user_id" => $twitterUserId, "count" => $limit, "include_entities" => "1"));
 	
 	$httpCode = $connection->http_code;
 	if ($httpCode == 200)

@@ -64,8 +64,14 @@ function editImage() {
 		});
 		
 		$('#jcrop-user-banner').Jcrop({
-			minSize: [ 1000, 125 ],
-			setSelect: [ 0, 0, 1000, 125 ],
+			boxWidth: 600,
+			aspectRatio: 8/1,
+			onSelect: updateCoords,
+		},function() { 
+			$('#crop-button').removeAttr('disabled');
+		});
+		
+		$('#jcrop-site-banner').Jcrop({
 			boxWidth: 600,
 			aspectRatio: 8/1,
 			onSelect: updateCoords,
@@ -113,16 +119,13 @@ function editImage() {
 				}
 				$target = "header";
 			} elseif (isset($_GET["type"]) && $_GET["type"] == "group-banner") {	
-				if ($width < 1000 || $height < 125) {
-					return $content .= "<p class=\"ss-error\">Your image must be at least 1000 x 125.</p>";
-				}
 				$target = "group-banner";
 				
 			} elseif (isset($_GET["type"]) && $_GET["type"] == "user-banner") {	
-				if ($width < 1000 || $height < 125) {
-					return $content .= "<p class=\"ss-error\">Your image must be at least 1000 x 125.</p>";
-				}
 				$target = "user-banner";
+				
+			} elseif (isset($_GET["type"]) && $_GET["type"] == "site-banner") {	
+				$target = "site-banner";
 				
 			} elseif ($width < 80 || $height < 80) {
 				return $content .= "<p class=\"ss-error\">Your avatar must be at least 80 x 80.</p>";
@@ -150,22 +153,27 @@ function editImage() {
 			if ($userPriv > 0) {
 				if (isset($_POST["userId"])) {
 					$content .= "<input type=\"hidden\" name=\"userId\" value=\"".$_POST["userId"]."\" />";
-				}
-				if (isset($_GET["type"]) && $_GET["type"] == "group-banner") {
-					$groupId = $_REQUEST["groupId"];
-					$content .= "<input type=\"hidden\" name=\"groupId\" value=\"$groupId\" />
-					<input type=\"hidden\" name=\"type\" value=\"group-banner\" />";
-					
-				} elseif (isset($_GET["type"]) && $_GET["type"] == "user-banner") {
-					$userId = $_REQUEST["userId"];
-					$content .= "<input type=\"hidden\" name=\"userId\" value=\"$userId\" />
-					<input type=\"hidden\" name=\"type\" value=\"user-banner\" />";
-					
 				} elseif (isset($_GET["type"]) && $_GET["type"] == "header") {
 					$postId = $_REQUEST["postId"];
 					$content .= "<input type=\"hidden\" name=\"postId\" value=\"$postId\" />
 					<input type=\"hidden\" name=\"type\" value=\"header\" />";
 				}
+			}
+			if (isset($_GET["type"]) && $_GET["type"] == "group-banner") {
+				$groupId = $_REQUEST["groupId"];
+				$content .= "<input type=\"hidden\" name=\"groupId\" value=\"$groupId\" />
+				<input type=\"hidden\" name=\"type\" value=\"group-banner\" />";
+				
+			} elseif (isset($_GET["type"]) && $_GET["type"] == "site-banner") {
+				$siteId = $_REQUEST["siteId"];
+				$content .= "<input type=\"hidden\" name=\"siteId\" value=\"$siteId\" />
+				<input type=\"hidden\" name=\"type\" value=\"site-banner\" />";
+				
+			} elseif (isset($_GET["type"]) && $_GET["type"] == "user-banner") {
+				$userId = $_REQUEST["userId"];
+				$content .= "<input type=\"hidden\" name=\"userId\" value=\"$userId\" />
+				<input type=\"hidden\" name=\"type\" value=\"user-banner\" />";
+				
 			}
 			$content .= "<p><input id=\"crop-button\" class=\"ss-button\" disabled=\"disabled\" type=\"submit\" value=\"Crop Image\" /></p>
 			<div class=\"center-text\"><img id=\"jcrop-$target\" src=\"$tmpLocation\" title=\"Preview\" /></div>

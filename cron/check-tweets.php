@@ -12,16 +12,23 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+header('Content-Type: text/html; charset=utf-8');
+
 include_once (dirname(__FILE__)."/../config/globals.php");
 include_once (dirname(__FILE__)."/../scripts/util.php");
 
 $db = ssDbConnect();
 
 $tweets = getTwitterList($twitterListId, 80, 1);
+//var_dump($tweets);
 $socialNetworkUsers = getPendingSocialNetworkUsers($db, 5);
 foreach ($socialNetworkUsers as $socialNetworkUser) {
-	array_merge($tweets,  getTwitterUserTweets($socialNetworkUser["socialNetworkUserExtId"], $socialNetworkUser["oauthToken"], $socialNetworkUser["oauthSecretToken"]));
+	$userTweets = getTwitterUserTweets($socialNetworkUser["socialNetworkUserExtId"], $socialNetworkUser["oauthToken"], $socialNetworkUser["oauthSecretToken"]);
+	//var_dump($userTweets);
+	$tweets = array_merge($tweets, $userTweets);
 }
+
+//var_dump($tweets);
 
 foreach ($tweets as $tweet) {
 	$tweetTwitterId = $tweet->id_str;
@@ -32,6 +39,8 @@ foreach ($tweets as $tweet) {
 	$tweetText = $tweet->text;
 	$socialNetworkUserId = addSocialNetworkUser(1, $tweetUserId, $tweetAuthor, $tweetAvatar, NULL, NULL, NULL, NULL, NULL, $db);
 	addTweet($tweetTwitterId, $tweetText, $tweetDate, $socialNetworkUserId, $db);
+	
+	var_dump("<br />",$tweet,"<br />");
 	
 	$socialNetworkUser = getSocialNetworkUser (1, $socialNetworkUserId, "socialNetworkUserId", $db);
 	if ($socialNetworkUser["userId"]) {
@@ -93,8 +102,10 @@ function expandURL($url) {
 }
 
 function addTweet($tweetTwitterId, $tweetText, $tweetDate, $socialNetworkUserId, $db) {
+	$tweetText = mysql_real_escape_string($tweetText);
+	
 	$sql = "INSERT IGNORE INTO TWEET (TWEET_TWITTER_ID, TWEET_TEXT, TWEET_DATE_TIME, SOCIAL_NETWORK_USER_ID) VALUES ('$tweetTwitterId', '$tweetText', '$tweetDate', '$socialNetworkUserId')";
-	mysql_query($sql, $db);
+	var_dump($sql, mysql_query($sql, $db));
 	
 	return $tweetId = mysql_insert_id;
 }

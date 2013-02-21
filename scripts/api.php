@@ -207,7 +207,7 @@ class API {
 		$sql = "$select $from $where $group $count $order $limit $offset;";
 	
 		// for debugging:
-		// print "<br />SQL $sql</br>";
+		//print "<br />SQL $sql</br>";
 	
 		// execute SQL query
 		$result["result"] = mysql_query($sql, $db);
@@ -299,6 +299,10 @@ class API {
 				$this->from["BLOG blog"] = true;
 				$this->from["TAG tag"] = true;
 				$this->from["TOPIC t"] = true;
+				
+			} else if ($query["name"] === "group") {
+				$this->from["TAG tag"] = true;
+				
 			} else if ($query["name"] === "author") {
 				$this->from["BLOG_AUTHOR author"] = true;
 				if ($query["modifier"] == "user-name") {
@@ -326,7 +330,7 @@ class API {
 			$searchType = mysql_real_escape_string($query["modifier"]);
 			
 			if ($query["name"] === "topic") {
-				$topics[] = "t.TOPIC_NAME='$searchValue' AND blog.BLOG_ID = tag.OBJECT_ID AND tag.OBJECT_TYPE_ID = '1' AND tag.TOPIC_ID = t.TOPIC_ID";
+				$topics[] = "t.TOPIC_NAME='$searchValue' AND blog.BLOG_ID = tag.OBJECT_ID AND tag.OBJECT_TYPE_ID = '3' AND tag.TOPIC_ID = t.TOPIC_ID";
 				
 				if ($searchType)
 					array_push ($this->errors, "Unrecognized modifier: $searchType");
@@ -365,6 +369,35 @@ class API {
 				elseif ($searchType != "all" && $searchType != NULL && $searchType != "") {
 					array_push ($this->errors, "Unrecognized modifier: $searchType");
 				}
+				
+			} else if ($query["name"] === "group") {
+				if (is_numeric($searchValue)) {
+					$db = ssDbConnect();
+					$groupTags = getTags($searchValue, 4, 3, $db);
+					$groupTopics = "";
+					foreach ($groupTags as $i => $tag) {
+						if ($i != 0) {
+							$groupTopics .= " OR ";
+						}
+						$topicId = $tag["topicId"];
+						$tagPrivacy = $tag["tagPrivacy"];
+						$groupTopics .= "(tag.TOPIC_ID = '$topicId'";
+						if ($tagPrivacy) {
+							$tagUserId = $tag["userId"];
+							$groupTopics .= " AND tag.PRIVATE_STATUS = 1 AND tag.USER_ID = $tagUserId";
+						}
+						$groupTopics .= ")";
+						
+						$this->group = "GROUP BY blog.BLOG_ID";
+					}
+					array_push ($this->where, "tag.OBJECT_TYPE_ID = '3' AND ($groupTopics) AND tag.OBJECT_ID = blog.BLOG_ID");
+				
+				} else{ 
+					array_push ($this->errors, "Identifier value must be numeric: $searchValue");
+				}
+				
+				if ($searchType)
+					array_push ($this->errors, "Unrecognized modifier: $searchType");
 				
 			} else if ($query["name"] == "identifier") {
 				if (is_numeric($searchValue))
@@ -505,7 +538,6 @@ class API {
 				
 			} else if ($query["name"] === "group") {
 				$this->from["TAG tag"] = true;
-				//$this->from["TAG tag2"] = true;
 				
 			} else if ($query["name"] === "topic") {
 				$this->from["TAG tag"] = true;
@@ -577,8 +609,10 @@ class API {
 				
 			} else if ($query["name"] === "group") {
 				if (is_numeric($searchValue)) {
+					$groupId = $searchValue;
+					
 					$db = ssDbConnect();
-					$groupTags = getTags($searchValue, 4, 3, $db);
+					$groupTags = getTags($groupId, 4, 3, $db);
 					$groupTopics = "";
 					foreach ($groupTags as $i => $tag) {
 						if ($i != 0) {
@@ -595,7 +629,15 @@ class API {
 						
 						$this->group = "GROUP BY post.BLOG_POST_ID";
 					}
-					array_push ($this->where, "tag.OBJECT_TYPE_ID = '1' AND ($groupTopics) AND tag.OBJECT_ID = post.BLOG_POST_ID");
+					$group = getGroup($groupId, $db);
+					if ($group["groupMatchedPosts"]) {
+						$whereArray[] = "(tag.OBJECT_TYPE_ID = '1' AND tag.OBJECT_ID = post.BLOG_POST_ID AND ($groupTopics))";
+					}
+					if ($group["groupMatchedSitePosts"]) {
+						$whereArray[] = "(tag.OBJECT_TYPE_ID = '3' AND tag.OBJECT_ID = post.BLOG_ID AND ($groupTopics))";
+					}
+					
+					array_push ($this->where, implode(" OR ", $whereArray));
 				
 				} else{ 
 					array_push ($this->errors, "Identifier value must be numeric: $searchValue");

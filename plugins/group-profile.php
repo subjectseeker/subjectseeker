@@ -75,6 +75,10 @@ function displayGroupProfile() {
 		}
 		print "</div>";
 	}
+	print "<h3>Sites</h3>";
+	$api = new API;
+	$api->searchDb("filter0=group&value0=$groupId&n=5&sort=added-date&order=desc", FALSE, "blog", FALSE);
+	displaySites($api->sites, $db);
 	print "</div>
 	
 	<div class=\"profile-main\">

@@ -43,12 +43,12 @@ $comment = getComment($commentId, $db);
 displayComment($comment, $authUserId, $db);
 
 global $debugSite;
-if ($debugSite != "true") {
+if ($debugSite != "true" && $objectTypeId == 1) {
 	// Use Search API to find Blog ID and Post URL
 	$api = new API;
-	$api->searchDb("type=post&filter0=identifier&value0=$postId", FALSE, "post", FALSE);
+	$api->searchDb("type=post&filter0=identifier&value0=$objectId", FALSE, "post", FALSE);
 	$post = array_shift($api->posts);
-	$postUrl = $post["postId"];
+	$postUrl = $post["postUrl"];
 	$blogId = $post["siteId"];
 		
 	// Get Blog social info
@@ -56,13 +56,13 @@ if ($debugSite != "true") {
 	$blogTwitterHandle = $socialNetworkUser["socialNetworkUserName"];
 	
 	// Tweet note to our Twitter account.
-	$shortUrl = get_bitly_short_url($postUri);
+	$shortUrl = get_bitly_short_url($postUrl);
 	
 	$noteAuthor = $authUserName;
 	if (!empty($userTwitter["socialNetworkUserName"])) {
 		$noteAuthor = "@".$userTwitter["socialNetworkUserName"];
 	}
-	$ssNote = "$note $shortUrl —$noteAuthor";
+	$ssNote = "$commentText $shortUrl —$noteAuthor";
 	
 	$connection = getTwitterAuthTokens($twitterNotesToken, $twitterNotesTokenSecret);
 	$connection->post("statuses/update", array("status" => $ssNote));

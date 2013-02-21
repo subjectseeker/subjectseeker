@@ -40,11 +40,7 @@ function displayResources($httpQuery = NULL, $allowOverride = TRUE) {
 		return NULL;
 	}
 	
-	print "<div class=\"entries\">";
-	foreach ($api->sites as $site) {
-		displaySite($site, $db);
-	}
-	print "</div>";
+	displaySites($api->sites, $db);
 	
 	pageButtons ($pages["sources"]->getAddress(), $pagesize, $api->total);
 }

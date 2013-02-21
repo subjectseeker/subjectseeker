@@ -1,4 +1,4 @@
-<?php
+f<?php
 
 /*
 
@@ -176,6 +176,7 @@ function userSettings() {
 			</form>
 			<hr class=\"margin-bottom\" />
 			<form class=\"block\" method=\"post\" action=\"".$pages["crop"]->getAddress()."/?url=$currentUrl&amp;type=user-banner\" enctype=\"multipart/form-data\">
+			<input type=\"hidden\" name=\"type\" value=\"user-banner\" />
 			<input type=\"hidden\" name=\"userId\" value=\"$userId\" />
 			<h3>Profile Banner</h3>
 			<p><input type=\"file\" name=\"image\" /> <input class=\"ss-button\" type=\"submit\" value=\"Upload\" /></p>
