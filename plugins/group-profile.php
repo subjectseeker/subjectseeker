@@ -80,8 +80,8 @@ function displayGroupProfile() {
 	if ($api->sites) {
 		print "<h3>Sites</h3>";
 		displaySites($api->sites, $db);
-		print "</div>";
 	}
+	print "</div>";
 	
 	print "<div class=\"profile-main\">
 	<h3>Description</h3>
