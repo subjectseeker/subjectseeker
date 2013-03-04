@@ -384,7 +384,7 @@ class API {
 						$groupTopics .= "(tag.TOPIC_ID = '$topicId'";
 						if ($tagPrivacy) {
 							$tagUserId = $tag["userId"];
-							$groupTopics .= " AND tag.PRIVATE_STATUS = 1 AND tag.USER_ID = $tagUserId";
+							$groupTopics .= " AND tag.USER_ID = $tagUserId";
 						}
 						$groupTopics .= ")";
 						
@@ -623,7 +623,7 @@ class API {
 						$groupTopics .= "(tag.TOPIC_ID = '$topicId'";
 						if ($tagPrivacy) {
 							$tagUserId = $tag["userId"];
-							$groupTopics .= " AND tag.PRIVATE_STATUS = 1 AND tag.USER_ID = $tagUserId";
+							$groupTopics .= " AND tag.USER_ID = $tagUserId";
 						}
 						$groupTopics .= ")";
 						
@@ -726,7 +726,7 @@ class API {
 				else
 					array_push ($this->errors, "Unrecognized value: $searchValue");
 				
-				array_push ($this->where, "post.BLOG_POST_ID = rec.OBJECT_ID","user.USER_ID = rec.USER_ID","OBJECT_TYPE_ID = '1'");
+				array_push ($this->where, "post.BLOG_POST_ID = rec.OBJECT_ID","user.USER_ID = rec.USER_ID","rec.OBJECT_TYPE_ID = '1'");
 				$this->group = "GROUP BY post.BLOG_POST_ID";
 				
 				if ($searchType)

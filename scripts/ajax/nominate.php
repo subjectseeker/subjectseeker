@@ -26,8 +26,19 @@ if (isLoggedIn()) {
 	$tagId = addTag("ssawards", $postId, 1, 3, $authUserId, FALSE, $db);
 	$tagName = "ssawards-$tagName";
 	addTag($tagName, $postId, 1, 3, $authUserId, FALSE, $db);
+	
+	global $homeUrl, $sitename, $contactEmail;
+	
+	$post = getPost($postId, $db);
+	$postUrl = $post["BLOG_POST_URI"];
+	
+	$subject = "ScienceSeeker Awards Nomination";
+	$message = "There is a new nomination for the ScienceSeeker Awards.
+
+$homeUrl/post/$postId
+
+The ".$sitename." Team.";
+	sendMail($contactEmail, $subject, $message);
 }
-
-
 
 ?>

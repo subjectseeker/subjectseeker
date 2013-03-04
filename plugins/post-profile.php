@@ -71,6 +71,7 @@ function displayPostProfile() {
 	<div class='profile-buttons'>";
 	recButton($postId, 1, $authUserId, FALSE, $db);
 	commentButton($postId, 1, $db);
+	trophyButton($postId, FALSE, $db);
 	print"</div>
 	</div>
 	<div class=\"profile-sidebar\">

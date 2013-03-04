@@ -76,16 +76,21 @@ function displayGroupProfile() {
 		print "</div>";
 	}
 	$api = new API;
-	$api->searchDb("filter0=group&value0=$groupId&n=5&sort=added-date&order=desc", FALSE, "blog", FALSE);
+	$api->searchDb("filter0=group&value0=$groupId&n=10&sort=added-date&order=desc", FALSE, "blog", FALSE);
 	if ($api->sites) {
-		print "<h3>Sites</h3>";
+		print "<h3>Sites (".$api->total.")</h3>";
 		displaySites($api->sites, $db);
+		print "<div class=\"page-buttons\">
+		<a class=\"ss-button\" href=\"".$pages["sources"]->address."/?type=blog&filter0=group&value0=$groupId\">More</a>
+		</div>";
 	}
 	print "</div>";
 	
-	print "<div class=\"profile-main\">
-	<h3>Description</h3>
-	<div class=\"block profile-description\" title=\"Description\">$groupDescription</div>";
+	print "<div class=\"profile-main\">";
+	if ($groupDescription !== NULL) {
+		print "<h3>Description</h3>
+		<div class=\"block profile-description\" title=\"Description\">$groupDescription</div>";
+	}
 	$api = new API;
 	$api->searchDb("filter0=group&value0=$groupId&n=8", FALSE, "post", FALSE);
 	if ($api->posts) {

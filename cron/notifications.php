@@ -85,37 +85,27 @@ function sendEPEmail ($postId, $userEmail, $userName, $userDisplayName, $db) {
 	$postTitle = $postData["BLOG_POST_TITLE"];+
 	
 	$subject = $sitename. " Editor's Pick";
-	$message = "Good news, ".$userDisplayName."!
-
-Your post $postTitle has been recommended by one of our editors.
-
-You can visit your post profile here:
-$homeUrl/post/$postId
+	$message = "There is a new nomination for the ScienceSeeker Awards.
 
 The ".$sitename." Team.";
 	sendMail($userEmail, $subject, $message);
 }
 
 function sendUserFollowerNotification($followerUserId, $userId, $db) {
-	global $homeUrl, $sitename;
+	global $homeUrl, $sitename, $contactEmail;
 	
 	$follower = getUser($followerUserId, $db);
 	$followerUserName = $follower["userName"];
 	$user = getUser($userId, $db);
 	$userName = $user["userName"];
-	$userEmail = $user["userEmail"];
 	
 	$subject = "$followerUserName is now following you on $sitename";
-	$message = "You've got a new follower on $sitename.
+	$message = "There is a new nomination for the ScienceSeeker Awards.
 	
-$followerUserName's profile: 
-$homeUrl/user/$followerUserName
 
-You can change your email notification preferences on your settings page:
-$homeUrl/user/$userName/settings
 
 The ".$sitename." Team.";
-	sendMail($userEmail, $subject, $message);
+	sendMail($contactEmail, $subject, $message);
 }
 
 ?>

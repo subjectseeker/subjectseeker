@@ -31,8 +31,9 @@ function displayUserPanel() {
 			print "<li class=\"user-panel-button\"><a href=\"".$pages["approve"]->getAddress()."\">Approve Sites</a></li>
 			<li class=\"user-panel-button\"><a href=\"".$pages["administer-sources"]->getAddress()."\">Administer Sites</a></li>";
 			if ($userPriv > 1){
-				print "<li class=\"user-panel-button\"><a href=\"".$pages["administer-posts"]->getAddress()."\">Administer Posts</a></li>";
-				print "<li class=\"user-panel-button\"><a href=\"".$pages["administer-users"]->getAddress()."\">Administer Users</a></li>";
+				print "<li class=\"user-panel-button\"><a href=\"".$pages["administer-posts"]->getAddress()."\">Administer Posts</a></li>
+				<li class=\"user-panel-button\"><a href=\"".$pages["administer-users"]->getAddress()."\">Administer Users</a></li>
+				<li class=\"user-panel-button\"><a href=\"".$pages["add-post"]->getAddress()."\">Add Post</a></li>";
 			}
 		}
 		print "</ul>

@@ -31,6 +31,7 @@ function displaySiteProfile() {
 	$site = getSite($siteId, $db);
 	$siteName = $site["siteName"];
 	$siteUrl = $site["siteUrl"];
+	$siteFeedUrl = $site["siteFeedUrl"];
 	$siteSummary = $site["siteSummary"];
 	$siteTwitter = getSocialNetworkUser(1, $siteId, "siteId", $db);
 	$siteBanner = getSiteBanner($siteId, $db);
@@ -64,18 +65,23 @@ function displaySiteProfile() {
 		}
 		print "<a href=\"".$pages["sources"]->getAddress()."/?type=blog&amp;filter0=topic&amp;value0=".urlencode($siteTopic["topicName"])."\" title=\"View all posts in ".$siteTopic["topicName"]."\">".$siteTopic["topicName"]."</a>";
 	}
-	print "</div>";
-	if ($siteUrl) {
-		print "<div class='block-label'>URL</div>
-		<div class='block-value'><a href='$siteUrl'>$siteUrl</a></div>";
-	}
+	print "</div>
+	<div class='block-label'>URL</div>
+	<div class='block-value'><a href='$siteUrl'>$siteUrl</a></div>
+	<div class='block-label'>Feed</div>
+	<div class='block-value'><a href='$siteFeedUrl'>$siteFeedUrl</a></div>";
 	if ($siteTwitter) {
 		print "<div class='block-label'>Social Networks</div>
 		<ul>
 		<li class=\"sync-link\"><a title=\"Twitter account\" href=\"https://twitter.com/#!/".$siteTwitter["socialNetworkUserName"]."\"><div class=\"twitter-icon\"></div> ".$siteTwitter["socialNetworkUserName"]."</a></li>
 		</ul>";
 	}
-	print "</div>";
+	print "<br />
+	<div class=\"center-text\">
+	<a class=\"ss-button\" href=\"$homeUrl/claim/".$siteId."\">Claim this site</a>
+	</div>
+	</div>";
+	
 	$followers = getFollowers($siteId, 3, $authUserId, $db);
 	if ($followers) {
 		print "<h3>Followers (".count($followers).")</h3>

@@ -43,6 +43,13 @@ function pluginMyGroups() {
 		$groupId = addGroup($groupName, $groupDescription, $db);
 		addGroupManager($groupId, $authUserId, 2, $db);
 		
+		if (isset($_POST["blog-network"])) {
+			editGroup($groupId, $groupName, $groupDescription, 0, 1, $db);
+			blogNetworkInfo();
+			
+			return NULL;
+		}
+		
 		print "<div class=\"margin-bottom\">
 		<h3>Tags to follow</h3>";
 		displayTags($groupId, 4, TRUE, $db);
@@ -51,9 +58,99 @@ function pluginMyGroups() {
 		<h3>Group Banner</h3>
 		<form method=\"post\" action=\"".$pages["crop"]->getAddress()."/?url=$homeUrl/group/$groupId&amp;type=group-banner&groupId=$groupId\" enctype=\"multipart/form-data\">
 		<div class=\"margin-bottom\"><input type=\"file\" name=\"image\" /></div>
-		<input class=\"ss-button\" type=\"submit\" value=\"Upload Banner\" /> <a class=\"ss-button\" href=\"$homeUrl/group/$groupId\">Group Profile</a>
+		<input class=\"ss-button\" type=\"submit\" value=\"Upload Banner\" /> <a class=\"ss-button\" href=\"$homeUrl/group/$groupId\">Skip</a>
 		</form>
 		</div>";
+		
+	} elseif ($step == "select-sites") {
+		$networkUrl = $_POST["network-url"];
+		$groupId = $_POST["group-id"];
+		$tagName = $_POST["tag-name"];
+		
+		if (!isGroupManager($groupId, $authUserId, NULL, $db)) {
+			return NULL;
+		}
+		
+		addTag($tagName, $groupId, 4, 3, $authUserId, TRUE, $db);
+		
+		print "<form method=\"post\">
+		<input type=\"hidden\" name=\"step\" value=\"select-sites\" />
+		<input type=\"hidden\" name=\"group-id\" value=\"$groupId\" />
+		<input type=\"hidden\" name=\"tag-name\" value=\"$tagName\" />
+		<div class=\"center-text\">
+		<div class=\"margin-bottom-small\"><input class=\"big-input\" type=\"text\" name=\"network-url\" value=\"$networkUrl\" /></div>
+		<p><input class=\"big-button\" type=\"submit\" value=\"Modify Search\" /></p>
+		</div>
+		</form>";
+		
+		$api = new API;
+		$api->searchDb("filter0=url&value0=$networkUrl&n=500", FALSE, "blog");
+		$sites = $api->sites;
+		print "<form method=\"post\">
+		<input type=\"hidden\" name=\"step\" value=\"selected-sites\" />
+		<input type=\"hidden\" name=\"group-id\" value=\"$groupId\" />
+		<input type=\"hidden\" name=\"tag-name\" value=\"$tagName\" />
+		<p><input class=\"checkall\" type=\"checkbox\" name=\"step\" value=\"selected-sites\" /> Select / Deselect All</p>
+		<div class=\"entries\">";
+		foreach ($sites as $site) {
+			$blogId = $site["siteId"];
+			$blogName = $site["siteName"];
+			$blogUri = $site["siteUrl"];
+			$blogSyndication = $site["siteFeedUrl"];
+			$blogDescription = $site["siteSummary"];
+			$blogTopics = getTags($blogId, 3, 1, $db);
+			
+			if (empty($blogDescription)) {
+				$blogDescription = "No summary available for this site.";
+			}
+			
+			print "<div class=\"ss-entry-wrapper\">
+			<div class=\"entry-indicator\">+</div>
+			<div class=\"post-header\">
+			<input class=\"checkbox\" type=\"checkbox\" name=\"sites[]\" value=\"$blogId\" /> <a class=\"entry-title\" href=\"$homeUrl/site/$blogId\">".$blogName."</a>
+			<div class=\"index-categories\">";
+			foreach ($blogTopics as $i => $topic) {
+				$topicName = $topic["topicName"];
+				if ($i != 0)
+					print " | ";
+				print "<a href=\"".$pages["sources"]->getAddress()."/?type=blog&amp;filter0=topic&amp;value0=".urlencode($topicName)."\" title=\"View all posts in $topicName\">$topicName</a>";
+			}
+			print "</div>
+			</div>
+			<div class=\"ss-slide-wrapper\">
+				<div class=\"entry-description\">$blogDescription</div>
+				<div>
+				<a class=\"ss-button\" href=\"$blogUri\">Home</a> <a class=\"ss-button\" href=\"".$pages["posts"]->getAddress()."/?type=posts&amp;filter0=blog&amp;modifier0=identifier&amp;value0=$blogId\">Posts</a> <a class=\"ss-button\" href=\"".$blogSyndication."\">Feed</a> <a class=\"ss-button\" href=\"$homeUrl/claim/".$blogId."\">Claim this site</a>
+				</div>
+			</div>
+			</div>";
+		}
+		print "</div>
+		<p><input class=\"ss-button\" type=\"submit\" value=\"Add Sites\" /></p>
+		</form>";
+		
+	} elseif ($step == "create-network") {
+		$groupId = $_REQUEST["groupId"];
+		blogNetworkInfo($groupId);
+		
+	} elseif ($step == "selected-sites") {
+		$siteIds = $_POST["sites"];
+		$groupId = $_POST["group-id"];
+		$tagName = $_POST["tag-name"];
+		
+		if (!isGroupManager($groupId, $authUserId, NULL, $db)) {
+			return NULL;
+		}
+		
+		foreach ($siteIds as $siteId) {
+			addTag($tagName, $siteId, 3, 3, $authUserId, FALSE, $db);
+		}
+		
+		print "<h3>Group Banner</h3>
+		<form method=\"post\" action=\"".$pages["crop"]->getAddress()."/?url=$homeUrl/group/$groupId&amp;type=group-banner&groupId=$groupId\" enctype=\"multipart/form-data\">
+		<div class=\"margin-bottom\"><input type=\"file\" name=\"image\" /></div>
+		<input class=\"ss-button\" type=\"submit\" value=\"Upload Banner\" /> <a class=\"ss-button\" href=\"$homeUrl/group/$groupId\">Skip</a>
+		</form>";
 		
 	} elseif ($step == "delete") {
 		$groupId = $_POST["groupId"];
@@ -126,9 +223,24 @@ function pluginMyGroups() {
 		<input type=\"text\" name=\"name\" /></div>
 		<div class=\"margin-bottom\">Description<br />
 		<textarea name=\"description\"></textarea></div>
+		<div class=\"margin-bottom\"><input type=\"checkbox\" name=\"blog-network\" value=\"1\" /> This is a blog network.</div>
 		<div class=\"margin-bottom\"><input class=\"ss-button\" type=\"submit\" value=\"Create Group\" /></div>
 		</form>";
 	}
+}
+
+function blogNetworkInfo($groupId) {
+	print "<form method=\"post\">
+	<input type=\"hidden\" name=\"step\" value=\"select-sites\" />
+	<input type=\"hidden\" name=\"group-id\" value=\"$groupId\" />
+	<h3>Create a unique tag for your network</h3>
+	<p><input type=\"text\" name=\"tag-name\" /><br />
+	<span class=\"subtle-text\">Example: sa-blogs</span></p>
+	<h3>Network base URL</h3>
+	<p><input type=\"text\" name=\"network-url\" /><br />
+	<span class=\"subtle-text\">Example: <em>http://blogs.scientificamerican.com/</em></span></p>
+	<p><input class=\"big-button\" type=\"submit\" value=\"Next step\" /></p>
+	</form>";
 }
 
 function editGroup($groupId, $groupName, $groupDescription, $groupMatchedPosts, $groupMatchedSitePosts, $db) {
@@ -224,13 +336,13 @@ function manageGroup($group, $db) {
 	<div class=\"margin-bottom\">User Name<br />
 	<input type=\"text\" name=\"manager-name\" /></div>
 	<div class=\"margin-bottom\"><input class=\"ss-button\" type=\"submit\" value=\"Add Manager\" /></div>
-	</form>";
+	</form>
+	<hr />";
 	if (isGroupManager($groupId, $authUserId, 2, $db)) {
-		print "<hr />
-		<form class=\"block\" method=\"post\">
+		print "<form class=\"block\" method=\"post\">
 		<input type=\"hidden\" name=\"step\" value=\"delete\" />
 		<input type=\"hidden\" name=\"groupId\" value=\"$groupId\" />
-		<input class=\"ss-button\" type=\"submit\" value=\"Delete Group\" />
+		<a class=\"ss-button\" href=\"".$pages["my-groups"]->getAddress()."/?step=create-network&groupId=$groupId\">Blog Network Creation</a> <input class=\"ss-button\" type=\"submit\" value=\"Delete Group\" />
 		</form>";
 	}
 	print "</div>

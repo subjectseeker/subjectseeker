@@ -311,9 +311,9 @@ class cache {
 		$this->cacheDir = $cachedir;
 		$this->cacheTime = $cacheTime;
 		
-		$fileName = $name;
+		$fileName = md5($name);
 		if ($useUrl == TRUE) {
-			$fileName = $name . urlencode($_SERVER["REQUEST_URI"]);
+			$fileName = md5($name . urlencode($_SERVER["REQUEST_URI"]));
 		}
 		
 		// Constructor of the class
@@ -1528,8 +1528,7 @@ function addSimplePieItem ($item, $language, $blogId, $db) {
 	$postDate = $item->get_local_date();
 	if (isset($postDate)) {
 		$timestamp = dateStringToSql($postDate);
-	}
-	else {
+	} else {
 		$timestamp = date("Y-m-d H:i:s");
 	}
 	
@@ -2592,7 +2591,7 @@ function displaySite($site, $db) {
 	<div class=\"ss-slide-wrapper\">
 		<div class=\"entry-description\">$blogDescription</div>
 		<div>
-		<a class=\"ss-button\" href=\"$blogUri\">Home</a> <a class=\"ss-button\" href=\"".$pages["posts"]->getAddress()."/?type=posts&amp;filter0=blog&amp;modifier0=identifier&amp;value0=$blogId\">Posts</a> <a class=\"ss-button\" href=\"".$blogSyndication."\">Feed</a> <a class=\"ss-button\" href=\"$homeUrl/claim/".$blogId."\">Claim this site</a>
+		<a class=\"ss-button\" href=\"$blogUri\">Home</a> <a class=\"ss-button\" href=\"".$pages["posts"]->getAddress()."/?type=posts&amp;filter0=blog&amp;modifier0=identifier&amp;value0=$blogId\">Posts</a> <a class=\"ss-button\" href=\"$homeUrl/claim/".$blogId."\">Claim this site</a>
 		</div>
 	</div>
 	</div>";
@@ -3238,30 +3237,34 @@ function checkPostData($postId, $postTitle, $postSummary, $postUrl, $postDate, $
 	global $pages;
 	$result = NULL;
 	
-	$blogId = postIdToBlogId ($postId, $db);
-	// if not logged in as an author or as admin, fail
-	if (! canEdit($userId, $blogId, $db)) {
-		$result .= "<p class=\"ss-error\">You don't have editing privileges for this post.</p>";
-	}
-
-	// user exists? active (0)?
-	$userName = getUserName($userId, $db);
-	$userStatus = getUserStatus($userId, $db);
-	if ($userStatus == null) {
-		$result .= "<p class=\"ss-error\">No such user $userName.</p>";
-	}
-	if ($userStatus != 0) {
-		$result .= "<p class=\"ss-error\">User $userName is not active.</p>";
+	if ($userId) {
+		// user exists? active (0)?
+		$userName = getUserName($userId, $db);
+		$userStatus = getUserStatus($userId, $db);
+		if ($userStatus == null) {
+			$result .= "<p class=\"ss-error\">No such user $userName.</p>";
+		}
+		if ($userStatus != 0) {
+			$result .= "<p class=\"ss-error\">User $userName is not active.</p>";
+		}
+		
+		$userPriv = getUserPrivilegeStatus($userId, $db);
+		if ($postStatus != 0 && $postStatus != 1 && $userPriv == 0) {
+			$result .= "<p class=\"ss-error\">You can't set this post status.</p>";
+		}
+		
+		$blogId = postIdToBlogId ($postId, $db);
+		// if not logged in as an author or as admin, fail
+		if (! canEdit($userId, $blogId, $db)) {
+			$result .= "<p class=\"ss-error\">You don't have editing privileges for this post.</p>";
+		}
 	}
 	
-	$userPriv = getUserPrivilegeStatus($userId, $db);
-	if ($postStatus != 0 && $postStatus != 1 && $userPriv == 0) {
-		$result .= "<p class=\"ss-error\">You can't set this post status.</p>";
-	}
-	
-	$postStatus = getPostStatusId($postId, $db);
-	if ($postStatus == null) {
-		$result .= "<p class=\"ss-error\">No such post $postId.</p>";
+	if ($postId) {
+		$postStatus = getPostStatusId($postId, $db);
+		if ($postStatus == null) {
+			$result .= "<p class=\"ss-error\">No such post $postId.</p>";
+		}
 	}
 	
 	if (!empty($postSummary) && mb_strlen($postSummary) > 8000) {

@@ -61,8 +61,7 @@ $(document).ready(function() {
 	$('.toggleHidenOption').change(function() {  
 		if($(this).attr('checked')) {
 			$(this).closest('form').find('.ss-hidden-option').slideDown();
-		}
-		else {
+		} else {
 			$(this).closest('form').find('.ss-hidden-option').slideUp();
 		}
   });
@@ -77,7 +76,7 @@ $(document).ready(function() {
   });
 	
 	$('.entries, .posts').on('click', '.ss-entry-wrapper', function(event) {
-		if(! $( event.target).parents('.ss-slide-wrapper, .recs, .user-card-small, .tag').length && ! $( event.target).is('a, .recommend')) {
+		if(! $( event.target).parents('.ss-slide-wrapper, .recs, .user-card-small, .tag').length && ! $( event.target).is('a, .recommend, input')) {
 			var slider = $(this).find('.ss-slide-wrapper:eq(0)');
 			var indicator = $(this).find('.entry-indicator');
 			slider.slideToggle(300, "swing", function() {
