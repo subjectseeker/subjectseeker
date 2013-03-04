@@ -602,6 +602,11 @@ function getUserActivity($id, $typeId, $userId, $actionType, $limit, $db) {
 			} elseif ($rec["objectTypeId"] == 2) {
 				$user = getUser($rec["objectId"], $db);
 				$action["title"] = "<a class='action-user' href='$homeUrl/user/$userName'>$userName</a> recommended user <a href='$homeUrl/user/".$user["userName"]."'>".$user["userName"]."</a>";
+				
+			} elseif ($rec["objectTypeId"] == 3) {
+				$site = getSite($rec["objectId"], $db);
+				$action["title"] = "<a class='action-user' href='$homeUrl/user/$userName'>$userName</a> recommended site <a href='$homeUrl/site/".$site["siteId"]."'>".$site["siteName"]."</a>.";
+				
 			} elseif ($rec["objectTypeId"] == 4) {
 				$group = getGroup($rec["objectId"], $db);
 				$groupId = $group["groupId"];
@@ -628,6 +633,10 @@ function getUserActivity($id, $typeId, $userId, $actionType, $limit, $db) {
 			if ($comment["objectTypeId"] == 1) {
 				$post = getPost($comment["objectId"], $db);
 				$action["title"] = "<a class='action-user' href='$homeUrl/user/$userName'>$userName</a> commented on <a href='$homeUrl/post/".$post["BLOG_POST_ID"]."'>".$post["BLOG_POST_TITLE"]."</a>";
+				
+			} elseif ($comment["objectTypeId"] == 3) {
+				$site = getSite($comment["objectId"], $db);
+				$action["title"] = "<a class='action-user' href='$homeUrl/user/$userName'>$userName</a> commented on <a href='$homeUrl/site/".$site["siteId"]."'>".$site["siteName"]."</a>";
 				
 			} elseif ($comment["objectTypeId"] == 4) {
 				$group = getGroup($comment["objectId"], $db);
