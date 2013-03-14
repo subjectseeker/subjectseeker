@@ -67,7 +67,7 @@ print $xml;
 // Input: post search results from DB, error message array
 // Return: Atom feed
 function formatSearchPostResults($posts, $errors, $db) {
-	global $homeUrl, $sitename;
+	global $homeUrl, $feedUrl, $sitename;
 	
 	// When are we?
 	$now = date( "c" );
@@ -81,8 +81,7 @@ function formatSearchPostResults($posts, $errors, $db) {
 	<feed xmlns=\"http://www.w3.org/2005/Atom\" xml:lang=\"en\" xmlns:ss=\"http://scienceseeker.org/ns/1\">
 	<title type=\"text\">$sitename</title>
 	<subtitle type=\"text\">Recent Posts</subtitle>
-	<link href=\"$myURI\" rel=\"self\" type=\"application/atom+xml\" />
-	<link href=\"$myHost\" rel=\"alternate\" type=\"text/html\" />
+	<link href=\"$feedUrl\" rel=\"self\" type=\"application/atom+xml\" />
 	<id>$myURI</id>
 	<updated>$now</updated>
 	<rights>No copyright asserted over individual posts; see original posts for copyright and/or licensing.</rights>

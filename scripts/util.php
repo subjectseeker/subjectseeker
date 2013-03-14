@@ -1565,9 +1565,9 @@ function addSimplePieItem ($item, $language, $blogId, $db) {
 	}
 	$blogAuthorId = addBlogAuthor($blogAuthorName, $blogId, $db);
 
-	$languageId = "NULL";
-	if (!empty($language)) {
-		$languageId = languageToId($language, $db);
+	$languageId = languageToId($language, $db);
+	if (empty($languageId)) {
+		$languageId = "NULL";
 	}
 
 	$summary = smartyTruncate($item->get_description(), 500);
