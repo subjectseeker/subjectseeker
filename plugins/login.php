@@ -49,32 +49,37 @@ function displayLogin() {
 			
 		} elseif ($_SESSION['oauth_token'] == $_REQUEST['oauth_token']) {
 			// Get User ID from Auth Tokens for log in
-			$twitterConnection = getTwitterAuthTokens ($_SESSION['oauth_token'], $_SESSION['oauth_token_secret']);
-			$twitterCredentials = $twitterConnection->getAccessToken();
-			$socialNetworkUser = getSocialNetworkUser (1, $twitterCredentials["user_id"], "socialNetworkUserExtId", $db);
-			$userId = $socialNetworkUser["userId"];
-			$userName = getUserName($userId, $db);
-			
-			// Log in and create cookie if successful
-			$authUser = new auth();
-			if ($userId && $authUser->validateUser($userName)) {
-				$authUser->loginUser($userId, TRUE);
-				header("Location: ".$originalUrl);
-			}
-			// If user is unverified, send to verification
-			elseif ($userId == TRUE && $authUser->errors[0]["id"] == 2) {
-				header("Location: ".$pages["login"]->getAddress(TRUE)."/?step=send-verification");
-			}
-			// If user doesn't exist, redirect to registration with settings now imported
-			else {
-				$_SESSION["regStep"] = "one";
-				$_SESSION["socialNetworkId"] = "1";
-				$_SESSION["userId"] = $twitterCredentials['user_id'];
-				$_SESSION["userName"] = $twitterCredentials["screen_name"];
-				$_SESSION["oauthToken"] = $twitterCredentials['oauth_token'];
-				$_SESSION["oauthSecretToken"] = $twitterCredentials['oauth_token_secret'];
-				$_SESSION["oauthRefreshToken"] = NULL;
-				header("Location: ".$pages["register"]->getAddress(TRUE)."/?url=".$originalUrl);
+			$accessToken = getTwitterAuthTokens($_SESSION["oauth_token"], $_SESSION["oauth_token_secret"], $_REQUEST["oauth_verifier"]);
+			if ($accessToken["user_id"]) {
+				$socialNetworkUser = getSocialNetworkUser (1, $accessToken["user_id"], "socialNetworkUserExtId", $db);
+				$userId = $socialNetworkUser["userId"];
+				$userName = getUserName($userId, $db);
+				
+				// Log in and create cookie if successful
+				$authUser = new auth();
+				if ($userId && $authUser->validateUser($userName)) {
+					$authUser->loginUser($userId, TRUE);
+					header("Location: ".$originalUrl);
+				}
+				// If user is unverified, send to verification
+				elseif ($userId == TRUE && $authUser->errors[0]["id"] == 2) {
+					header("Location: ".$pages["login"]->getAddress(TRUE)."/?step=send-verification");
+				}
+				// If user doesn't exist, redirect to registration with settings now imported
+				else {
+					$_SESSION["regStep"] = "one";
+					$_SESSION["socialNetworkId"] = "1";
+					$_SESSION["userId"] = $accessToken["user_id"];
+					$_SESSION["userName"] = $accessToken["screen_name"];
+					$_SESSION["oauthToken"] = $accessToken["oauth_token"];
+					$_SESSION["oauthSecretToken"] = $accessToken["oauth_token_secret"];
+					$_SESSION["oauthRefreshToken"] = NULL;
+					header("Location: ".$pages["register"]->getAddress(TRUE)."/?url=".$originalUrl);
+				}
+			} else {
+				$content .= "<div class=\"box-title\">Log In</div>
+				<p>Twitter sync failed.</p>
+				<p><a class=\"white-button\" href=\"".$pages["twitter"]->getAddress(TRUE)."/?step=authUrl&amp;url=".$originalUrl."\">Retry</a> <a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
 			}
 		}
 	}
