@@ -378,7 +378,7 @@ class cache {
 function getPage ($url, $post = NULL) {
 	$ch = curl_init();		// initialize curl handle
 	curl_setopt($ch, CURLOPT_URL,$url); // set url to post to
-	curl_setopt($ch, CURLOPT_FAILONERROR, 1);
+	curl_setopt($ch, CURLOPT_FAILONERROR, 0);
 	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);// allow redirects
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER,1); // return into a variable
 	curl_setopt($ch, CURLOPT_TIMEOUT, 8); // times out after 4s
@@ -879,6 +879,15 @@ function removeRecommendation ($id, $typeId, $userId, $db) {
 
 function addComment($id, $typeId, $sourceId, $userId, $commentText, $commentDate, $db) {
 	$commentText = mysql_real_escape_string(strip_tags(substr($commentText, 0, 140)));
+
+	// Check if comment from twitter exists
+	$sql = "SELECT COMMENT_ID FROM COMMENT WHERE USER_ID = '$userId' AND COMMENT_TEXT = '$commentText'";
+	$result = mysql_query($sql, $db);
+
+	if (mysql_num_rows($result) > 0) {
+		return null;
+	}
+
 	$sql = "INSERT IGNORE INTO COMMENT (OBJECT_ID, OBJECT_TYPE_ID, COMMENT_SOURCE_ID, USER_ID, COMMENT_DATE_TIME, COMMENT_TEXT) VALUES ($id, $typeId, $sourceId, $userId, '$commentDate', '$commentText')";
 	mysql_query($sql, $db);
 	
@@ -2107,7 +2116,7 @@ function trophyButton($postId, $ajax, $db) {
 	$result = mysql_query($sql, $db);
 	$row = mysql_fetch_array($result);
 	
-	if (!$ajax)
+	/*if (!$ajax)
 		print "<div class='trophy-box' data-id='$postId'>";
 	
 	if ($row)
@@ -2116,7 +2125,7 @@ function trophyButton($postId, $ajax, $db) {
 		print "<div class='nominate' title='Nominate'></div>";
 		
 	if (!$ajax)
-		print "</div>";
+		print "</div>";*/
 }
 
 function commentButton($objectId, $objectTypeId, $db) {
@@ -4596,104 +4605,180 @@ function getGooglePlusUser($googleUserId) {
 	return $googlePlusUser;
 }
 
+function twitterConnection($url, $method = "GET", $query = array(), $oauthToken = NULL, $oauthSecret = NULL, $returnUrl = NULL) {
+	global $twitterConsumerKey, $twitterConsumerSecret, $homeUrl;
+	date_default_timezone_set("UTC");
+	
+	$token_secret = $oauthSecret;
+	$consumer_key = $twitterConsumerKey;
+	$consumer_secret = $twitterConsumerSecret;
+	
+	$oauth = array(
+			'oauth_consumer_key' => $consumer_key,
+			'oauth_nonce' => (string)mt_rand(),
+			'oauth_timestamp' => time(),
+			'oauth_signature_method' => 'HMAC-SHA1',
+			'oauth_version' => '1.0'
+	);
+	
+	if ($oauthToken) {
+		$oauth["oauth_token"] = $oauthToken;
+	}
+	
+	if ($returnUrl) {
+		$oauth["oauth_callback"] = $returnUrl;
+	}
+	
+	$oauth = array_map("rawurlencode", $oauth);
+	$query = array_map("rawurlencode", $query);
+	
+	$arr = array_merge($oauth, $query);
+	
+	asort($arr);
+	ksort($arr);
+
+	$querystring = urldecode(http_build_query($arr, '', '&'));
+	
+	$base_string = $method."&".rawurlencode($url)."&".rawurlencode($querystring);
+	
+	$key = rawurlencode($consumer_secret)."&".rawurlencode($token_secret);
+	
+	$signature = rawurlencode(base64_encode(hash_hmac('sha1', $base_string, $key, true)));
+	
+	if ($method == "GET") {
+		$url .= "?".http_build_query($query);
+	}
+	
+	$oauth['oauth_signature'] = $signature;
+	ksort($oauth);
+	
+	$oauth = array_map("add_quotes", $oauth);
+	
+	$auth = "OAuth " . urldecode(http_build_query($oauth, '', ', '));
+	
+	$options = array( CURLOPT_HTTPHEADER => array("Authorization: $auth"),
+	CURLOPT_HEADER => false,
+	CURLOPT_URL => $url,
+	CURLOPT_RETURNTRANSFER => true,
+	CURLOPT_SSL_VERIFYPEER => false);
+	if ($method == "POST") {
+		$options[CURLOPT_POST] = true;
+		$options[CURLOPT_POSTFIELDS] = http_build_query($query);
+	}
+	
+	// do our business
+	$feed = curl_init();
+	curl_setopt_array($feed, $options);
+	$result = curl_exec($feed);
+	curl_close($feed);
+	
+	//$twitter_data = json_decode($json);
+	return $result;
+}
+
+function add_quotes($str) { return '"'.$str.'"'; }
+
+function urlencodeRFC3986($string) {
+   return str_replace('%7E', '~', rawurlencode($string));
+}
+
+function getTwitterToken($returnUrl = NULL) {
+	$url = "https://api.twitter.com/oauth/request_token";
+	
+	$tries = 10;
+	$oauthToken = NULL;
+	$tokens = array();
+	while ($oauthToken == NULL && $tries > 0) {
+		parse_str(twitterConnection($url, "POST", array(), NULL, NULL, $returnUrl), $tokens);
+		$oauthToken = $tokens["oauth_token"];
+
+		$tries--;
+	}
+
+	$_SESSION["oauth_token"] = $oauthToken;
+	$_SESSION["oauth_token_secret"] = $tokens["oauth_token_secret"];
+	
+	return $tokens;
+}
+
+
 // Input: URL to return to, Boolean to determine if Twitter should ask for confirmation again.
 // Output: Twitter authorization URL
 function getTwitterAuthURL ($returnUrl, $authorize = FALSE) {
-	global $twitterConsumerKey;
-	global $twitterConsumerSecret;
-	include_once (dirname(__FILE__)."/../third-party/twitteroauth/twitteroauth.php");
-	
-	// Connect to Twitter with our keys
-	$connection = new TwitterOAuth($twitterConsumerKey, $twitterConsumerSecret);
-	$requestToken = $connection->getRequestToken("$returnUrl");
-	$_SESSION["oauth_token"] = $requestToken["oauth_token"];
-	$_SESSION["oauth_token_secret"] = $requestToken["oauth_token_secret"];
-	
-	// Ask Twitter for URL
-	$twitterUrl = $connection->getAuthorizeURL($requestToken, $authorize);
-	
-	return $twitterUrl;
+	$tokens = getTwitterToken($returnUrl);
+	$authUrl = "https://api.twitter.com/oauth/authenticate?oauth_token=".$tokens["oauth_token"];
+
+	return $authUrl;
 }
 
 // Input: User Auth Token, User Secret Auth Token
 // Output: Connection to Twitter User Account
-function getTwitterAuthTokens ($oauthToken = NULL, $oauthSecret = NULL) {
-	include_once (dirname(__FILE__)."/../third-party/twitteroauth/twitteroauth.php");
-	global $twitterConsumerKey;
-	global $twitterConsumerSecret;
+function getTwitterAuthTokens($oauthToken = NULL, $oauthSecret = NULL, $oauthVerifier = NULL) {;
+	$url = "https://api.twitter.com/oauth/access_token";
+	$parameters = array(
+		"oauth_verifier" => $oauthVerifier
+	);
 	
-	// Ask Twitter for access to user account
-	$connection = new TwitterOAuth($twitterConsumerKey, $twitterConsumerSecret, $oauthToken, $oauthSecret);
+	parse_str(twitterConnection($url, "POST", $parameters, $oauthToken, $oauthSecret), $tokens);
 	
-	return $connection;
+	return $tokens;
 }
 
 // Input: User Auth Token, User Secret Auth Token
 // Output: Connection to Twitter User Account
 function addToTwitterList($twitterUserId) {
-	include_once (dirname(__FILE__)."/../third-party/twitteroauth/twitteroauth.php");
-	global $twitterConsumerKey;
-	global $twitterConsumerSecret;
 	global $twitterListId;
 	global $twitterListToken;
 	global $twitterListTokenSecret;
-	
-	// Add new user to Twitter list
-	$connection = new TwitterOAuth($twitterConsumerKey, $twitterConsumerSecret, $twitterListToken, $twitterListTokenSecret);
-	$result = $connection->post('lists/members/create', array('list_id' => $twitterListId, 'user_id' => $twitterUserId));
-	$httpCode = $connection->http_code;
-	
-	if ($httpCode == 200) return TRUE;
-	
+
+	$url = "https://api.twitter.com/1.1/lists/members/create.json";
+	$parameters = array("list_id" => $twitterListId, "user_id" => $twitterUserId);
+	twitterConnection($url, "GET", $parameters, $twitterListToken, $twitterListTokenSecret);
+
 	return FALSE;
 }
 
 // Input: Twitter User ID or Twitter handle
 // Output: Get Twitter user profile details
-function getTwitterUserDetails($twitterUserId = NULL, $twitterUserName = NULL) {
-	include_once (dirname(__FILE__)."/../third-party/twitteroauth/twitteroauth.php");
-	global $twitterConsumerKey;
-	global $twitterConsumerSecret;
+function getTwitterUserDetails($twitterUserId = NULL, $twitterUserName = NULL, $oauthToken = NULL, $oauthSecret = NULL) {
+	$url = "https://api.twitter.com/1.1/users/lookup.json";
+	$parameters = array(
+		"user_id" => $twitterUserId
+	);
 	
-	$connection = new TwitterOAuth($twitterConsumerKey, $twitterConsumerSecret);
-	$result = $connection->post("users/lookup", array("user_id" => $twitterUserId, "screen_name" => $twitterUserName));
-	$httpCode = $connection->http_code;
-	if ($httpCode == 200) {
-		if (count($result) == 1)
-			return array_shift($result);
-		else
-			return $result;
-	}
-	
-	return FALSE;
+	$data = twitterConnection($url, "GET", $parameters, $oauthToken, $oauthSecret);
+	$details = array_shift(json_decode($data));
+
+	return $details;
 }
 
 // Input: Twitter User ID or Twitter handle
 // Output: Get Twitter user profile details
-function getTwitterUserTweets($twitterUserId, $oauthToken = NULL, $oauthSecretToken = NULL, $limit = 15) {
-	include_once (dirname(__FILE__)."/../third-party/twitteroauth/twitteroauth.php");
-	global $twitterConsumerKey;
-	global $twitterConsumerSecret;
+function getTwitterUserTweets($twitterUserId, $oauthToken = NULL, $oauthSecret = NULL, $limit = 15) {
+	$url = "https://api.twitter.com/1.1/statuses/user_timeline.json";
+	$parameters = array(
+		"user_id" => $twitterUserId,
+		"count" => $limit
+	);
 	
-	$connection = new TwitterOAuth($twitterConsumerKey, $twitterConsumerSecret, $oauthToken, $oauthSecretToken);
-	$result = $connection->get("statuses/user_timeline", array("user_id" => $twitterUserId, "count" => $limit, "include_entities" => "1"));
-	
-	$httpCode = $connection->http_code;
-	if ($httpCode == 200)
-		return $result;
-	
-	return FALSE;
+	$tweets = json_decode(twitterConnection($url, "GET", $parameters, $oauthToken, $oauthSecret));
+
+	return $tweets;
 }
 
 // Input: Twitter List ID
 // Output: Tweets from twitter list
-function getTwitterList($twitterListId, $count = 9, $includeEntities = 0) {
-	include_once (dirname(__FILE__)."/../third-party/twitteroauth/twitteroauth.php");
-	global $twitterListApi;
-	global $twitterConsumerKey;
-	global $twitterConsumerSecret;
-	$connection = getTwitterAuthTokens ($twitterConsumerKey, $twitterConsumerSecret);
-	$twitterListResults = $connection->get("lists/statuses", array("list_id" => $twitterListId, "count" => $count, "include_entities" => $includeEntities));
+function getTwitterList($twitterListId, $count = 9) {
+	global $twitterListToken;
+	global $twitterListTokenSecret;
+
+	$url = "https://api.twitter.com/1.1/lists/statuses.json";
+	$parameters = array(
+		"list_id" => $twitterListId,
+		"count" => $count
+	);
+	$twitterListResults = $connection->get("lists/statuses", array("list_id" => $twitterListId, "count" => $count));
+	$tweets = json_decode(twitterConnection($url, "GET", $parameters, $twitterListToken, $twitterListTokenSecret));
 	
 	return $twitterListResults;
 }

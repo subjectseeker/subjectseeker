@@ -21,6 +21,7 @@ function syncPage() {
 	if (isset($_REQUEST["step"]) && $_REQUEST["step"] == "twitterAuth") {
 		$callbackUrl = $_REQUEST["callback"]."/?url=".$originalUrl;
 		$twitterAuthUrl = getTwitterAuthURL($callbackUrl, TRUE);
+		
 		header("Location: $twitterAuthUrl");
 		
 	} elseif (isset($_REQUEST["step"]) && $_REQUEST["step"] == "googleAuth") {
@@ -48,18 +49,24 @@ function syncPage() {
 			<p><a class=\"white-button\" href=\"".$pages["sync"]->getAddress(TRUE)."/?url=$originalUrl\">Retry synchronization</a> <a class=\"white-button\" href=\"$originalUrl\">Take me back to $sitename</a></p>";
 		} else {
 			// Get Twitter Tokens
-			$twitterConnection = getTwitterAuthTokens($_SESSION["oauth_token"], $_SESSION["oauth_token_secret"]);
-			$twitterCredentials = $twitterConnection->getAccessToken();
+			$accessToken = getTwitterAuthTokens($_SESSION["oauth_token"], $_SESSION["oauth_token_secret"], $_REQUEST["oauth_verifier"]);
 			
-			// Add new user to member list.
-			addToTwitterList($twitterCredentials["user_id"]);
-			
-			$twitterUserDetails = getTwitterUserDetails($twitterCredentials["user_id"]);
-			// Add Twitter account to database
-			addSocialNetworkUser(1, $twitterCredentials["user_id"], $twitterCredentials["screen_name"], $twitterUserDetails->profile_image_url, $authUserId, NULL, $twitterCredentials["oauth_token"], $twitterCredentials["oauth_token_secret"], NULL, $db);
-			
-			$content .= "<p>Your Twitter account has been successfully synced with our system.</p>
-			<p><a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
+			if (isset($accessToken["user_id"])) {
+				$twitterUserDetails = getTwitterUserDetails($accessToken["user_id"], NULL, $accessToken["oauth_token"], $accessToken["oauth_token_secret"]);
+
+				// Add new user to member list.
+				addToTwitterList($accessToken["user_id"]);
+
+				// Add Twitter account to database
+				addSocialNetworkUser(1, $accessToken["user_id"], $accessToken["screen_name"], $twitterUserDetails->profile_image_url, $authUserId, NULL, $accessToken["oauth_token"], $accessToken["oauth_token_secret"], NULL, $db);
+
+				$content .= "<p>Your Twitter account has been successfully synced with our system.</p>
+				<p><a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
+			} else {
+				$content .= "<p class=\"ss-error\">There was a problem trying to sync you account.</p>
+				<a class=\"white-button\" href=\"".$pages["sync"]->getAddress(TRUE)."\">Retry</a> <p><a class=\"white-button\" href=\"$originalUrl\">Back to $sitename</a></p>";
+			}
+
 		}
 	} elseif (isset($_REQUEST["code"])) {
 		$oauthRefreshToken = NULL;

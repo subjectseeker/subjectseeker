@@ -45,7 +45,7 @@ function pluginMyGroups() {
 		
 		if (isset($_POST["blog-network"])) {
 			editGroup($groupId, $groupName, $groupDescription, 0, 1, $db);
-			blogNetworkInfo();
+			blogNetworkInfo($groupId);
 			
 			return NULL;
 		}

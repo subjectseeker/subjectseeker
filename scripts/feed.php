@@ -115,6 +115,7 @@ function formatSearchPostResults($posts, $errors, $db) {
 		$postData["hasCitation"] = sanitize( $post[ "hasCitation" ] );
 		
 		$postId = $post["postId"];
+		$blogId = $post["siteId"];
 		
 		// Get citations
 		if ($postData["hasCitation"] == 1) {
@@ -140,8 +141,8 @@ function formatSearchPostResults($posts, $errors, $db) {
 			$postData["lang"] = "en";
 		}
 		
-		$postData["categories"] = getTags($postId, 1, NULL, $db);
-		$postData["blog_categories"] = getTags($blogId, 3, NULL, $db);
+		$postData["categories"] = getTags($postId, 1, 0, $db);
+		$postData["blog_categories"] = getTags($blogId, 3, 1, $db);
 
 		// Now start putting it all into Atom
 		$xml .= "	<entry xml:lang=\"" . $postData[ "lang" ] . "\">\n";
@@ -210,7 +211,6 @@ function formatSearchPostResults($posts, $errors, $db) {
 		$xml .= "			<link href=\"" . $postData[ "feed_uri" ] . "\" rel=\"self\" />\n";
 		
 		$xml .= "			<link href=\"" . $postData[ "blog_uri" ] ."\" rel=\"alternate\" type=\"text/html\" />\n";
-		
 		foreach ($postData["blog_categories"] as $category) {
 			$topicName = $category["topicName"];
 			$xml .= "			<category term=\"$topicName\" />\n";
