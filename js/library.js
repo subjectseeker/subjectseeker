@@ -188,28 +188,30 @@ $(document).ready(function() {
 	});
 	
 	$('.trophy-box').on('click', '.nominated,.nominate', function() {
+		var parent = $(this).parents('.trophy-box');
 		var id = $(this).parents('.trophy-box').data('id');
+		var type = $(this).parents('.trophy-box').data('type');
 		
 		if (!isLoggedIn()) {
 			notification('<p>You must be logged in to nominate a post.</p><a class="ss-button" href="/login">Log In</a> <a class="ss-button" href="/register">Register</a>');
 			return false;
 		}
 		
-		popup('<div class="center-text"><img src="/images/icons/loading.gif" alt="Loading" title="Loading" /></div>');
+		parent.html(loadingGif);
 		$.ajax({
 			type: 'POST',
-			url: '/scripts/ajax/contest-categories.php',
-			data: 'id=' + id,
+			url: '/scripts/ajax/nominate.php',
+			data: 'id=' + id + '&type=' + type,
 			cache: false,
 			success: function(data) {
-				popup(data);
+				parent.html(data);
 			} 
 		});
 		
 		return false;
 	});
 	
-	$('#popup-box').on('click', '.contest-category', function() {
+	/*$('#popup-box').on('click', '.contest-category', function() {
 		var parent = $(this).parents('ul');
 		var id = parent.data('id');
 		var category = $(this).data('category');
@@ -223,7 +225,7 @@ $(document).ready(function() {
 		closePopup();
 		
 		return false;
-	});
+	});*/
 	
 	$('.rec-box').on('click','.rec-count', function() {
 		var parent = $(this).parents('.rec-box');

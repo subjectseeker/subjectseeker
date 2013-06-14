@@ -23,12 +23,12 @@ function displayUserProfile() {
 		$authUser = new auth();
 		$authUserId = $authUser->userId;
 		$authUserName = $authUser->userName;
-		$userPriv = getUserPrivilegeStatus($authUserId, $db);
 	}
 	preg_match('/(?<=\/user\/)[A-Za-z][A-Za-z0-9_]+/', $_SERVER["REQUEST_URI"], $matchResult);
 	$userName = $matchResult[0];
 	
 	$userId = getUserId($userName, $db);
+	$userPriv = getUserPrivilegeStatus($userId, $db);
 	$userAvatar = getUserAvatar($userId, $db);
 	$userBannerSrc = getUserBanner($userId, $db);
 	$userData = getUser($userId, $db);
@@ -82,6 +82,11 @@ function displayUserProfile() {
 			print "<li class=\"sync-link\"><a title=\"Google account\" href=\"https://plus.google.com/".$userGoogle["socialNetworkUserExtId"]."\"><div class=\"googleplus-icon\"></div> ".$userGoogle["socialNetworkUserName"]."</a></li>";
 		}
 		print "</ul>";
+	}
+	if ($userPriv == 1) {
+		print "<div class=\"center-text\"><div class=\"editor-label\">Editor</div></div>";
+	} else if ($userPriv == 2) {
+		print "<div class=\"center-text\"><div class=\"admin-label\">Administrator</div></div>";
 	}
 	print "</div>";
 	$followers = getFollowers($userId, 2, $authUserId, $db);

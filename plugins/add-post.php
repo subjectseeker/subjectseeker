@@ -66,9 +66,11 @@ function pluginAddPost() {
 		if (empty($postUrl)) {
 			$errors .= "<p class=\"ss-error\">You must submit a URL for this post.</p>";
 		}
-		$sql = "SELECT BLOG_POST_ID FROM BLOG_POST WHERE (BLOG_POST_TITLE = '$postTitle' AND BLOG_POST_DATE_TIME = '$postDate') OR (BLOG_POST_URI = '$postUrl')";
+		$sql = "SELECT * FROM BLOG_POST WHERE (BLOG_POST_TITLE = '$postTitle' AND BLOG_POST_DATE_TIME = '$postDate') OR (BLOG_POST_URI = '$postUrl')";
 		$result =	mysql_query($sql, $db);
-		if (! $result || mysql_num_rows($result) != 0) {
+		if (mysql_num_rows($result) != 0) {
+			$row = mysql_fetch_array($result);
+			var_dump($row);
 			$errors .= "<p class=\"ss-error\">This post already exists in the database.</p>";
 		}
 		if ($errors) {
@@ -126,7 +128,6 @@ function addPost($postTitle, $postUrl, $postDate, $postSummary, $authorName, $si
 	$authorId = addBlogAuthor($authorName, $siteId, $db);
 	
 	$sql = "INSERT INTO BLOG_POST (BLOG_ID, BLOG_AUTHOR_ID, LANGUAGE_ID, BLOG_POST_STATUS_ID, BLOG_POST_URI, BLOG_POST_DATE_TIME, BLOG_POST_INGEST_DATE_TIME, BLOG_POST_SUMMARY, BLOG_POST_TITLE) VALUES ($siteId, $authorId, 33, 0, '". mysql_real_escape_string( htmlspecialchars($postUrl) ) . "' , '" . $postDate . "', NOW(), '" . mysql_real_escape_string($postSummary) . "' ,'" . mysql_real_escape_string($postTitle) . "')";
-	var_dump($sql);
 	mysql_query($sql, $db);
 }
 

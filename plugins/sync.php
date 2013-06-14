@@ -21,7 +21,6 @@ function syncPage() {
 	if (isset($_REQUEST["step"]) && $_REQUEST["step"] == "twitterAuth") {
 		$callbackUrl = $_REQUEST["callback"]."/?url=".$originalUrl;
 		$twitterAuthUrl = getTwitterAuthURL($callbackUrl, TRUE);
-		
 		header("Location: $twitterAuthUrl");
 		
 	} elseif (isset($_REQUEST["step"]) && $_REQUEST["step"] == "googleAuth") {

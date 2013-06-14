@@ -2473,7 +2473,7 @@ function displayPosts ($posts, $minimal = FALSE, $open = FALSE, $db) {
 		<div class=\"recs\">";
 		recButton($postId, 1, $authUserId, FALSE, $db);
 		commentButton($postId, 1, $db);
-		trophyButton($postId, FALSE, $db);
+		//trophyButton($postId, FALSE, $db);
 		print "</div>
 		</div>
 		</div>";
@@ -4706,7 +4706,11 @@ function getTwitterToken($returnUrl = NULL) {
 // Output: Twitter authorization URL
 function getTwitterAuthURL ($returnUrl, $authorize = FALSE) {
 	$tokens = getTwitterToken($returnUrl);
-	$authUrl = "https://api.twitter.com/oauth/authenticate?oauth_token=".$tokens["oauth_token"];
+	if ($authorize == TRUE) {
+		$authUrl = "https://api.twitter.com/oauth/authenticate?oauth_token=".$tokens["oauth_token"];
+	} else {
+		$authUrl = "https://api.twitter.com/oauth/authorize?oauth_token=".$tokens["oauth_token"];
+	}
 
 	return $authUrl;
 }
@@ -4777,8 +4781,7 @@ function getTwitterList($twitterListId, $count = 9) {
 		"list_id" => $twitterListId,
 		"count" => $count
 	);
-	$twitterListResults = $connection->get("lists/statuses", array("list_id" => $twitterListId, "count" => $count));
-	$tweets = json_decode(twitterConnection($url, "GET", $parameters, $twitterListToken, $twitterListTokenSecret));
+	$twitterListResults = json_decode(twitterConnection($url, "GET", $parameters, $twitterListToken, $twitterListTokenSecret));
 	
 	return $twitterListResults;
 }

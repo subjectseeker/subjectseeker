@@ -21,13 +21,29 @@ if (isLoggedIn()) {
 	$authUserId = $authUser->userId;
 	$authUserPriv = getUserPrivilegeStatus($authUserId, $db);
 	$postId = $_REQUEST["id"];
-	$tagName = $_REQUEST["category"];
+	$type = $_REQUEST["type"];
+
+	if ($type == "unknown") {
+		mysql_select_db("sciseek_openlab", $db);
+	}
+
+	$sql = "SELECT *, topic.TOPIC_NAME FROM TAG tag INNER JOIN TOPIC topic ON tag.TOPIC_ID = topic.TOPIC_ID WHERE OBJECT_ID = '$postId' AND OBJECT_TYPE_ID = '1' AND TOPIC_NAME = 'openlab-2013-finalist'";
+	$result = mysql_query($sql, $db);
+	$row = mysql_fetch_array($result);
 	
-	$tagId = addTag("ssawards", $postId, 1, 3, $authUserId, FALSE, $db);
-	$tagName = "ssawards-$tagName";
-	addTag($tagName, $postId, 1, 3, $authUserId, FALSE, $db);
+	$tagName = "openlab-2013-finalist";
+	$tagId = addTag($tagName, $postId, 1, 3, $authUserId, TRUE, $db);
+	if ($row) {
+		$sql = "DELETE FROM TAG WHERE TAG_ID = '$tagId'";
+		mysql_query($sql, $db);
+		print "<div class='nominate' title='Nominate'></div>";
+	} else {
+		print "<div class='nominated' title='Nominated'></div>";
+	}
 	
-	global $homeUrl, $sitename, $contactEmail;
+	
+	
+	/*global $homeUrl, $sitename, $contactEmail;
 	
 	$post = getPost($postId, $db);
 	$postUrl = $post["BLOG_POST_URI"];
@@ -38,7 +54,7 @@ if (isLoggedIn()) {
 $homeUrl/post/$postId
 
 The ".$sitename." Team.";
-	sendMail($contactEmail, $subject, $message);
+	sendMail($contactEmail, $subject, $message);*/
 }
 
 ?>

@@ -973,10 +973,59 @@ img.alignleft {
 }
 
 pre {
-display: inline;
-font-family: nonee;
-white-space: pre;
-margin: none;
+	display: inline;
+	font-family: nonee;
+	white-space: pre;
+	margin: none;
+}
+
+.editor-label {
+	background: #FFCC8B;
+	padding: 5px 15px;
+	display: inline-block;
+	text-align: center;
+	border: 1px solid #EBBA52;
+	box-shadow: inset 0px 1px 0px 0px rgba(255, 255, 255, 0.46);
+	font-weight: bold;
+	text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.5);
+	color: #854614;
+	border-radius: 6px;
+}
+
+.admin-label {
+	background: #FAD359;
+	padding: 5px 15px;
+	display: inline-block;
+	text-align: center;
+	border: 1px solid #ECC04F;
+	box-shadow: inset 0px 1px 0px 0px rgba(255, 255, 255, 0.46);
+	font-weight: bold;
+	text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.5);
+	color: #865F0D;
+	border-radius: 6px;
+}
+
+
+.network-wrapper {
+	float: left;
+	width: 300px;
+	padding: 6px;
+}
+
+.network-wrapper h2 {
+	text-align: center;
+	border-bottom: 1px solid #CFC8C8;
+	padding-bottom: 5px;
+	box-shadow: 0px 4px 10px -7px #383838;
+}
+
+.network-wrapper h2 a:link, .network-wrapper h2 a:visited {
+	color: #4B4B4B;
+}
+
+.network-posts {
+	height: 500px;
+	overflow: auto;
 }
 
 #content-container {
