@@ -850,6 +850,21 @@ CREATE TABLE IF NOT EXISTS `USER_STATUS` (
   UNIQUE KEY `AK_USER_STATUS_DESCRIPTION` (`USER_STATUS_DESCRIPTION`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='The approval status of a user account, e.g., active, under r';
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `SETTING`
+--
+
+DROP TABLE IF EXISTS `SETTING`;
+CREATE TABLE IF NOT EXISTS `SETTING` (
+  `SETTING_ID` int(10) unsigned NOT NULL auto_increment COMMENT 'Unique identifier of a setting',
+  `SETTING_NAME` varchar(155) collate utf8_unicode_ci NOT NULL COMMENT 'Name of a setting.',
+  `SETTING_VALUE` text collate utf8_unicode_ci NOT NULL COMMENT 'Value of a setting.',
+  PRIMARY KEY  (`SETTING_ID`),
+  UNIQUE KEY `SETTING_NAME` (`SETTING_NAME`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Settings of the installation.';
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

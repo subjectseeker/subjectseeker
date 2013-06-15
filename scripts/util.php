@@ -1742,6 +1742,28 @@ function addTopic ($topic, $db) {
 	return mysql_insert_id();
 }
 
+function loadSettings($db) {
+	$sql = "SELECT * FROM SETTING";
+	$results = mysql_query($sql, $db);
+
+	$settings = Array();
+	while ($row = mysql_fetch_array($results)) {
+		$settings[$row["SETTING_NAME"]] = $row["SETTING_VALUE"];
+	}
+
+	return $settings;
+}
+
+function editSetttings($settings, $db) {
+	foreach ($settings as $name => $setting) {
+		$setting = mysql_real_escape_string($setting);
+		$sql = "UPDATE SETTING SET SETTING_VALUE='$setting'  WHERE SETTING_NAME = '$name'";
+		mysql_query($sql, $db);
+	}
+
+	return $settings;
+}
+
 // Input: Post ID, DB Handle
 // Return: Post Data
 function getPost ($postId, $db) {
