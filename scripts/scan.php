@@ -16,11 +16,14 @@ if (isset($_REQUEST["url"]) == false) {
 	return NULL;
 }
 
-$url = parse_url($_REQUEST["url"], PHP_URL_HOST);
-$api->searchDb("filter0=url&value0=$url", FALSE, "blog");
+$parsedUrl = parse_url($_REQUEST["url"]);
+$baseUrl = $parsedUrl["scheme"]."://".$parsedUrl["host"];
+
+$api = new API;
+$api->searchDb("filter0=url&value0=$baseUrl", FALSE, "blog");
 foreach ($api->sites as $site) {
 	scanSite($site, $db);
-	print "Scanned: ".$site["siteName"]."<br /";
+	print "Scanned: ".$site["siteName"]."<br />";
 }
 
 function scanSite($site, $db) {

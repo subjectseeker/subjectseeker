@@ -266,29 +266,29 @@ The ".$sitename." Team.";
 
 // Input: Array with blog data, DB handle
 // Action: Scans blog for new posts and adds them to the system.
-function crawlBlogs($blog, $db) {
-	$blogUri = $blog["syndicationuri"];
-	$blogId = $blog["id"];
-	$blogName = $blog["name"];
+function crawlBlogs($site, $db) {
+	$siteFeedUrl = $site["siteFeedUrl"];
+	$siteId = $site["siteId"];
+	$siteName = $site["siteName"];
 	$postIds = array();
 	$message = NULL;
 
-	$feed = getSimplePie($blogUri);
+	$feed = getSimplePie($siteFeedUrl);
 	if ($feed->error()) {
-		$message = "<p class=\"ss-error\">ERROR: $blogUri (ID $blogId): " . $feed->error() . "</p>\n";
+		$message = "<p class=\"ss-error\">ERROR: $siteFeedUrl (ID $siteId): " . $feed->error() . "</p>\n";
 		return $message;
 	}
 	foreach ($feed->get_items(0, 50) as $item) {
-		$postId = addSimplePieItem($item, $feed->get_language(), $blogId, $db);
+		$postId = addSimplePieItem($item, $feed->get_language(), $siteId, $db);
 		$item = NULL;
 		if (!empty($postId)) {
 			$postIds[] = $postId;
 		}
 	}
-	markCrawled($blogId, $db);
+	markCrawled($siteId, $db);
 
 	$newPostCount = count($postIds);
-	$message = "<p class=\"ss-successful\">$blogName (ID $blogId) has been scanned; $newPostCount new posts found.</p>";
+	$message = "<p class=\"ss-successful\">$siteName (ID $siteId) has been scanned; $newPostCount new posts found.</p>";
 	$feed = NULL;
 
 	return $message;
@@ -2785,7 +2785,7 @@ function confirmEditBlog ($step, $db) {
 			return;
 		} elseif (!empty($crawl)) {
 			// Find new posts
-			$blog = array("syndicationuri"=>$blogSyndicationUri, "id"=>$blogId, "name"=>$blogName);
+			$blog = array("siteFeedUrl"=>$blogSyndicationUri, "siteId"=>$blogId, "siteName"=>$blogName);
 			$result = crawlBlogs($blog, $db);
 			
 			// Get posts and find citations
@@ -4108,6 +4108,7 @@ function checkCitations ($postUri, $postId, $db) {
 		preg_match("/(?<=bpr3.included=)./", $values, $rbInclude);
 		preg_match("/(?<=ss.included=)./", $values, $ssInclude);
 		if (($rbInclude[0] == 1 && $ssInclude[0] == NULL) || ($ssInclude[0] == 1)) {
+			insertCitationMarker (postIdToBlogId ($postId, $db), $db);
 			storeTopics ($postId, $values, $db);
 			$citations[] = $data -> asXML();;
 		}
