@@ -4,5 +4,6 @@ RewriteRule ^search/default/?$ scripts/feed.php [L]
 RewriteRule ^feed/posts/?$ scripts/feed.php [L]
 RewriteRule ^widget/default/?$ scripts/widget.php [L]
 RewriteRule ^post/([0-9]+)/badge/?$ scripts/post-badge.php [L]
+RewriteRule ^API/scan/?$ scripts/scan.php [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^(.*)$ index.php [L,QSA]

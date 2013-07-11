@@ -1533,7 +1533,7 @@ box-shadow:  1px 3px 10px 1px rgba(0, 0, 0, 0.3);
 }
 
 .arrow-up, .arrow-down, .arrow-left, .arrow-right {
-  background-image: url("../../images/icons/ss-sprite.png?v=1?v=1");
+  background-image: url("../../images/icons/ss-sprite.png?v=3");
   height: 16px;
   width: 14px;
   background-repeat: no-repeat;
@@ -1557,7 +1557,7 @@ box-shadow:  1px 3px 10px 1px rgba(0, 0, 0, 0.3);
 }
 
 .rss-icon, .twitter-t, .facebook-icon, .comment-icon, .recommended, .recommend, .twitter-icon, .googleplus-icon, .nominate, .nominated {
-	background-image: url("../../images/icons/ss-sprite.png?v=1");
+	background-image: url("../../images/icons/ss-sprite.png?v=3");
   background-repeat: no-repeat;
 }
 

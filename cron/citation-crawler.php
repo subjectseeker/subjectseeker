@@ -169,7 +169,6 @@ foreach ($posts as $post) {
   if (! citedPost($post["id"], $db)) {
 		$citations = checkCitations ($post["url"], $post["id"], $db);
 		if (is_array($citations)) {
-			insertCitationMarker ($post["blogId"], $db);
 			foreach ($citations as $citation) {
 				$articleData = parseCitation($citation);
 				$generatedCitation = storeCitation ($articleData, $post["id"], $db);
