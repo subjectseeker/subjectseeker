@@ -4623,7 +4623,7 @@ function getGoogleUser($oauthToken) {
 function getGooglePlusUser($googleUserId) {
 	global $googleApiKey;
 	
-	$googlePlusUser = json_decode(getPage("https://www.googleapis.com/plus/v1/people/".$googleUserId."?key=AIzaSyChWvOYFgrH742CkKltZk2LyqZIOxPs2k0"));
+	$googlePlusUser = json_decode(getPage("https://www.googleapis.com/plus/v1/people/".$googleUserId."?key=$googleApiKey"));
 	
 	return $googlePlusUser;
 }
