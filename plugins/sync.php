@@ -24,8 +24,9 @@ function syncPage() {
 		header("Location: $twitterAuthUrl");
 		
 	} elseif (isset($_REQUEST["step"]) && $_REQUEST["step"] == "googleAuth") {
+		global $googleClientId;
 		$callbackUrl = $_REQUEST["callback"];
-		$googleAuthUrl = "https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=490557068973.apps.googleusercontent.com&redirect_uri=$callbackUrl&scope=https://www.googleapis.com/auth/userinfo.email+https://www.googleapis.com/auth/userinfo.profile&access_type=offline";
+		$googleAuthUrl = "https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=$googleClientId&redirect_uri=$callbackUrl&scope=https://www.googleapis.com/auth/userinfo.email+https://www.googleapis.com/auth/userinfo.profile&access_type=offline";
 		header("Location: $googleAuthUrl");
 	}
 	

@@ -85,7 +85,12 @@ function sendEPEmail ($postId, $userEmail, $userName, $userDisplayName, $db) {
 	$postTitle = $postData["BLOG_POST_TITLE"];+
 	
 	$subject = $sitename. " Editor's Pick";
-	$message = "There is a new nomination for the ScienceSeeker Awards.
+	$message = "Good news, ".$userDisplayName."!
+
+Your post $postTitle has been recommended by one of our editors.
+
+You can visit your post profile here:
+$homeUrl/post/$postId
 
 The ".$sitename." Team.";
 	sendMail($userEmail, $subject, $message);
@@ -100,9 +105,13 @@ function sendUserFollowerNotification($followerUserId, $userId, $db) {
 	$userName = $user["userName"];
 	
 	$subject = "$followerUserName is now following you on $sitename";
-	$message = "There is a new nomination for the ScienceSeeker Awards.
-	
+	$message = "You've got a new follower on $sitename.
+        
+$followerUserName's profile: 
+$homeUrl/user/$followerUserName
 
+You can change your email notification preferences on your settings page:
+$homeUrl/user/$userName/settings
 
 The ".$sitename." Team.";
 	sendMail($contactEmail, $subject, $message);
