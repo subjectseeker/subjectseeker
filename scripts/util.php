@@ -4774,7 +4774,7 @@ function getTwitterUserDetails($twitterUserId = NULL, $twitterUserName = NULL, $
 	);
 	
 	$data = twitterConnection($url, "GET", $parameters, $oauthToken, $oauthSecret);
-	$details = array_shift(json_decode($data));
+	$details = json_decode($data);
 
 	return $details;
 }
