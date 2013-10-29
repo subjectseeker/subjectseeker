@@ -28,16 +28,17 @@ class API {
 	private $count = "";
 	
 	public function searchDb($httpQuery = NULL, $allowOverride = TRUE, $type = NULL, $useCache = TRUE, $userPriv = 0) {
+
 		$db = ssDbConnect();
 		$params = parseHttpParams($httpQuery, $allowOverride);
 		if ($type) {
 			$params["parameters"]["type"] = $type;
 		}
 		$params["parameters"]["privilege"] = $userPriv;
-		
+	
 		$cache = new cache("posts-".$params["string"], TRUE, FALSE);
 		if ($cache->caching == TRUE || !$useCache) {
-			$queryResult = $this->generateSearchQuery($params, $db);
+		$queryResult = $this->generateSearchQuery($params, $db);
 			
 			if ($queryResult["errors"]) {
 				foreach ($queryResult["errors"] as $error) {
@@ -50,10 +51,11 @@ class API {
 			if (!$queryResult["result"]) {
 				return NULL;
 			}
-			
+	
 			if ($params["parameters"]["type"] == "post") {
 				$posts = array();
 				while ($row = mysql_fetch_array($queryResult["result"])) {
+
 					$post["postId"] = $row["BLOG_POST_ID"];
 					$post["postTitle"] = $row["BLOG_POST_TITLE"];
 					$post["postUrl"] = htmlspecialchars($row["BLOG_POST_URI"]);
@@ -83,7 +85,6 @@ class API {
 				}
 				$this->posts = $posts;
 				$this->total = $queryResult["total"];
-				
 			} elseif ($params["parameters"]["type"] == "blog") {
 				$sites = array();
 				while ($row = mysql_fetch_array($queryResult["result"])) {
@@ -100,7 +101,7 @@ class API {
 				}
 				$this->sites = $sites;
 				$this->total = $queryResult["total"];
-				
+		
 			} elseif ($params["parameters"]["type"] == "topic") {
 				$topics = array();
 				while ($row = mysql_fetch_array($queryResult["result"])) {
@@ -148,7 +149,6 @@ class API {
 		$order = NULL;
 		$limit = NULL;
 		$offset = NULL;
-		
 		
 		if ($type == "") {
 			array_push ($this->errors, "No search type specified.");
@@ -205,7 +205,6 @@ class API {
 		
 		// construct SQL query
 		$sql = "$select $from $where $group $count $order $limit $offset;";
-	
 		// for debugging:
 		//print "<br />SQL $sql</br>";
 	
@@ -805,7 +804,7 @@ class API {
 			array_push ($this->where, $blogTopicsQuery);
 		}
 		if ($params["parameters"]["show-all"] != "true") {
-			array_push($this->where, "post.BLOG_POST_DATE_TIME < NOW()");
+			array_push($this->where, "post.BLOG_POST_DATE_TIME BETWEEN NOW() - INTERVAL 1 MONTH AND NOW()");
 		}
 		if ($params["parameters"]["min-date"]) {
 			$minDate = dateStringToSql($params["parameters"]["min-date"]);
