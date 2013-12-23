@@ -12,19 +12,43 @@ include_once (dirname(__FILE__)."/util.php");
 
 $db = ssDbConnect();
 
-if (isset($_REQUEST["url"]) == false) {
+if (isset($_REQUEST["query"]) == false && isset($_REQUEST["type"]) == false) {
 	return NULL;
 }
 
-$parsedUrl = parse_url($_REQUEST["url"]);
-$baseUrl = $parsedUrl["scheme"]."://".$parsedUrl["host"];
+$type = $_REQUEST["type"];
+$query = $_REQUEST["query"];
 
-$api = new API;
-$api->searchDb("filter0=url&value0=$baseUrl", FALSE, "blog");
-foreach ($api->sites as $site) {
-	scanSite($site, $db);
-	print "Scanned: ".$site["siteName"]."<br />";
+if ($type == "citation") {
+	$results = titleToCitations($query);
+	print "<subjectseeker>";
+	if (is_array($results) == FALSE) {
+	 print "<error>An error has occurred, please try again.</error>";
+	 
+	} else {
+		print "
+	<citations>";
+		if ($results != NULL) {
+			foreach ($results as $result) {
+				print "
+			<citation>".htmlspecialchars($result)."</citation>";
+			}
+		}
+		print "	</citations>";
+	}
+	print "</subjectseeker>"
+} else if ($type == "blog") {
+	$parsedUrl = parse_url($query);
+	$baseUrl = $parsedUrl["scheme"]."://".$parsedUrl["host"];
+
+	$api = new API;
+	$api->searchDb("filter0=url&value0=$baseUrl", FALSE, "blog");
+	foreach ($api->sites as $site) {
+		scanSite($site, $db);
+		print "Scanned: ".$site["siteName"]."<br />";
+	}
 }
+
 
 function scanSite($site, $db) {
 	$siteId = $site["siteId"];
@@ -47,5 +71,4 @@ function scanSite($site, $db) {
 		}
 	}
 }
-
 ?>
