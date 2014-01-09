@@ -4770,11 +4770,12 @@ function addToTwitterList($twitterUserId) {
 function getTwitterUserDetails($twitterUserId = NULL, $twitterUserName = NULL, $oauthToken = NULL, $oauthSecret = NULL) {
 	$url = "https://api.twitter.com/1.1/users/lookup.json";
 	$parameters = array(
-		"user_id" => $twitterUserId
+		"user_id" => $twitterUserId,
+		"screen_name" => $twitterUserName
 	);
 	
 	$data = twitterConnection($url, "GET", $parameters, $oauthToken, $oauthSecret);
-	$details = json_decode($data);
+	$details = array_shift(json_decode($data));
 
 	return $details;
 }
